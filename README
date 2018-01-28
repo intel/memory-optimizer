@@ -4,8 +4,8 @@ Dependency:
     ubuntu:
         sudo apt-get install libyaml-cpp-dev libnuma-dev
     CentOS:
-        yum install yaml-cpp-devel
-        yum install numactl-libs.x86_64
+        sudo yum install yaml-cpp-devel
+        sudo yum install numactl-libs.x86_64
 
 Config file format:
     format of configuration file:
