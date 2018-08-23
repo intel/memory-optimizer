@@ -135,14 +135,14 @@ _loadidlemap_out:
 }
 
 static const struct option opts[] = {
-	{"offset", required_argument, NULL, 'o'},
-	{"size", required_argument, NULL, 's'},
-	{"interval", required_argument, NULL, 'i'},
-	{"loop", required_argument, NULL, 'l'},
-	{"bitmap", required_argument, NULL, 'b'},
-	{"output", required_argument, NULL, 'f'},
-	{"help", no_argument, NULL, 'h'},
-	{NULL, 0, NULL, 0}
+	{"offset",	required_argument,	NULL,	'o'},
+	{"size",	required_argument,	NULL,	's'},
+	{"interval",	required_argument,	NULL,	'i'},
+	{"loop",	required_argument,	NULL,	'l'},
+	{"bitmap",	required_argument,	NULL,	'b'},
+	{"output",	required_argument,	NULL,	'f'},
+	{"help",	no_argument,		NULL,	'h'},
+	{NULL,		0,			NULL,	0}
 };
 
 static void usage(char *prog)
