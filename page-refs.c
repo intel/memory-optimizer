@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include <sys/user.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -20,15 +21,6 @@
 #define MAX_IDLEMAP_SIZE	(20 * 1024 * 1024)	//20M * 8 * 4K = 640G ?
 #define MAX_FILE_PATH	255
 
-//#define DEBUG
-
-#ifdef DEBUG
-#define debug_printf(fmt, args...) \
-		printf(fmt, ##args);
-#else
-#define debug_printf(fmt, args...)
-#endif
-
 // globals
 int g_debug;			// 1 == some, 2 == verbose
 unsigned long long *g_idlebuf;
@@ -39,6 +31,22 @@ unsigned long long g_start_pfn, g_num_pfn;
 unsigned char g_setidle_buf[IDLEMAP_BUF_SIZE];
 int g_setidle_bufsize;
 int g_idlefd;
+
+int verbose_printf(int level, const char *format, ...)
+{
+	if (g_debug < level)
+		return 0;
+
+	va_list args;
+	va_start(args, format);
+	int ret = vprintf(format, args);
+	va_end(args);
+
+	return ret;
+}
+
+#define debug_printf(fmt, args...)	verbose_printf(1, fmt, ##args)
+#define printdd(fmt, args...)		verbose_printf(2, fmt, ##args)
 
 // on return:
 // 	for nrefs in [0, max]:
@@ -118,12 +126,12 @@ int account_refs(void)
 	while (len < g_idlebufsize) {
 		// need to check ?
 		idlebits = g_idlebuf[idlemap];
-		debug_printf("idlebits: 0x%llx\n", idlebits);
+		printdd("idlebits: 0x%llx\n", idlebits);
 
 		for (pfn = 0; pfn < 64; pfn++) {
 			if (!(idlebits & (1ULL << pfn))) {
 				g_refs_count[base_pfn + pfn]++;
-				debug_printf("pfn 0x%llx refs_count 0x%llx\n",
+				printdd("pfn 0x%llx refs_count 0x%llx\n",
 					     base_pfn + pfn,
 					     g_refs_count[base_pfn + pfn]);
 			}
@@ -201,6 +209,7 @@ static const struct option opts[] = {
 	{"loop",	required_argument,	NULL,	'l'},
 	{"bitmap",	required_argument,	NULL,	'b'},
 	{"output",	required_argument,	NULL,	'f'},
+	{"verbose",	required_argument,	NULL,	'v'},
 	{"help",	no_argument,		NULL,	'h'},
 	{NULL,		0,			NULL,	0}
 };
@@ -216,6 +225,7 @@ static void usage(char *prog)
 		"    -l|--loop		The number of times to scan bitmap.\n"
 		"    -b|--bitmap	The bitmap file for scanning.\n"
 		"    -f|--output	The output file for the result of scanning.\n",
+		"    -v|--verbose	Show debug info.\n",
 		prog);
 }
 
@@ -228,7 +238,7 @@ int main(int argc, char *argv[])
 	int pagesize, optind, opt = 0, options_index = 0;
 	char bitmap_file[MAX_FILE_PATH] = "bitmap_file";
 	char output_file[MAX_FILE_PATH] = "output_file";
-	const char *optstr = "ho:s:i:l:b:f:";
+	const char *optstr = "hvo:s:i:l:b:f:";
 	unsigned long long offset = 0, size = 0, bufsize;
 	unsigned long long set_us, read_us, dur_us, slp_us, account_us, est_us;
 	static struct timeval ts1, ts2, ts3, ts4, ts5;
@@ -268,6 +278,9 @@ int main(int argc, char *argv[])
 		case 'f':
 			strcpy(output_file, optarg);
 			debug_printf("output_file = %s\n", output_file);
+			break;
+		case 'v':
+			g_debug++;
 			break;
 		case 'h':
 			usage(argv[0]);
