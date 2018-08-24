@@ -18,6 +18,11 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "iomem_parse.h"
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+
 #define MAX_LINE 160
 #define MAX_MEMORY_RANGES 2048
 static struct memory_range memory_range[MAX_MEMORY_RANGES];
@@ -31,7 +36,7 @@ static struct memory_range memory_range[MAX_MEMORY_RANGES];
  *
  * @return 0 on success, any other value on failure.
  */
-static int get_memory_ranges_proc_iomem(struct memory_range **range, int *ranges)
+int get_memory_ranges_proc_iomem(struct memory_range **range, int *ranges)
 {
 	const char *iomem= "/proc/iomem";
 	int memory_ranges = 0;
