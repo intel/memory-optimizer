@@ -1,0 +1,34 @@
+#!/bin/bash
+
+refs_count_file=$1
+
+[[ $refs_count_file ]] || {
+	# try default output file
+	[[ -f output_file ]] && refs_count_file=output_file
+}
+
+[[ $refs_count_file ]] || {
+	echo "Usage: $0 refs_count_file"
+	exit
+}
+
+plot() {
+	gnuplot <<-EOF
+
+	set xlabel "refs"
+	set ylabel "pages"
+
+	set size 1
+	set terminal pngcairo size ${width:-1280}, 800
+	set terminal pngcairo size ${width:-1000}, 600
+	set terminal pngcairo size ${width:-1280}, ${height:-800}
+
+	set output "$refs_count_file.png"
+
+	plot "$refs_count_file" with linespoints pt 7 ps 2 lw 2 lc rgbcolor "red" title "pages"
+
+EOF
+}
+
+plot $refs_count_file
+echo "feh $refs_count_file.png"
