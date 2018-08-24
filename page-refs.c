@@ -65,7 +65,7 @@ int output_refs_count(unsigned int loop, const char *output_file)
 {
 	unsigned short nrefs;
 	FILE *file;
-	unsigned long refs_count[loop];
+	unsigned long refs_count[loop+1];
 
 	if (!g_refs_count)
 		return -1;
