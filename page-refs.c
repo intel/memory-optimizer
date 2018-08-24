@@ -285,8 +285,7 @@ int main(int argc, char *argv[])
 
 	g_setidle_bufsize = size < sizeof(g_setidle_buf) ?
 			    size : sizeof(g_setidle_buf);
-	for (i = 0; i < g_setidle_bufsize; i++)
-		g_setidle_buf[i] = 0xff;
+	memset(g_setidle_buf, 0xff, g_setidle_bufsize);
 
 	if ((g_idlefd = open(bitmap_file, O_RDWR)) < 0) {
 		perror("Can't write bitmap file");
