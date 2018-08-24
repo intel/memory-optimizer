@@ -147,8 +147,6 @@ int account_refs(void)
 
 int setidlemap(unsigned long long offset, unsigned long long size)
 {
-	char *p;
-	int i;
 	ssize_t len = 0;
 
 	if (lseek(g_idlefd, offset, SEEK_SET) < 0) {
@@ -224,7 +222,7 @@ static void usage(char *prog)
 		"    -i|--interval	The interval to scan bitmap.\n"
 		"    -l|--loop		The number of times to scan bitmap.\n"
 		"    -b|--bitmap	The bitmap file for scanning.\n"
-		"    -f|--output	The output file for the result of scanning.\n",
+		"    -f|--output	The output file for the result of scanning.\n"
 		"    -v|--verbose	Show debug info.\n",
 		prog);
 }
@@ -235,12 +233,13 @@ int main(int argc, char *argv[])
 	int i, ret = 0;
 	double interval = 0.1;
 	unsigned short loop = 1;
-	int pagesize, optind, opt = 0, options_index = 0;
+	int pagesize, opt = 0, options_index = 0;
 	char bitmap_file[MAX_FILE_PATH] = "/sys/kernel/mm/page_idle/bitmap";
 	char output_file[MAX_FILE_PATH] = "output_file";
 	const char *optstr = "hvo:s:i:l:b:f:";
-	unsigned long long offset = 0, size = 0, bufsize;
-	unsigned long long set_us, read_us, dur_us, slp_us, account_us, est_us;
+	unsigned long long offset = 0, size = 0;
+	unsigned int bufsize;
+	unsigned long long set_us, read_us, dur_us, slp_us, account_us;
 	static struct timeval ts1, ts2, ts3, ts4, ts5;
 
 	// handle huge pages ?
@@ -330,7 +329,7 @@ int main(int argc, char *argv[])
 		     g_start_pfn, g_num_pfn);
 
 	if ((g_refs_count = calloc(g_num_pfn, sizeof(unsigned short))) == NULL) {
-		printf("Can't allocate memory for idlemap buf (%d bytes)!\n",
+		printf("Can't allocate memory for idlemap buf (%llu bytes)!\n",
 		       sizeof(unsigned short) * g_num_pfn);
 		ret = -2;
 		goto out;
