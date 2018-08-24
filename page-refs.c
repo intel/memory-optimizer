@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
 		case 0:
 			break;
 		case 'o':
-			offset = strtoul(optarg, NULL, 16);
+			offset = memparse(optarg, NULL);
 			debug_printf("offset = 0x%llx\n", offset);
 			offset /= pagesize * 8;
 			debug_printf("offset of the bitmap = 0x%llx, pagesize = 0x%x\n", offset, pagesize);
