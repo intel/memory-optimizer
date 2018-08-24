@@ -1,6 +1,7 @@
 /*
  * TBD
  */
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -149,7 +150,12 @@ int setidlemap(unsigned long long offset, unsigned long long size)
 
 	while (size) {
 		len = write(g_idlefd, g_setidle_buf, g_setidle_bufsize);
+
 		if (len < 0) {
+			// reach max PFN
+			if (errno == ENXIO)
+				return 0;
+
 			perror("setidlemap: error writing idle bitmap");
 			return len;
 		}
