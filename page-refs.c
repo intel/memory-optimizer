@@ -70,7 +70,7 @@ int output_refs_count(unsigned int loop, const char *output_file)
 	if (!g_refs_count)
 		return -1;
 
-	if (!count_refs(loop, refs_count)) {
+	if (count_refs(loop, refs_count)) {
 		fprintf(stderr, "refs_count out of range\n");
 		return -1;
 	}
