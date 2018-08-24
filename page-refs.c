@@ -39,7 +39,54 @@ char g_setidle_buf[IDLEMAP_BUF_SIZE];
 int g_setidle_bufsize;
 int g_idlefd;
 
-int output_refs(const char *output_file)
+// on return:
+// 	for nrefs in [0, max]:
+// 		count_array[nrefs] = npages;
+int count_refs(unsigned int max, unsigned long count_array[])
+{
+	unsigned long long pfn;
+	unsigned short nrefs;
+
+	memset(count_array, 0, max + 1);
+
+	for (pfn = 0; pfn < g_num_pfn; pfn++) {
+		nrefs = g_refs_count[pfn];
+		if (nrefs <= max)
+			count_array[nrefs]++;
+		else
+			return 1;
+	}
+
+	return 0;
+}
+
+int output_refs_count(unsigned int loop, const char *output_file)
+{
+	unsigned short nrefs;
+	FILE *file;
+	unsigned long refs_count[loop];
+
+	if (!g_refs_count)
+		return -1;
+
+	if (!count_refs(loop, refs_count)) {
+		fprintf(stderr, "refs_count out of range\n");
+		return -1;
+	}
+
+	if ((file = fopen(output_file, "w")) == NULL) {
+		perror("Can't open to write the output file");
+		exit(2);
+	}
+
+	for (nrefs = 0; nrefs <= loop; nrefs++) {
+		fprintf(file, "%3u %15lu\n", (unsigned int)nrefs, refs_count[nrefs]);
+	}
+	fclose(file);
+	return 0;
+}
+
+int output_pfn_refs(const char *output_file)
 {
 	FILE *file;
 	unsigned long long pfn;
@@ -167,7 +214,7 @@ int main(int argc, char *argv[])
 	//double duration, mbytes;
 	int i, ret = 0;
 	double interval = 0.1;
-	unsigned long loop = 1;
+	unsigned short loop = 1;
 	int pagesize, optind, opt = 0, options_index = 0;
 	char bitmap_file[MAX_FILE_PATH] = "bitmap_file";
 	char output_file[MAX_FILE_PATH] = "output_file";
@@ -313,7 +360,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	output_refs(output_file);
+	output_refs_count(loop, output_file);
 
 out:
 	if (g_idlefd)
