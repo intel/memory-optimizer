@@ -56,7 +56,7 @@ int count_refs(unsigned int max, unsigned long count_array[])
 	unsigned long long pfn;
 	unsigned short nrefs;
 
-	memset(count_array, 0, max + 1);
+	memset(count_array, 0, (max + 1) * sizeof(count_array[0]));
 
 	for (pfn = 0; pfn < g_num_pfn; pfn++) {
 		nrefs = g_refs_count[pfn];
