@@ -15,7 +15,7 @@
 #include <string.h>
 
 #define IDLEMAP_CHUNK_SIZE	8
-#define IDLEMAP_BUF_SIZE	4096
+#define IDLEMAP_BUF_SIZE	(1<<20)
 
 // big enough to span 640 Gbytes:
 #define MAX_IDLEMAP_SIZE	(20 * 1024 * 1024)	//20M * 8 * 4K = 640G ?
