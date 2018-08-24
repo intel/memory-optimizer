@@ -4,7 +4,7 @@ refs_count_file=$1
 
 [[ $refs_count_file ]] || {
 	# try default output file
-	[[ -f output_file ]] && refs_count_file=output_file
+	[[ -f refs_count ]] && refs_count_file=refs_count
 }
 
 [[ $refs_count_file ]] || {
