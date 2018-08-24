@@ -14,6 +14,9 @@
 #include <getopt.h>
 #include <string.h>
 
+#include "lib/memparse.h"
+#include "lib/iomem_parse.h"
+
 #define IDLEMAP_CHUNK_SIZE	8
 #define IDLEMAP_BUF_SIZE	(1<<20)
 
@@ -257,7 +260,7 @@ int main(int argc, char *argv[])
 			debug_printf("offset of the bitmap = 0x%llx, pagesize = 0x%x\n", offset, pagesize);
 			break;
 		case 's':
-			size = strtoul(optarg, NULL, 16);
+			size = memparse(optarg, NULL);
 			debug_printf("size = 0x%llx\n", size);
 			size /= pagesize * 8;
 			debug_printf("size of the bitmap = 0x%llx, pagesize = 0x%x\n", size, pagesize);
