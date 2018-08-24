@@ -308,13 +308,12 @@ int main(int argc, char *argv[])
 	debug_printf("The start pfn is 0x%llx, the number of pfn is 0x%llx.\n",
 		     g_start_pfn, g_num_pfn);
 
-	if ((g_refs_count = malloc(sizeof(unsigned short) * g_num_pfn)) == NULL) {
+	if ((g_refs_count = calloc(g_num_pfn, sizeof(unsigned short))) == NULL) {
 		printf("Can't allocate memory for idlemap buf (%d bytes)!\n",
 		       sizeof(unsigned short) * g_num_pfn);
 		ret = -2;
 		goto out;
 	}
-	memset(g_refs_count, 0, sizeof(unsigned short) * g_num_pfn);
 
 	for (i = 0; i < loop; i++) {
 		// set idle flags
