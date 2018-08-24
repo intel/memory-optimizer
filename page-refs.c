@@ -35,7 +35,7 @@ unsigned long long g_idlebufsize;
 unsigned short *g_refs_count;
 unsigned long long g_offset, g_size;
 unsigned long long g_start_pfn, g_num_pfn;
-char g_setidle_buf[IDLEMAP_BUF_SIZE];
+unsigned char g_setidle_buf[IDLEMAP_BUF_SIZE];
 int g_setidle_bufsize;
 int g_idlefd;
 
@@ -140,7 +140,7 @@ int setidlemap(unsigned long long offset, unsigned long long size)
 {
 	char *p;
 	int i;
-	unsigned long len = 0;
+	ssize_t len = 0;
 
 	if (lseek(g_idlefd, offset, SEEK_SET) < 0) {
 		perror("Can't seek bitmap file");
@@ -149,6 +149,10 @@ int setidlemap(unsigned long long offset, unsigned long long size)
 
 	while (size) {
 		len = write(g_idlefd, g_setidle_buf, g_setidle_bufsize);
+		if (len < 0) {
+			perror("setidlemap: error writing idle bitmap");
+			return len;
+		}
 		size -= len;
 	}
 
