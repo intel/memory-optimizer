@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
 	double interval = 0.1;
 	unsigned short loop = 1;
 	int pagesize, optind, opt = 0, options_index = 0;
-	char bitmap_file[MAX_FILE_PATH] = "bitmap_file";
+	char bitmap_file[MAX_FILE_PATH] = "/sys/kernel/mm/page_idle/bitmap";
 	char output_file[MAX_FILE_PATH] = "output_file";
 	const char *optstr = "hvo:s:i:l:b:f:";
 	unsigned long long offset = 0, size = 0, bufsize;
