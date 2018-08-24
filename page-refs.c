@@ -289,18 +289,20 @@ int main(int argc, char *argv[])
 	if (!size)
 		size = MAX_IDLEMAP_SIZE;
 
-	g_setidle_bufsize = size < sizeof(g_setidle_buf) ?
-			    size : sizeof(g_setidle_buf);
+	// align on IDLEMAP_CHUNK_SIZE
+	bufsize = size;
+	bufsize += IDLEMAP_CHUNK_SIZE - 1;
+	bufsize = (bufsize / IDLEMAP_CHUNK_SIZE) * IDLEMAP_CHUNK_SIZE;
+
+	g_setidle_bufsize = bufsize < sizeof(g_setidle_buf) ?
+			    bufsize : sizeof(g_setidle_buf);
 	memset(g_setidle_buf, 0xff, g_setidle_bufsize);
 
 	if ((g_idlefd = open(bitmap_file, O_RDWR)) < 0) {
 		perror("Can't write bitmap file");
 		exit(2);
 	}
-	//need to align on IDLEMAP_CHUNK_SIZE ?
-	bufsize = size;
-	bufsize += IDLEMAP_CHUNK_SIZE - 1;
-	bufsize = bufsize / IDLEMAP_CHUNK_SIZE * IDLEMAP_CHUNK_SIZE;
+
 	if ((g_idlebuf = malloc(bufsize)) == NULL) {
 		printf("Can't allocate memory for idlemap buf (%d bytes)!\n",
 		       bufsize);
