@@ -24,6 +24,8 @@
 #define MAX_IDLEMAP_SIZE	(20 * 1024 * 1024)	//20M * 8 * 4K = 640G ?
 #define MAX_FILE_PATH	255
 
+#define PFN_IDLE_BITMAP_PATH "/sys/kernel/mm/page_idle/bitmap"
+
 // globals
 int g_debug;			// 1 == some, 2 == verbose
 unsigned long long *g_idlebuf;
@@ -237,13 +239,14 @@ int main(int argc, char *argv[])
 	double interval = 0.1;
 	unsigned short loop = 1;
 	int pagesize, opt = 0, options_index = 0;
-	char bitmap_file[MAX_FILE_PATH] = "/sys/kernel/mm/page_idle/bitmap";
+	char bitmap_file[MAX_FILE_PATH] = PFN_IDLE_BITMAP_PATH;
 	char output_file[MAX_FILE_PATH] = "refs_count";
 	const char *optstr = "hvo:s:i:l:b:f:";
 	unsigned long long offset = 0, size = 0;
 	unsigned int bufsize;
 	unsigned long long set_us, read_us, dur_us, slp_us, account_us;
 	static struct timeval ts1, ts2, ts3, ts4, ts5;
+	int is_pfn_bitmap;
 
 	// handle huge pages ?
 	pagesize = getpagesize();
@@ -309,6 +312,8 @@ int main(int argc, char *argv[])
 	bufsize += IDLEMAP_CHUNK_SIZE - 1;
 	bufsize = (bufsize / IDLEMAP_CHUNK_SIZE) * IDLEMAP_CHUNK_SIZE;
 
+	is_pfn_bitmap = !strcmp(bitmap_file, PFN_IDLE_BITMAP_PATH);
+
 	g_setidle_bufsize = bufsize < sizeof(g_setidle_buf) ?
 			    bufsize : sizeof(g_setidle_buf);
 	memset(g_setidle_buf, 0xff, g_setidle_bufsize);
@@ -341,7 +346,9 @@ int main(int argc, char *argv[])
 	for (i = 0; i < loop; i++) {
 		// set idle flags
 		gettimeofday(&ts1, NULL);
-		ret = setidlemap(offset, size);
+		// the per-task idle bitmap will auto clear A bits on read
+		if (is_pfn_bitmap)
+			ret = setidlemap(offset, size);
 		if (ret) {
 			goto out;
 		}
