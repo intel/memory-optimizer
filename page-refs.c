@@ -21,10 +21,14 @@
 #define IDLEMAP_BUF_SIZE	(1<<20)
 
 // big enough to span 640 Gbytes:
-#define MAX_IDLEMAP_SIZE	(20 * 1024 * 1024)	//20M * 8 * 4K = 640G ?
+#define MAX_IDLEMAP_SIZE	(20 * 1024 * 1024)	//20M * 8 * 4K = 640G
 #define MAX_FILE_PATH	255
 
 #define PFN_IDLE_BITMAP_PATH "/sys/kernel/mm/page_idle/bitmap"
+#define KERNEL_PAGE_FLAGS    "/proc/kpageflags"
+
+#define PAGE_FLAGS_HUGE      (1 << 17)
+#define PAGE_FLAGS_THP       (1 << 22)
 
 // globals
 int g_debug;			// 1 == some, 2 == verbose
@@ -36,6 +40,9 @@ unsigned long long g_start_pfn, g_num_pfn;
 unsigned char g_setidle_buf[IDLEMAP_BUF_SIZE];
 int g_setidle_bufsize;
 int g_idlefd;
+int g_kpageflags_fd;
+unsigned long long *g_kpageflags_buf;
+unsigned long long g_kpageflags_bufsize;
 
 int verbose_printf(int level, const char *format, ...)
 {
@@ -56,18 +63,27 @@ int verbose_printf(int level, const char *format, ...)
 // on return:
 // 	for nrefs in [0, max]:
 // 		count_array[nrefs] = npages;
-int count_refs(unsigned int max, unsigned long count_array[])
+int count_refs(unsigned int max,
+			unsigned long count_4k_array[],
+			unsigned long count_2m_array[])
 {
 	unsigned long long pfn;
 	unsigned short nrefs;
 
-	memset(count_array, 0, (max + 1) * sizeof(count_array[0]));
+	memset(count_4k_array, 0, (max + 1) * sizeof(count_4k_array[0]));
+	memset(count_2m_array, 0, (max + 1) * sizeof(count_2m_array[0]));
 
 	for (pfn = 0; pfn < g_num_pfn; pfn++) {
 		nrefs = g_refs_count[pfn];
-		if (nrefs <= max)
-			count_array[nrefs]++;
-		else
+		if (nrefs <= max) {
+			if (!(g_kpageflags_buf[pfn] & PAGE_FLAGS_THP))
+				count_4k_array[nrefs]++;
+			else {
+				count_2m_array[nrefs]++;
+				debug_printf("pfn 0x%llx is a huge page.\n",
+							 pfn);
+			}
+		} else
 			return 1;
 	}
 
@@ -78,13 +94,11 @@ int output_refs_count(unsigned int loop, const char *output_file)
 {
 	unsigned short nrefs;
 	FILE *file;
-	unsigned long refs_count[loop+1];
+	unsigned long refs_4k_count[loop + 1];
+	unsigned long refs_2m_count[loop + 1];
 
-	if (!g_refs_count)
-		return -1;
-
-	if (count_refs(loop, refs_count)) {
-		fprintf(stderr, "refs_count out of range\n");
+	if (count_refs(loop, refs_4k_count, refs_2m_count)) {
+		fprintf(stderr, "refs count out of range\n");
 		return -1;
 	}
 
@@ -93,8 +107,12 @@ int output_refs_count(unsigned int loop, const char *output_file)
 		exit(2);
 	}
 
+	fprintf(file, "%-8s %-15s %-15s\n", "refs", "count_4K", "count_2M");
+	fprintf(file, "===================================\n");
+
 	for (nrefs = 0; nrefs <= loop; nrefs++) {
-		fprintf(file, "%3u %15lu\n", (unsigned int)nrefs, refs_count[nrefs]);
+		fprintf(file, "%-8u %-15lu %-15lu\n", (unsigned int)nrefs,
+			refs_4k_count[nrefs], refs_2m_count[nrefs]);
 	}
 	fclose(file);
 	return 0;
@@ -129,7 +147,6 @@ int account_refs(void)
 	unsigned long long idlebits, idlemap = 0, base_pfn = 0, pfn;
 
 	while (len < g_idlebufsize) {
-		// need to check ?
 		idlebits = g_idlebuf[idlemap];
 		printdd("idlebits: 0x%llx\n", idlebits);
 
@@ -205,6 +222,36 @@ _loadidlemap_out:
 	return err;
 }
 
+int loadflags(unsigned long long pfn, unsigned long long num_pfn)
+{
+	char *p;
+	ssize_t len = 0;
+	int err = 0;
+
+	if (lseek(g_kpageflags_fd,
+		  pfn * sizeof(unsigned long long), SEEK_SET) < 0) {
+		printf("Can't seek kernel page flags file");
+		err = -4;
+		goto _loadflags_out;
+	}
+
+	p = (char *)g_kpageflags_buf;
+	g_kpageflags_bufsize = 0;
+
+	// unfortunately, larger reads do not seem supported
+	while ((len = read(g_kpageflags_fd, p, IDLEMAP_CHUNK_SIZE)) > 0) {
+		p += len;
+		g_kpageflags_bufsize += len;
+		num_pfn--;
+		if (num_pfn <= 0)
+			break;
+	}
+	debug_printf("g_kpageflags_bufsize: 0x%llx\n", g_kpageflags_bufsize);
+
+_loadflags_out:
+	return err;
+}
+
 static const struct option opts[] = {
 	{"offset",	required_argument,	NULL,	'o'},
 	{"size",	required_argument,	NULL,	's'},
@@ -234,7 +281,6 @@ static void usage(char *prog)
 
 int main(int argc, char *argv[])
 {
-	//double duration, mbytes;
 	int i, ret = 0;
 	double interval = 0.1;
 	unsigned short loop = 1;
@@ -248,7 +294,6 @@ int main(int argc, char *argv[])
 	static struct timeval ts1, ts2, ts3, ts4, ts5;
 	int is_pfn_bitmap;
 
-	// handle huge pages ?
 	pagesize = getpagesize();
 
 	/* parse the options */
@@ -288,8 +333,6 @@ int main(int argc, char *argv[])
 			g_debug++;
 			break;
 		case 'h':
-			usage(argv[0]);
-			exit(0);
 		case '?':
 		default:
 			usage(argv[0]);
@@ -343,15 +386,34 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
+	g_kpageflags_fd = open(KERNEL_PAGE_FLAGS, O_RDONLY);
+	if (g_kpageflags_fd < 0) {
+		printf("Can't read file %s!\n", KERNEL_PAGE_FLAGS);
+		ret = -3;
+		goto out;
+	}
+
+	g_kpageflags_buf = calloc(g_num_pfn, sizeof(unsigned long long));
+	if (!g_kpageflags_buf) {
+		printf("Can't allocate memory for idlemap buf (%d bytes)!\n",
+		       bufsize);
+		ret = -1;
+		goto out;
+	}
+
+	ret = loadflags(g_start_pfn, g_num_pfn);
+	if (ret)
+		goto out;
+
 	for (i = 0; i < loop; i++) {
 		// set idle flags
 		gettimeofday(&ts1, NULL);
 		// the per-task idle bitmap will auto clear A bits on read
 		if (is_pfn_bitmap)
 			ret = setidlemap(offset, size);
-		if (ret) {
+		if (ret)
 			goto out;
-		}
+
 		// sleep
 		gettimeofday(&ts2, NULL);
 		usleep((int)(interval * 1000000));
@@ -359,15 +421,13 @@ int main(int argc, char *argv[])
 
 		// read idle flags
 		ret = loadidlemap(offset, size);
-		if (ret) {
+		if (ret)
 			goto out;
-		}
-		gettimeofday(&ts4, NULL);
 
+		gettimeofday(&ts4, NULL);
 		ret = account_refs();
-		if (ret) {
+		if (ret)
 			goto out;
-		}
 		gettimeofday(&ts5, NULL);
 
 		//TODO: create a routine func to simplify the below calculations
@@ -397,11 +457,15 @@ int main(int argc, char *argv[])
 out:
 	if (g_idlefd)
 		close(g_idlefd);
+	if (g_kpageflags_fd)
+		close(g_kpageflags_fd);
 
 	if (g_idlebuf)
 		free(g_idlebuf);
 	if (g_refs_count)
 		free(g_refs_count);
+	if (g_kpageflags_buf)
+		free(g_kpageflags_buf);
 
 	return ret;
 }
