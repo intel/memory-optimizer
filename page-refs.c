@@ -2,17 +2,17 @@
  * TBD
  */
 #include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <sys/user.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/user.h>
+#include <unistd.h>
 
 #include "lib/memparse.h"
 #include "lib/iomem_parse.h"
