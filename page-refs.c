@@ -328,6 +328,12 @@ static void usage(char *prog)
 		prog);
 }
 
+static inline unsigned long long tv_delta(struct timeval t1, struct timeval t2)
+{
+	return  (t2.tv_sec  - t1.tv_sec) * 1000000 +
+		(t2.tv_usec - t1.tv_usec);
+}
+
 int main(int argc, char *argv[])
 {
 	int i, ret = 0;
@@ -494,18 +500,12 @@ int main(int argc, char *argv[])
 			goto out;
 		gettimeofday(&ts5, NULL);
 
-		//TODO: create a routine func to simplify the below calculations
 		// calculate times
-		set_us = 1000000 * (ts2.tv_sec - ts1.tv_sec) +
-				   (ts2.tv_usec - ts1.tv_usec);
-		slp_us = 1000000 * (ts3.tv_sec - ts2.tv_sec) +
-				   (ts3.tv_usec - ts2.tv_usec);
-		read_us = 1000000 * (ts4.tv_sec - ts3.tv_sec) +
-				    (ts4.tv_usec - ts3.tv_usec);
-		account_us = 1000000 * (ts5.tv_sec - ts4.tv_sec) +
-				       (ts5.tv_usec - ts4.tv_usec);
-		dur_us = 1000000 * (ts5.tv_sec - ts1.tv_sec) +
-				   (ts5.tv_usec - ts1.tv_usec);
+		set_us = tv_delta(ts1, ts2);
+		slp_us = tv_delta(ts2, ts3);
+		read_us = tv_delta(ts3, ts4);
+		account_us = tv_delta(ts4, ts5);
+		dur_us = tv_delta(ts1, ts5);
 
 		if (g_debug) {
 			printf("set time   : %.6f s\n", (double)set_us / 1000000);
