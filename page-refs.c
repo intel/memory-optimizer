@@ -33,7 +33,8 @@
 // globals
 int g_debug;			// 1 == some, 2 == verbose
 unsigned long long *g_idlebuf;
-unsigned long long g_idlebufsize;
+unsigned long long g_idlebuf_size;
+unsigned long long g_idlebuf_len;
 unsigned short *g_refs_count;
 unsigned short *g_refs_2m_count;
 unsigned long long g_offset, g_size;
@@ -181,7 +182,7 @@ int account_refs(void)
 	unsigned long long pfn_2m = 0, pfn, fn;
 	int count_2m = 1;
 
-	while (len < g_idlebufsize) {
+	while (len < g_idlebuf_len) {
 		idlebits = g_idlebuf[idlemap];
 		printdd("idlebits: 0x%llx\n", idlebits);
 
@@ -252,17 +253,17 @@ int loadidlemap(unsigned long long offset, unsigned long long size)
 	}
 
 	p = (char *)g_idlebuf;
-	g_idlebufsize = 0;
+	g_idlebuf_len = 0;
 
 	// unfortunately, larger reads do not seem supported
-	while ((len = read(g_idlefd, p, IDLEMAP_CHUNK_SIZE)) > 0) {
+	while ((len = read(g_idlefd, p, g_idlebuf_size - g_idlebuf_len)) > 0) {
 		p += len;
-		g_idlebufsize += len;
+		g_idlebuf_len += len;
 		size -= len;
 		if (size <= 0)
 			break;
 	}
-	debug_printf("g_idlebufsize: 0x%llx\n", g_idlebufsize);
+	debug_printf("g_idlebuf_len: 0x%llx\n", g_idlebuf_len);
 
 _loadidlemap_out:
 	return err;
@@ -420,6 +421,7 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 	debug_printf("size: 0x%llx, bufsize: 0x%llx\n", size, bufsize);
+	g_idlebuf_size = bufsize;
 
 	g_start_pfn = offset * 8;
 	g_num_pfn = size * 8;
