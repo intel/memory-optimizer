@@ -22,7 +22,7 @@
 
 // big enough to span 640 Gbytes:
 #define MAX_IDLEMAP_SIZE	(20 * 1024 * 1024)	//20M * 8 * 4K = 640G
-#define MAX_FILE_PATH	255
+#define MAX_FILE_PATH		255
 
 #define PFN_IDLE_BITMAP_PATH "/sys/kernel/mm/page_idle/bitmap"
 #define KERNEL_PAGE_FLAGS    "/proc/kpageflags"
@@ -35,8 +35,9 @@ int g_debug;			// 1 == some, 2 == verbose
 unsigned long long *g_idlebuf;
 unsigned long long g_idlebufsize;
 unsigned short *g_refs_count;
+unsigned short *g_refs_2m_count;
 unsigned long long g_offset, g_size;
-unsigned long long g_start_pfn, g_num_pfn;
+unsigned long long g_start_pfn, g_num_pfn, g_sim_2m_num_pfn;
 unsigned char g_setidle_buf[IDLEMAP_BUF_SIZE];
 int g_setidle_bufsize;
 int g_idlefd;
@@ -80,10 +81,30 @@ int count_refs(unsigned int max,
 				count_4k_array[nrefs]++;
 			else {
 				count_2m_array[nrefs]++;
-				debug_printf("pfn 0x%llx is a huge page.\n",
-							 pfn);
+				printdd("pfn 0x%llx is a huge page.\n",
+					pfn);
 			}
 		} else
+			return 1;
+	}
+
+	return 0;
+}
+
+int count_sim_2m_refs(unsigned int max,
+				unsigned long count_sim_2m_array[])
+{
+	unsigned long long pfn;
+	unsigned short nrefs;
+
+	memset(count_sim_2m_array, 0,
+			(max + 1) * sizeof(count_sim_2m_array[0]));
+
+	for (pfn = 0; pfn < g_sim_2m_num_pfn; pfn++) {
+		nrefs = g_refs_2m_count[pfn];
+		if (nrefs <= max)
+			count_sim_2m_array[nrefs]++;
+		else
 			return 1;
 	}
 
@@ -96,8 +117,14 @@ int output_refs_count(unsigned int loop, const char *output_file)
 	FILE *file;
 	unsigned long refs_4k_count[loop + 1];
 	unsigned long refs_2m_count[loop + 1];
+	unsigned long refs_sim_2m_count[loop + 1];
 
 	if (count_refs(loop, refs_4k_count, refs_2m_count)) {
+		fprintf(stderr, "refs count out of range\n");
+		return -1;
+	}
+
+	if (count_sim_2m_refs(loop, refs_sim_2m_count)) {
 		fprintf(stderr, "refs count out of range\n");
 		return -1;
 	}
@@ -107,12 +134,17 @@ int output_refs_count(unsigned int loop, const char *output_file)
 		exit(2);
 	}
 
-	fprintf(file, "%-8s %-15s %-15s\n", "refs", "count_4K", "count_2M");
-	fprintf(file, "===================================\n");
+	fprintf(file, "%-8s %-15s %-15s %-15s\n",
+				"refs", "count_4K",
+				"count_2M", "count_simulate_2M");
+	fprintf(file, "=========================================================\n");
 
 	for (nrefs = 0; nrefs <= loop; nrefs++) {
-		fprintf(file, "%-8u %-15lu %-15lu\n", (unsigned int)nrefs,
-			refs_4k_count[nrefs], refs_2m_count[nrefs]);
+		fprintf(file, "%-8u %-15lu %-15lu %-15lu\n",
+				(unsigned int)nrefs,
+				refs_4k_count[nrefs],
+				refs_2m_count[nrefs],
+				refs_sim_2m_count[nrefs]);
 	}
 	fclose(file);
 	return 0;
@@ -144,7 +176,10 @@ int output_pfn_refs(const char *output_file)
 int account_refs(void)
 {
 	unsigned long len = 0;
-	unsigned long long idlebits, idlemap = 0, base_pfn = 0, pfn;
+	unsigned long long idlebits, idlemap = 0;
+	unsigned long long base_pfn_2m = 0, base_pfn = 0;
+	unsigned long long pfn_2m = 0, pfn, fn;
+	int count_2m = 1;
 
 	while (len < g_idlebufsize) {
 		idlebits = g_idlebuf[idlemap];
@@ -152,7 +187,15 @@ int account_refs(void)
 
 		for (pfn = 0; pfn < 64; pfn++) {
 			if (!(idlebits & (1ULL << pfn))) {
-				g_refs_count[base_pfn + pfn]++;
+				fn = base_pfn + pfn;
+				g_refs_count[fn]++;
+
+				//only count once in a 2M page
+				if (count_2m) {
+					pfn_2m = fn / 512;
+					g_refs_2m_count[pfn_2m]++;
+					count_2m = 0;
+				}
 				printdd("pfn 0x%llx refs_count 0x%llx\n",
 					     base_pfn + pfn,
 					     g_refs_count[base_pfn + pfn]);
@@ -162,6 +205,9 @@ int account_refs(void)
 		len += IDLEMAP_CHUNK_SIZE;
 		idlemap = len / IDLEMAP_CHUNK_SIZE;
 		base_pfn = idlemap * 64;
+		base_pfn_2m = base_pfn / 512;
+		if (base_pfn_2m > pfn_2m)
+			count_2m = 1;
 	}
 
 	return 0;
@@ -379,10 +425,22 @@ int main(int argc, char *argv[])
 	debug_printf("The start pfn is 0x%llx, the number of pfn is 0x%llx.\n",
 		     g_start_pfn, g_num_pfn);
 
-	if ((g_refs_count = calloc(g_num_pfn, sizeof(unsigned short))) == NULL) {
-		printf("Can't allocate memory for idlemap buf (%llu bytes)!\n",
+	g_refs_count = calloc(g_num_pfn, sizeof(unsigned short));
+	if (g_refs_count == NULL) {
+		printf("Can't allocate memory for refs count buf (%llu bytes)!\n",
 		       sizeof(unsigned short) * g_num_pfn);
 		ret = -2;
+		goto out;
+	}
+
+	g_sim_2m_num_pfn = (g_num_pfn + 511) / 512;
+	debug_printf("g_sim_2m_num_pfn: 0x%llx\n", g_sim_2m_num_pfn);
+	g_refs_2m_count =
+			calloc(g_sim_2m_num_pfn, sizeof(unsigned short));
+	if (g_refs_2m_count == NULL) {
+		printf("Can't allocate memory for 2M refs count buf (%llu bytes)!\n",
+		       sizeof(unsigned short) * g_sim_2m_num_pfn);
+		ret = -4;
 		goto out;
 	}
 
