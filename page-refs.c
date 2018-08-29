@@ -356,6 +356,7 @@ int main(int argc, char *argv[])
 		case 's':
 			size = memparse(optarg, NULL);
 			debug_printf("size = 0x%llx\n", size);
+			size += pagesize * 8 - 1;
 			size /= pagesize * 8;
 			debug_printf("size of the bitmap = 0x%llx, pagesize = 0x%x\n", size, pagesize);
 			break;
