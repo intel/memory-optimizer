@@ -44,7 +44,8 @@ int g_setidle_bufsize;
 int g_idlefd;
 int g_kpageflags_fd;
 unsigned long long *g_kpageflags_buf;
-unsigned long long g_kpageflags_bufsize;
+unsigned long long g_kpageflags_buf_size;
+unsigned long long g_kpageflags_buf_len;
 
 int verbose_printf(int level, const char *format, ...)
 {
@@ -283,17 +284,18 @@ int loadflags(unsigned long long pfn, unsigned long long num_pfn)
 	}
 
 	p = (char *)g_kpageflags_buf;
-	g_kpageflags_bufsize = 0;
+	g_kpageflags_buf_len = 0;
 
 	// unfortunately, larger reads do not seem supported
-	while ((len = read(g_kpageflags_fd, p, IDLEMAP_CHUNK_SIZE)) > 0) {
+	while ((len = read(g_kpageflags_fd, p,
+			   g_kpageflags_buf_size - g_kpageflags_buf_len)) > 0) {
 		p += len;
-		g_kpageflags_bufsize += len;
+		g_kpageflags_buf_len += len;
 		num_pfn--;
 		if (num_pfn <= 0)
 			break;
 	}
-	debug_printf("g_kpageflags_bufsize: 0x%llx\n", g_kpageflags_bufsize);
+	debug_printf("g_kpageflags_buf_len: 0x%llx\n", g_kpageflags_buf_len);
 
 _loadflags_out:
 	return err;
@@ -461,6 +463,7 @@ int main(int argc, char *argv[])
 		ret = -1;
 		goto out;
 	}
+	g_kpageflags_buf_size = g_num_pfn * sizeof(unsigned long long);
 
 	ret = loadflags(g_start_pfn, g_num_pfn);
 	if (ret)
