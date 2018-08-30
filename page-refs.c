@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <libgen.h>
+#include <linux/limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,10 +24,11 @@
 
 // big enough to span 640 Gbytes:
 #define MAX_IDLEMAP_SIZE	(20 * 1024 * 1024)	//20M * 8 * 4K = 640G
-#define MAX_FILE_PATH		255
 
-#define PFN_IDLE_BITMAP_PATH "/sys/kernel/mm/page_idle/bitmap"
-#define KERNEL_PAGE_FLAGS    "/proc/kpageflags"
+#define PFN_IDLE_BITMAP_PATH	"/sys/kernel/mm/page_idle/bitmap"
+#define KERNEL_PAGE_FLAGS	"/proc/kpageflags"
+#define GNUPLOT_PATH		"/usr/bin/gnuplot"
+#define PLOT_SCRIPT		"plot-page-refs"
 
 #define PAGE_FLAGS_HUGE      (1 << 17)
 #define PAGE_FLAGS_THP       (1 << 22)
@@ -334,14 +337,32 @@ static inline unsigned long long tv_delta(struct timeval t1, struct timeval t2)
 		(t2.tv_usec - t1.tv_usec);
 }
 
+static int plot_output(char *argv[], char *output_file)
+{
+	char mypath[PATH_MAX];
+	struct stat sb;
+
+	if (stat(GNUPLOT_PATH, &sb))
+		return -1;
+
+	if (!(sb.st_mode & S_IXUSR))
+		return -2;
+
+	if (!realpath(argv[0], mypath))
+		return -3;
+
+	return system(strcat(dirname(mypath), "/" PLOT_SCRIPT));
+}
+
+
 int main(int argc, char *argv[])
 {
 	int i, ret = 0;
 	double interval = 0.1;
 	unsigned short loop = 1;
 	int pagesize, opt = 0, options_index = 0;
-	char bitmap_file[MAX_FILE_PATH] = PFN_IDLE_BITMAP_PATH;
-	char output_file[MAX_FILE_PATH] = "refs_count";
+	char bitmap_file[PATH_MAX] = PFN_IDLE_BITMAP_PATH;
+	char output_file[PATH_MAX] = "refs_count";
 	const char *optstr = "hvo:s:i:l:b:f:";
 	unsigned long long offset = 0, size = 0;
 	unsigned int bufsize;
@@ -517,6 +538,7 @@ int main(int argc, char *argv[])
 	}
 
 	output_refs_count(loop, output_file);
+	plot_output(argv, output_file);
 
 out:
 	if (g_idlefd)
