@@ -279,11 +279,27 @@ int loadflags(unsigned long long pfn, unsigned long long num_pfn)
 	ssize_t len = 0;
 	int err = 0;
 
+	g_kpageflags_fd = open(KERNEL_PAGE_FLAGS, O_RDONLY);
+	if (g_kpageflags_fd < 0) {
+		printf("Can't read file %s!\n", KERNEL_PAGE_FLAGS);
+		err = -3;
+		goto out;
+	}
+
+	g_kpageflags_buf_size = g_num_pfn * sizeof(unsigned long long);
+	g_kpageflags_buf = calloc(g_num_pfn, sizeof(unsigned long long));
+	if (!g_kpageflags_buf) {
+		printf("Can't allocate memory for kpageflags buf (%d bytes)!\n",
+		       g_kpageflags_buf_size);
+		err = -1;
+		goto out;
+	}
+
 	if (lseek(g_kpageflags_fd,
 		  pfn * sizeof(unsigned long long), SEEK_SET) < 0) {
 		printf("Can't seek kernel page flags file");
 		err = -4;
-		goto _loadflags_out;
+		goto out;
 	}
 
 	p = (char *)g_kpageflags_buf;
@@ -300,7 +316,7 @@ int loadflags(unsigned long long pfn, unsigned long long num_pfn)
 	}
 	debug_printf("g_kpageflags_buf_len: 0x%llx\n", g_kpageflags_buf_len);
 
-_loadflags_out:
+out:
 	return err;
 }
 
@@ -488,22 +504,6 @@ int main(int argc, char *argv[])
 		printf("Can't allocate memory for 2M refs count buf (%llu bytes)!\n",
 		       sizeof(unsigned short) * g_sim_2m_num_pfn);
 		ret = -4;
-		goto out;
-	}
-
-	g_kpageflags_fd = open(KERNEL_PAGE_FLAGS, O_RDONLY);
-	if (g_kpageflags_fd < 0) {
-		printf("Can't read file %s!\n", KERNEL_PAGE_FLAGS);
-		ret = -3;
-		goto out;
-	}
-
-	g_kpageflags_buf_size = g_num_pfn * sizeof(unsigned long long);
-	g_kpageflags_buf = calloc(g_num_pfn, sizeof(unsigned long long));
-	if (!g_kpageflags_buf) {
-		printf("Can't allocate memory for kpageflags buf (%d bytes)!\n",
-		       g_kpageflags_buf_size);
-		ret = -1;
 		goto out;
 	}
 
