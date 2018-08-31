@@ -83,7 +83,7 @@ int count_refs(unsigned int max,
 	for (pfn = 0; pfn < g_num_pfn; pfn++) {
 		nrefs = g_refs_count[pfn];
 		if (nrefs <= max) {
-			if (!(g_kpageflags_buf[pfn] & PAGE_FLAGS_THP))
+			if (!g_kpageflags_buf || !(g_kpageflags_buf[pfn] & PAGE_FLAGS_THP))
 				count_4k_array[nrefs]++;
 			else {
 				count_2m_array[nrefs]++;
@@ -508,9 +508,11 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
-	ret = loadflags(g_start_pfn, g_num_pfn);
-	if (ret)
-		goto out;
+	if (is_pfn_bitmap) {
+		ret = loadflags(g_start_pfn, g_num_pfn);
+		if (ret)
+			goto out;
+	}
 
 	for (i = 0; i < loop; i++) {
 		// set idle flags
