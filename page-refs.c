@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <libgen.h>
 #include <linux/limits.h>
+#include <linux/kernel-page-flags.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,9 +31,6 @@
 #define KERNEL_PAGE_FLAGS	"/proc/kpageflags"
 #define GNUPLOT_PATH		"/usr/bin/gnuplot"
 #define PLOT_SCRIPT		"plot-page-refs"
-
-#define PAGE_FLAGS_HUGE      (1 << 17)
-#define PAGE_FLAGS_THP       (1 << 22)
 
 // globals
 int g_debug;			// 1 == some, 2 == verbose
@@ -82,16 +80,23 @@ int count_refs(unsigned int max,
 
 	for (pfn = 0; pfn < g_num_pfn; pfn++) {
 		nrefs = g_refs_count[pfn];
-		if (nrefs <= max) {
-			if (!g_kpageflags_buf || !(g_kpageflags_buf[pfn] & PAGE_FLAGS_THP))
-				count_4k_array[nrefs]++;
-			else {
-				count_2m_array[nrefs]++;
-				printdd("pfn 0x%lx is a huge page.\n",
-					pfn);
-			}
-		} else
+		if (nrefs > max)
 			return 1;
+		if (g_kpageflags_buf) {
+			if (g_kpageflags_buf[pfn] & (1<<KPF_COMPOUND_TAIL)) {
+				printdd("skip tail %lx\n", pfn);
+				continue;
+			}
+			if (g_kpageflags_buf[pfn] & ((1<<KPF_HUGE) | (1<<KPF_THP))) {
+				count_2m_array[nrefs]++;
+				printdd("pfn 0x%lx is a huge page.\n", pfn);
+				if (!(g_kpageflags_buf[pfn] & (1<<KPF_COMPOUND_HEAD)))
+					printf("pfn 0x%lx is non-head huge page.\n", pfn);
+				continue;
+			}
+		}
+
+		count_4k_array[nrefs]++;
 	}
 
 	return 0;
