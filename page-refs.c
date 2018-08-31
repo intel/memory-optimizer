@@ -83,6 +83,10 @@ int count_refs(unsigned int max,
 		if (nrefs > max)
 			return 1;
 		if (g_kpageflags_buf) {
+			if (g_kpageflags_buf[pfn] & (1<<KPF_NOPAGE)) {
+				printdd("skip nopage %lx\n", pfn);
+				continue;
+			}
 			if (g_kpageflags_buf[pfn] & (1<<KPF_COMPOUND_TAIL)) {
 				printdd("skip tail %lx\n", pfn);
 				continue;
