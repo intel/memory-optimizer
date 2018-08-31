@@ -307,6 +307,7 @@ _loadflags_out:
 static const struct option opts[] = {
 	{"offset",	required_argument,	NULL,	'o'},
 	{"size",	required_argument,	NULL,	's'},
+	{"range",	required_argument,	NULL,	'r'},
 	{"interval",	required_argument,	NULL,	'i'},
 	{"loop",	required_argument,	NULL,	'l'},
 	{"bitmap",	required_argument,	NULL,	'b'},
@@ -323,6 +324,7 @@ static void usage(char *prog)
 		"    -h|--help		Show this information.\n"
 		"    -o|--offset	The start offset of the bitmap to be scanned.\n"
 		"    -s|--size		The size should be scanned.\n"
+		"    -r|--range		The hex addr range to scan.\n"
 		"    -i|--interval	The interval to scan bitmap.\n"
 		"    -l|--loop		The number of times to scan bitmap.\n"
 		"    -b|--bitmap	The bitmap file for scanning.\n"
@@ -363,7 +365,7 @@ int main(int argc, char *argv[])
 	int pagesize, opt = 0, options_index = 0;
 	char bitmap_file[PATH_MAX] = PFN_IDLE_BITMAP_PATH;
 	char output_file[PATH_MAX] = "refs_count";
-	const char *optstr = "hvo:s:i:l:b:f:";
+	const char *optstr = "hvo:s:r:i:l:b:f:";
 	unsigned long long offset = 0, size = 0;
 	unsigned int bufsize;
 	unsigned long long set_us, read_us, dur_us, slp_us, account_us;
@@ -388,6 +390,19 @@ int main(int argc, char *argv[])
 			debug_printf("size = 0x%llx\n", size);
 			size += pagesize * 8 - 1;
 			size /= pagesize * 8;
+			debug_printf("size of the bitmap = 0x%llx, pagesize = 0x%x\n", size, pagesize);
+			break;
+		case 'r':
+			if (sscanf(optarg, "%llx-%llx", &offset, &size) != 2) {
+				fprintf(stderr, "range format: hex_start-hex_end\n");
+				exit(1);
+			}
+			size -= offset;
+			debug_printf("size = 0x%llx\n", size);
+			size += pagesize * 8 - 1;
+			size /= pagesize * 8;
+			offset /= pagesize * 8;
+			debug_printf("offset of the bitmap = 0x%llx, pagesize = 0x%x\n", offset, pagesize);
 			debug_printf("size of the bitmap = 0x%llx, pagesize = 0x%x\n", size, pagesize);
 			break;
 		case 'i':
