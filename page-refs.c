@@ -36,19 +36,19 @@
 // globals
 int g_debug;			// 1 == some, 2 == verbose
 unsigned long long *g_idlebuf;
-unsigned long long g_idlebuf_size;
-unsigned long long g_idlebuf_len;
+int g_idlebuf_size;
+int g_idlebuf_len;
 unsigned short *g_refs_count;
 unsigned short *g_refs_2m_count;
-unsigned long long g_offset, g_size;
-unsigned long long g_start_pfn, g_num_pfn, g_sim_2m_num_pfn;
+unsigned long g_offset, g_size;
+unsigned long g_start_pfn, g_num_pfn, g_sim_2m_num_pfn;
 unsigned char g_setidle_buf[IDLEMAP_BUF_SIZE];
 int g_setidle_bufsize;
 int g_idlefd;
 int g_kpageflags_fd;
 unsigned long long *g_kpageflags_buf;
-unsigned long long g_kpageflags_buf_size;
-unsigned long long g_kpageflags_buf_len;
+int g_kpageflags_buf_size;
+int g_kpageflags_buf_len;
 
 int verbose_printf(int level, const char *format, ...)
 {
@@ -73,7 +73,7 @@ int count_refs(unsigned int max,
 			unsigned long count_4k_array[],
 			unsigned long count_2m_array[])
 {
-	unsigned long long pfn;
+	unsigned long pfn;
 	unsigned short nrefs;
 
 	memset(count_4k_array, 0, (max + 1) * sizeof(count_4k_array[0]));
@@ -86,7 +86,7 @@ int count_refs(unsigned int max,
 				count_4k_array[nrefs]++;
 			else {
 				count_2m_array[nrefs]++;
-				printdd("pfn 0x%llx is a huge page.\n",
+				printdd("pfn 0x%lx is a huge page.\n",
 					pfn);
 			}
 		} else
@@ -158,7 +158,7 @@ int output_refs_count(unsigned int loop, const char *output_file)
 int output_pfn_refs(const char *output_file)
 {
 	FILE *file;
-	unsigned long long pfn;
+	unsigned long pfn;
 
 	if (!g_refs_count)
 		return -1;
@@ -170,7 +170,7 @@ int output_pfn_refs(const char *output_file)
 
 	fprintf(file, "%-18s  refcount\n", "PFN");
 	for (pfn = 0; pfn < g_num_pfn; pfn++) {
-		fprintf(file, "0x%016llx  %d\n",
+		fprintf(file, "0x%016lx  %d\n",
 			g_start_pfn + pfn,
 			g_refs_count[pfn]);
 	}
@@ -182,8 +182,8 @@ int account_refs(void)
 {
 	unsigned long len = 0;
 	unsigned long long idlebits, idlemap = 0;
-	unsigned long long base_pfn_2m = 0, base_pfn = 0;
-	unsigned long long pfn_2m = 0, pfn, fn;
+	unsigned long base_pfn_2m = 0, base_pfn = 0;
+	unsigned long pfn_2m = 0, pfn, fn;
 	int count_2m = 1;
 
 	while (len < g_idlebuf_len) {
@@ -201,7 +201,7 @@ int account_refs(void)
 					g_refs_2m_count[pfn_2m]++;
 					count_2m = 0;
 				}
-				printdd("pfn 0x%llx refs_count 0x%llx\n",
+				printdd("pfn 0x%lx refs_count 0x%lx\n",
 					     base_pfn + pfn,
 					     g_refs_count[base_pfn + pfn]);
 			}
@@ -218,7 +218,7 @@ int account_refs(void)
 	return 0;
 }
 
-int setidlemap(unsigned long long offset, unsigned long long size)
+int setidlemap(unsigned long offset, unsigned long size)
 {
 	ssize_t len = 0;
 
@@ -244,7 +244,7 @@ int setidlemap(unsigned long long offset, unsigned long long size)
 	return 0;
 }
 
-int loadidlemap(unsigned long long offset, unsigned long long size)
+int loadidlemap(unsigned long offset, unsigned long size)
 {
 	char *p;
 	ssize_t len = 0;
@@ -267,13 +267,13 @@ int loadidlemap(unsigned long long offset, unsigned long long size)
 		if (size <= 0)
 			break;
 	}
-	debug_printf("g_idlebuf_len: 0x%llx\n", g_idlebuf_len);
+	debug_printf("g_idlebuf_len: 0x%lx\n", g_idlebuf_len);
 
 _loadidlemap_out:
 	return err;
 }
 
-int loadflags(unsigned long long pfn, unsigned long long num_pfn)
+int loadflags(unsigned long pfn, unsigned long num_pfn)
 {
 	char *p;
 	ssize_t len = 0;
@@ -314,7 +314,7 @@ int loadflags(unsigned long long pfn, unsigned long long num_pfn)
 		if (num_pfn <= 0)
 			break;
 	}
-	debug_printf("g_kpageflags_buf_len: 0x%llx\n", g_kpageflags_buf_len);
+	debug_printf("g_kpageflags_buf_len: 0x%lx\n", g_kpageflags_buf_len);
 
 out:
 	return err;
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
 	char bitmap_file[PATH_MAX] = PFN_IDLE_BITMAP_PATH;
 	char output_file[PATH_MAX] = "refs_count";
 	const char *optstr = "hvo:s:r:i:l:b:f:";
-	unsigned long long offset = 0, size = 0;
+	unsigned long offset = 0, size = 0;
 	unsigned int bufsize;
 	unsigned long long set_us, read_us, dur_us, slp_us, account_us;
 	static struct timeval ts1, ts2, ts3, ts4, ts5;
@@ -397,29 +397,29 @@ int main(int argc, char *argv[])
 			break;
 		case 'o':
 			offset = memparse(optarg, NULL);
-			debug_printf("offset = 0x%llx\n", offset);
+			debug_printf("offset = 0x%lx\n", offset);
 			offset /= pagesize * 8;
-			debug_printf("offset of the bitmap = 0x%llx, pagesize = 0x%x\n", offset, pagesize);
+			debug_printf("offset of the bitmap = 0x%lx, pagesize = 0x%x\n", offset, pagesize);
 			break;
 		case 's':
 			size = memparse(optarg, NULL);
-			debug_printf("size = 0x%llx\n", size);
+			debug_printf("size = 0x%lx\n", size);
 			size += pagesize * 8 - 1;
 			size /= pagesize * 8;
-			debug_printf("size of the bitmap = 0x%llx, pagesize = 0x%x\n", size, pagesize);
+			debug_printf("size of the bitmap = 0x%lx, pagesize = 0x%x\n", size, pagesize);
 			break;
 		case 'r':
-			if (sscanf(optarg, "%llx-%llx", &offset, &size) != 2) {
+			if (sscanf(optarg, "%lx-%lx", &offset, &size) != 2) {
 				fprintf(stderr, "range format: hex_start-hex_end\n");
 				exit(1);
 			}
 			size -= offset;
-			debug_printf("size = 0x%llx\n", size);
+			debug_printf("size = 0x%lx\n", size);
 			size += pagesize * 8 - 1;
 			size /= pagesize * 8;
 			offset /= pagesize * 8;
-			debug_printf("offset of the bitmap = 0x%llx, pagesize = 0x%x\n", offset, pagesize);
-			debug_printf("size of the bitmap = 0x%llx, pagesize = 0x%x\n", size, pagesize);
+			debug_printf("offset of the bitmap = 0x%lx, pagesize = 0x%x\n", offset, pagesize);
+			debug_printf("size of the bitmap = 0x%lx, pagesize = 0x%x\n", size, pagesize);
 			break;
 		case 'i':
 			interval = atof(optarg);
@@ -480,28 +480,28 @@ int main(int argc, char *argv[])
 		ret = -1;
 		goto out;
 	}
-	debug_printf("size: 0x%llx, bufsize: 0x%llx\n", size, bufsize);
+	debug_printf("size: 0x%lx, bufsize: 0x%lx\n", size, bufsize);
 	g_idlebuf_size = bufsize;
 
 	g_start_pfn = offset * 8;
 	g_num_pfn = size * 8;
-	debug_printf("The start pfn is 0x%llx, the number of pfn is 0x%llx.\n",
+	debug_printf("The start pfn is 0x%lx, the number of pfn is 0x%lx.\n",
 		     g_start_pfn, g_num_pfn);
 
 	g_refs_count = calloc(g_num_pfn, sizeof(unsigned short));
 	if (g_refs_count == NULL) {
-		printf("Can't allocate memory for refs count buf (%llu bytes)!\n",
+		printf("Can't allocate memory for refs count buf (%lu bytes)!\n",
 		       sizeof(unsigned short) * g_num_pfn);
 		ret = -2;
 		goto out;
 	}
 
 	g_sim_2m_num_pfn = (g_num_pfn + 511) / 512;
-	debug_printf("g_sim_2m_num_pfn: 0x%llx\n", g_sim_2m_num_pfn);
+	debug_printf("g_sim_2m_num_pfn: 0x%lx\n", g_sim_2m_num_pfn);
 	g_refs_2m_count =
 			calloc(g_sim_2m_num_pfn, sizeof(unsigned short));
 	if (g_refs_2m_count == NULL) {
-		printf("Can't allocate memory for 2M refs count buf (%llu bytes)!\n",
+		printf("Can't allocate memory for 2M refs count buf (%lu bytes)!\n",
 		       sizeof(unsigned short) * g_sim_2m_num_pfn);
 		ret = -4;
 		goto out;
