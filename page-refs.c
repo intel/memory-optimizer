@@ -192,27 +192,29 @@ int account_refs(void)
 	uint64_t idlebits, idlemap = 0;
 	unsigned long len = 0;
 	unsigned long base_pfn_2m = 0, base_pfn = 0;
-	unsigned long pfn_2m = 0, pfn, fn;
+	unsigned long pfn_2m = 0, pfn;
+	int bit;
 	int count_2m = 1;
 
 	while (len < g_idlebuf_len) {
 		idlebits = g_idlebuf[idlemap];
 		printdd("idlebits: 0x%" PRIu64 "\n", idlebits);
 
-		for (pfn = 0; pfn < 64; pfn++) {
-			if (!(idlebits & (1ULL << pfn))) {
-				fn = base_pfn + pfn;
-				g_refs_count[fn]++;
+		for (bit = 0; bit < 64; bit++) {
+			if (!(idlebits & (1ULL << bit))) {
+				pfn = base_pfn + bit;
+				if (pfn >= g_num_pfn)
+					break;
+				g_refs_count[pfn]++;
 
 				//only count once in a 2M page
 				if (count_2m) {
-					pfn_2m = fn / 512;
+					pfn_2m = pfn / 512;
 					g_refs_2m_count[pfn_2m]++;
 					count_2m = 0;
 				}
 				printdd("pfn 0x%lx refs_count 0x%lx\n",
-					     base_pfn + pfn,
-					     g_refs_count[base_pfn + pfn]);
+					pfn, g_refs_count[pfn]);
 			}
 		}
 
