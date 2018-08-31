@@ -114,8 +114,12 @@ int count_sim_2m_refs(unsigned int max,
 
 	for (pfn = 0; pfn < g_sim_2m_num_pfn; pfn++) {
 		nrefs = g_refs_2m_count[pfn];
-		if (nrefs <= max)
+		if (nrefs <= max) {
+			if (g_kpageflags_buf &&
+			    !(g_kpageflags_buf[pfn * 512] & (1<< KPF_LRU)))
+				continue;
 			count_sim_2m_array[nrefs]++;
+		}
 		else
 			return 1;
 	}
