@@ -25,6 +25,23 @@
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
+#ifndef KPF_PGTABLE
+#define KPF_PGTABLE             26
+#endif
+
+/* kernel hacking assistances
+ * WARNING: subject to change, never rely on them!
+ */
+#define KPF_RESERVED		32
+#define KPF_MLOCKED		33
+#define KPF_MAPPEDTODISK	34
+#define KPF_PRIVATE		35
+#define KPF_PRIVATE_2		36
+#define KPF_OWNER_PRIVATE	37
+#define KPF_ARCH		38
+#define KPF_UNCACHED		39
+#define KPF_SOFTDIRTY		40
+
 static const char * const page_flag_names[] = {
 	[KPF_LOCKED]		= "L:locked",
 	[KPF_ERROR]		= "E:error",
@@ -51,9 +68,19 @@ static const char * const page_flag_names[] = {
 	[KPF_KSM]		= "x:ksm",
 	[KPF_THP]		= "t:thp",
 	[KPF_BALLOON]		= "o:balloon",
-	/* [KPF_PGTABLE]		= "g:pgtable", */
+	[KPF_PGTABLE]		= "g:pgtable",
 	[KPF_ZERO_PAGE]		= "z:zero_page",
 	[KPF_IDLE]              = "i:idle_page",
+
+	[KPF_RESERVED]		= "r:reserved",
+	[KPF_MLOCKED]		= "m:mlocked",
+	[KPF_MAPPEDTODISK]	= "d:mappedtodisk",
+	[KPF_PRIVATE]		= "P:private",
+	[KPF_PRIVATE_2]		= "p:private_2",
+	[KPF_OWNER_PRIVATE]	= "O:owner_private",
+	[KPF_ARCH]		= "h:arch",
+	[KPF_UNCACHED]		= "c:uncached",
+	[KPF_SOFTDIRTY]		= "f:softdirty",
 
 };
 
