@@ -20,6 +20,7 @@
 
 #include "lib/memparse.h"
 #include "lib/iomem_parse.h"
+#include "lib/page-types.h"
 
 #define IDLEMAP_CHUNK_SIZE	8
 #define IDLEMAP_BUF_SIZE	(1<<20)
@@ -180,9 +181,11 @@ int output_pfn_refs(const char *output_file)
 
 	fprintf(file, "%-18s  refcount\n", "PFN");
 	for (pfn = 0; pfn < g_num_pfn; pfn++) {
-		fprintf(file, "0x%016lx  %d\n",
+		fprintf(file, "0x%016lx  %3d  %s  %s\n",
 			g_start_pfn + pfn,
-			g_refs_count[pfn]);
+			g_refs_count[pfn],
+			g_kpageflags_buf ? page_flag_name(g_kpageflags_buf[pfn]) : "",
+			g_kpageflags_buf ? page_flag_longname(g_kpageflags_buf[pfn]) : "");
 	}
 	fclose(file);
 	return 0;
@@ -391,6 +394,7 @@ int main(int argc, char *argv[])
 	int pagesize, opt = 0, options_index = 0;
 	char bitmap_file[PATH_MAX] = PFN_IDLE_BITMAP_PATH;
 	char output_file[PATH_MAX] = "refs_count";
+	char pfn_outfile[PATH_MAX] = "pfn_refs";
 	const char *optstr = "hvo:s:r:i:l:b:f:";
 	unsigned long offset = 0, size = 0;
 	unsigned int bufsize;
@@ -565,6 +569,7 @@ int main(int argc, char *argv[])
 	}
 
 	output_refs_count(loop, output_file);
+	output_pfn_refs(pfn_outfile);
 	plot_output(argv, output_file);
 
 out:
