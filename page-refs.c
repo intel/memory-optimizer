@@ -565,7 +565,8 @@ int main(int argc, char *argv[])
 	}
 
 	output_refs_count(loop, output_file);
-	output_pfn_refs(pfn_outfile);
+	if (g_debug)
+		output_pfn_refs(pfn_outfile);
 	plot_output(argv, output_file);
 
 out:
