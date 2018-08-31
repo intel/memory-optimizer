@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <libgen.h>
 #include <linux/limits.h>
+#include <linux/kernel.h>
 #include <linux/kernel-page-flags.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -25,8 +26,8 @@
 #define IDLEMAP_CHUNK_SIZE	8
 #define IDLEMAP_BUF_SIZE	(1<<20)
 
-// big enough to span 640 Gbytes:
-#define MAX_IDLEMAP_SIZE	(20 * 1024 * 1024)	//20M * 8 * 4K = 640G
+// 1TB
+#define MAX_IDLEMAP_SIZE	(1UL<<40)
 
 #define PFN_IDLE_BITMAP_PATH	"/sys/kernel/mm/page_idle/bitmap"
 #define KERNEL_PAGE_FLAGS	"/proc/kpageflags"
@@ -49,6 +50,8 @@ int g_kpageflags_fd;
 uint64_t *g_kpageflags_buf;
 int g_kpageflags_buf_size;
 int g_kpageflags_buf_len;
+int page_shift;
+int idle_shift;
 
 int verbose_printf(int level, const char *format, ...)
 {
@@ -237,7 +240,7 @@ int setidlemap(unsigned long offset, unsigned long size)
 {
 	ssize_t len = 0;
 
-	if (lseek(g_idlefd, offset, SEEK_SET) < 0) {
+	if (lseek(g_idlefd, offset >> idle_shift, SEEK_SET) < 0) {
 		perror("Can't seek bitmap file");
 		exit(3);
 	}
@@ -253,7 +256,7 @@ int setidlemap(unsigned long offset, unsigned long size)
 			perror("setidlemap: error writing idle bitmap");
 			return len;
 		}
-		size -= len;
+		size -= len << idle_shift;
 	}
 
 	return 0;
@@ -265,7 +268,7 @@ int loadidlemap(unsigned long offset, unsigned long size)
 	ssize_t len = 0;
 	int err = 0;
 
-	if (lseek(g_idlefd, offset, SEEK_SET) < 0) {
+	if (lseek(g_idlefd, offset >> idle_shift, SEEK_SET) < 0) {
 		printf("Can't seek bitmap file");
 		err = -4;
 		goto _loadidlemap_out;
@@ -278,7 +281,7 @@ int loadidlemap(unsigned long offset, unsigned long size)
 	while ((len = read(g_idlefd, p, g_idlebuf_size - g_idlebuf_len)) > 0) {
 		p += len;
 		g_idlebuf_len += len;
-		size -= len;
+		size -= len << idle_shift;
 		if (size <= 0)
 			break;
 	}
@@ -404,8 +407,6 @@ int main(int argc, char *argv[])
 	static struct timeval ts1, ts2, ts3, ts4, ts5;
 	int is_pfn_bitmap;
 
-	pagesize = getpagesize();
-
 	/* parse the options */
 	while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
 		switch (opt) {
@@ -413,16 +414,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'o':
 			offset = memparse(optarg, NULL);
-			debug_printf("offset = 0x%lx\n", offset);
-			offset /= pagesize * 8;
-			debug_printf("offset of the bitmap = 0x%lx, pagesize = 0x%x\n", offset, pagesize);
 			break;
 		case 's':
 			size = memparse(optarg, NULL);
-			debug_printf("size = 0x%lx\n", size);
-			size += pagesize * 8 - 1;
-			size /= pagesize * 8;
-			debug_printf("size of the bitmap = 0x%lx, pagesize = 0x%x\n", size, pagesize);
 			break;
 		case 'r':
 			if (sscanf(optarg, "%lx-%lx", &offset, &size) != 2) {
@@ -430,12 +424,6 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			size -= offset;
-			debug_printf("size = 0x%lx\n", size);
-			size += pagesize * 8 - 1;
-			size /= pagesize * 8;
-			offset /= pagesize * 8;
-			debug_printf("offset of the bitmap = 0x%lx, pagesize = 0x%x\n", offset, pagesize);
-			debug_printf("size of the bitmap = 0x%lx, pagesize = 0x%x\n", size, pagesize);
 			break;
 		case 'i':
 			interval = atof(optarg);
@@ -464,6 +452,18 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	is_pfn_bitmap = !strcmp(bitmap_file, PFN_IDLE_BITMAP_PATH);
+
+	pagesize = getpagesize();
+	page_shift = ffs(pagesize) - 1;
+	if (is_pfn_bitmap)
+		idle_shift = page_shift + 3;
+	else
+		idle_shift = page_shift + 3; // may be different later
+
+	offset = offset & ~(unsigned long)(pagesize * 64 - 1);
+	size = __ALIGN_KERNEL(size, pagesize * 64);
+
 	printf("Watching the %s to calculate page reference count every %.2f seconds for %d times.\n"
 	       "The result will be saved in %s.\n",
 	       bitmap_file,
@@ -474,12 +474,7 @@ int main(int argc, char *argv[])
 	if (!size)
 		size = MAX_IDLEMAP_SIZE;
 
-	// align on IDLEMAP_CHUNK_SIZE
-	bufsize = size;
-	bufsize += IDLEMAP_CHUNK_SIZE - 1;
-	bufsize = (bufsize / IDLEMAP_CHUNK_SIZE) * IDLEMAP_CHUNK_SIZE;
-
-	is_pfn_bitmap = !strcmp(bitmap_file, PFN_IDLE_BITMAP_PATH);
+	bufsize = size / (pagesize * 8);
 
 	g_setidle_bufsize = bufsize < sizeof(g_setidle_buf) ?
 			    bufsize : sizeof(g_setidle_buf);
@@ -499,8 +494,8 @@ int main(int argc, char *argv[])
 	debug_printf("size: 0x%lx, bufsize: 0x%lx\n", size, bufsize);
 	g_idlebuf_size = bufsize;
 
-	g_start_pfn = offset * 8;
-	g_num_pfn = size * 8;
+	g_start_pfn = offset / pagesize;
+	g_num_pfn = size / pagesize;
 	debug_printf("The start pfn is 0x%lx, the number of pfn is 0x%lx.\n",
 		     g_start_pfn, g_num_pfn);
 
