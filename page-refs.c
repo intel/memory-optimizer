@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <libgen.h>
 #include <linux/limits.h>
 #include <stdarg.h>
@@ -35,7 +36,7 @@
 
 // globals
 int g_debug;			// 1 == some, 2 == verbose
-unsigned long long *g_idlebuf;
+uint64_t *g_idlebuf;
 int g_idlebuf_size;
 int g_idlebuf_len;
 unsigned short *g_refs_count;
@@ -46,7 +47,7 @@ unsigned char g_setidle_buf[IDLEMAP_BUF_SIZE];
 int g_setidle_bufsize;
 int g_idlefd;
 int g_kpageflags_fd;
-unsigned long long *g_kpageflags_buf;
+uint64_t *g_kpageflags_buf;
 int g_kpageflags_buf_size;
 int g_kpageflags_buf_len;
 
@@ -180,15 +181,15 @@ int output_pfn_refs(const char *output_file)
 
 int account_refs(void)
 {
+	uint64_t idlebits, idlemap = 0;
 	unsigned long len = 0;
-	unsigned long long idlebits, idlemap = 0;
 	unsigned long base_pfn_2m = 0, base_pfn = 0;
 	unsigned long pfn_2m = 0, pfn, fn;
 	int count_2m = 1;
 
 	while (len < g_idlebuf_len) {
 		idlebits = g_idlebuf[idlemap];
-		printdd("idlebits: 0x%llx\n", idlebits);
+		printdd("idlebits: 0x%" PRIu64 "\n", idlebits);
 
 		for (pfn = 0; pfn < 64; pfn++) {
 			if (!(idlebits & (1ULL << pfn))) {
