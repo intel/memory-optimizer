@@ -498,14 +498,14 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
+	g_kpageflags_buf_size = g_num_pfn * sizeof(unsigned long long);
 	g_kpageflags_buf = calloc(g_num_pfn, sizeof(unsigned long long));
 	if (!g_kpageflags_buf) {
-		printf("Can't allocate memory for idlemap buf (%d bytes)!\n",
-		       bufsize);
+		printf("Can't allocate memory for kpageflags buf (%d bytes)!\n",
+		       g_kpageflags_buf_size);
 		ret = -1;
 		goto out;
 	}
-	g_kpageflags_buf_size = g_num_pfn * sizeof(unsigned long long);
 
 	ret = loadflags(g_start_pfn, g_num_pfn);
 	if (ret)
