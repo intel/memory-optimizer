@@ -12,4 +12,4 @@ page-refs: page-refs.c $(LIB_SOURCE_FILES)
 	$(CC) -g $< $(LIB_SOURCE_FILES) -o $@ $(CFLAGS)
 
 task-refs: task-refs.cc $(CLASS_SOURCE_FILES) $(CLASS_HEADER_FILES)
-	$(CXX) -g $< $(CLASS_SOURCE_FILES) -o $@ $(CXXFLAGS)
+	$(CXX) -g $< $(CLASS_SOURCE_FILES) -o $@ $(CXXFLAGS) --std=c++14

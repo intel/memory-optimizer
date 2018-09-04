@@ -1,4 +1,6 @@
 #include <unistd.h>
+#include <iostream>
+#include <stdio.h>
 
 #include "ProcIdlePages.h"
 
@@ -47,14 +49,18 @@ int ProcIdlePages::count_refs_one(
   return err;
 }
 
-int ProcIdlePages::count_refs()
+int ProcIdlePages:::count_refs()
 {
   int err = 0;
 
-  count_refs_one(page_refs_4k, refs_count_4k);
-  count_refs_one(page_refs_2m, refs_count_2m);
-
-  // TODO
+	err = count_refs_one(page_refs_4k, refs_count_4k);
+	if (err) {
+		std::cerr << "count 4K page out of range" << std::endl;
+	}
+	err = count_refs_one(page_refs_2m, refs_count_2m);
+	if (err) {
+		std::cerr << "count 2M page out of range" << std::endl;
+	}
 
   return err;
 }
@@ -63,7 +69,24 @@ int ProcIdlePages::save_counts(std::string filename)
 {
   int err = 0;
 
-  // TODO
+	FILE *file;
+	file = fopen(filename, "w");
+	if (file == NULL) {
+		std::cerr << "open file " << filename << "failed" << std::endl;
+		return 0;
+	}
+	fprintf(file, "%-8s %-15s %-15s\n",
+                 "refs", "count_4K",
+                 "count_2M");
+	fprintf(file, "=========================================================\n");
 
+	for (int i = 0; i < nr_walks; i++) {
+		fprintf(file, "%-8u %-15lu %-15lu\n",
+							(unsigned int)i,
+							refs_4k_count[i],
+							refs_2m_count[i]);
+	}
+	fclose(file);
+	
   return err;
 }
