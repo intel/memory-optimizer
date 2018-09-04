@@ -52,7 +52,7 @@ class ProcIdlePages
     int walk();
     int count_refs_one(
                    std::unordered_map<unsigned long, unsigned char>& page_refs,
-                   std::vector<unsigned char>& refs_count);
+                   std::vector<unsigned long>& refs_count);
 
   private:
     static const unsigned long PTE_SIZE = 1UL << 12;
@@ -71,8 +71,8 @@ class ProcIdlePages
 
     // refs => page count
     // accumulated by count_refs()
-    std::vector<unsigned char> refs_count_4k;
-    std::vector<unsigned char> refs_count_2m;
+    std::vector<unsigned long> refs_count_4k;
+    std::vector<unsigned long> refs_count_2m;
 };
 
 #endif

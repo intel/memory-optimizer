@@ -37,30 +37,33 @@ int ProcIdlePages::walk()
 
 int ProcIdlePages::count_refs_one(
                    std::unordered_map<unsigned long, unsigned char>& page_refs,
-                   std::vector<unsigned char>& refs_count)
+                   std::vector<unsigned long>& refs_count)
 {
   int err = 0;
 
   refs_count.clear();
-  refs_count.reserve(nr_walks+1);
+  refs_count.reserve(nr_walks + 1);
 
   // TODO
 
   return err;
 }
 
-int ProcIdlePages:::count_refs()
+int ProcIdlePages::count_refs()
 {
   int err = 0;
 
-	err = count_refs_one(page_refs_4k, refs_count_4k);
-	if (err) {
-		std::cerr << "count 4K page out of range" << std::endl;
-	}
-	err = count_refs_one(page_refs_2m, refs_count_2m);
-	if (err) {
-		std::cerr << "count 2M page out of range" << std::endl;
-	}
+  err = count_refs_one(page_refs_4k, refs_count_4k);
+  if (err) {
+    std::cerr << "count 4K page out of range" << std::endl;
+    return err;
+  }
+
+  err = count_refs_one(page_refs_2m, refs_count_2m);
+  if (err) {
+    std::cerr << "count 2M page out of range" << std::endl;
+    return err;
+  }
 
   return err;
 }
@@ -70,23 +73,25 @@ int ProcIdlePages::save_counts(std::string filename)
   int err = 0;
 
 	FILE *file;
-	file = fopen(filename, "w");
+	file = fopen(filename.c_str(), "w");
 	if (file == NULL) {
 		std::cerr << "open file " << filename << "failed" << std::endl;
-		return 0;
+    perror(filename.c_str());
+		return -1;
 	}
+
 	fprintf(file, "%-8s %-15s %-15s\n",
                  "refs", "count_4K",
                  "count_2M");
 	fprintf(file, "=========================================================\n");
 
 	for (int i = 0; i < nr_walks; i++) {
-		fprintf(file, "%-8u %-15lu %-15lu\n",
-							(unsigned int)i,
-							refs_4k_count[i],
-							refs_2m_count[i]);
+		fprintf(file, "%-8d %-15lu %-15lu\n",
+							i,
+							refs_count_4k[i],
+							refs_count_2m[i]);
 	}
 	fclose(file);
-	
+
   return err;
 }
