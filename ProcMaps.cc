@@ -117,13 +117,12 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
       sscanf(str_value[2].c_str(), "%lx", &e.offset);
       sscanf(str_value[3].c_str(), "%d:%d", &e.dev_major, &e.dev_minor);
       sscanf(str_value[4].c_str(), "%lu", &e.ino);
-      sscanf(str_value[5].c_str(), "%s", filename);
-
+      
       e.read     = (str_value[1][0] == 'r');
       e.write    = (str_value[1][1] == 'w');
       e.exec     = (str_value[1][2] == 'x');
       e.mayshare = (str_value[1][3] != 'p');      
-      e.path     = filename;
+      e.path     = str_value[5];
 
       maps.push_back(e);
 
