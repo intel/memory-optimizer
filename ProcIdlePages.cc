@@ -51,12 +51,27 @@ int ProcIdlePages::walk()
   if (0 == err)
   {
     std::vector<proc_maps_entry> address_map;
-
+#if 1
     address_map = proc_maps.load(pid);
+#else
+    
+    proc_maps_entry e;
+    e.start = 0;
+    e.end = 0x1500;
+    address_map.push_back(e);
 
+    e.start = 0x4000;
+    e.end = 0x5000;
+    address_map.push_back(e);
+
+#endif
+    
+    parse_start = 0;
+    parsed_end = 0;
+    printf("+Parse start:\n");
     for (size_t i = 0; i < address_map.size(); ++i)
     {
-#if 1
+#if 0
         printf("start=%lx, end=%lx, offset=%lx, RWXS=%d%d%d%d, inode=%lu, path=%s\n",
                address_map[i].start,
                address_map[i].end,
@@ -68,12 +83,19 @@ int ProcIdlePages::walk()
                address_map[i].ino,
                address_map[i].path.c_str());
 #endif
-        
-        parsed_end = 0;
-        end = address_map[i].end;
         start = address_map[i].start;
-        parse_start = start;
-        //printf("try start = %lx\n", start);
+        end = address_map[i].end;
+
+        /*
+         * to avoid overlape
+         */
+        if (parse_start >= end)
+            continue;
+
+        if (parse_start <= start)
+            parse_start = start;
+        
+        printf("range: [%lx - %lx]\n", parse_start, end);
         while ((parse_start < end) && (parse_start >= start))
         {            
             err = read_idlepages(parse_start,
@@ -87,6 +109,7 @@ int ProcIdlePages::walk()
                                 data_buffer,
                                 read_completed,
                                 parsed_end);
+                printf("  parsed: [%lx-%lx] \n", parse_start, parsed_end);
                 parse_start = parsed_end;
             }
             else
@@ -96,7 +119,7 @@ int ProcIdlePages::walk()
                 break;
             }
         }
-        //printf("\tend = %lx completed \n", parse_start);
+        
     }
   }
 
@@ -264,7 +287,7 @@ int ProcIdlePages::read_idlepages(unsigned long va_start,
   lp_idle_info[i++] = {PMD_IDLE, 1};
   lp_idle_info[i++] = {PMD_IDLE, 2};
   lp_idle_info[i++] = {PMD_IDLE, 4};
-  
+#if 0  
   lp_idle_info[i++] = {PUD_ACCESSED, 1};
   lp_idle_info[i++] = {PUD_ACCESSED, 2};
   lp_idle_info[i++] = {PUD_ACCESSED, 4};
@@ -276,6 +299,7 @@ int ProcIdlePages::read_idlepages(unsigned long va_start,
   lp_idle_info[i++] = {PUD_IDLE, 1};
   lp_idle_info[i++] = {PUD_IDLE, 2};
   lp_idle_info[i++] = {PUD_IDLE, 4};
+#endif
   
   completed_size = i * sizeof(*lp_idle_info);
   
