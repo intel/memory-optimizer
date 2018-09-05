@@ -93,7 +93,7 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
       {
           each_split = each_line.find_first_of(" ", split_array[i-1]);
 
-          if (-1 == each_split)
+          if (std::string::npos == each_split)
           {break;}
 
           //+1 for begin from next non-space item
