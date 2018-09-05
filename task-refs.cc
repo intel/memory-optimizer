@@ -81,7 +81,7 @@ static void parse_cmdline(int argc, char *argv[])
     usage(argv[0]);
 
   if (option.output_file.empty())
-    option.output_file = "refs-count-" + option.pid;
+    option.output_file = "refs-count-" + std::to_string(option.pid);
 }
 
 
