@@ -6,7 +6,6 @@
 #include <string>
 #include <sys/types.h>
 #include <unordered_map>
-
 #include "ProcMaps.h"
 
 enum ProcIdlePageType
@@ -38,8 +37,11 @@ struct ProcIdleExtent
 
 class ProcIdlePages
 {
+  private:
+    typedef std::unordered_map<unsigned long, unsigned char> page_refs_info;
+    
   public:
-    ProcIdlePages(): pid(0) {};
+    ProcIdlePages(): pid(0), lp_procfile(NULL) {};
     ~ProcIdlePages() {};
 
     void set_pid(pid_t i) { pid = i; }
@@ -53,26 +55,48 @@ class ProcIdlePages
     int count_refs_one(
                    std::unordered_map<unsigned long, unsigned char>& page_refs,
                    std::vector<unsigned long>& refs_count);
-
+    
+    int read_idlepages_begin(void);
+    void read_idlepages_end(void);
+    int read_idlepages(unsigned long va_start,
+                       ProcIdleExtent* lp_idle_info,
+                       unsigned long read_size, unsigned long& completed_size);
+    
+    void parse_idlepages(unsigned long start_va,
+                         ProcIdleExtent* lp_idle_info,
+                         unsigned long size,
+                         unsigned long& parsed_end);
+    
+    void update_idlepages_info(page_refs_info& info,
+                               unsigned long va, unsigned long page_size,
+                               unsigned long count);
+    
   private:
     static const unsigned long PTE_SIZE = 1UL << 12;
     static const unsigned long PMD_SIZE = 1UL << 21;
     static const unsigned long PUD_SIZE = 1UL << 30;
     static const unsigned long P4D_SIZE = 1UL << 39;
-
+    static const unsigned long KiB = 1024;
+    static const unsigned int IDLE_BUFFER_COUNT = 512;
     pid_t pid;
     ProcMaps proc_maps;
     int nr_walks;
 
     // VA => refs
     // accumulated by walk()
+
     std::unordered_map<unsigned long, unsigned char> page_refs_4k;
     std::unordered_map<unsigned long, unsigned char> page_refs_2m;
-
+    std::unordered_map<unsigned long, unsigned char> page_refs_1g;
+    
     // refs => page count
     // accumulated by count_refs()
     std::vector<unsigned long> refs_count_4k;
     std::vector<unsigned long> refs_count_2m;
+
+    FILE* lp_procfile;
+
+    ProcIdleExtent data_buffer[IDLE_BUFFER_COUNT];
 };
 
 #endif
