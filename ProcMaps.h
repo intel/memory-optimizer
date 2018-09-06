@@ -13,7 +13,7 @@ struct proc_maps_entry
 	unsigned long start;
 	unsigned long end;
 
-  char perms[4];
+  char perms[5];
 	bool read;
 	bool write;
 	bool exec;
