@@ -7,12 +7,13 @@
 #include "ProcMaps.h"
 
 
-#if 0
+#if 1
 static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
 {
   char filename[PATH_MAX];
   proc_maps_entry e;
-  char path[4096];
+  char line[4096];
+  int path_index;
   FILE *f;
   int ret;
 
@@ -20,13 +21,13 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
 
   f = fopen(filename, "r");
   if (!f) {
- 	perror(filename);
-	return -1;
+    perror(filename);
+    return -1;
   }
 
-  for (;;)
+  while (fgets(line, sizeof(line), f))
   {
-    ret = fscanf(f, "%lx-%lx %4s %lx %d:%d %lu %4095s\n",
+    ret = sscanf(line, "%lx-%lx %4s %lx %d:%d %lu%*[ ]%n",
                  &e.start,
                  &e.end,
                  e.perms,
@@ -34,30 +35,22 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
                  &e.dev_major,
                  &e.dev_minor,
                  &e.ino,
-                 path);
+                 &path_index);
 
-    if (ret == EOF) {
-      if (ferror(f)) {
-        perror(filename);
-        ret = -2;
-      } else
-        ret = 0;
-      break;
-    }
-    
     if (ret < 7)
     {
-      fprintf(stderr, "failed to parse %s\n", filename);
-      ret = -3;
+      fprintf(stderr, "parse failed: %d %s\n%s", ret, filename, line);
+      ret = -EINVAL;
 			break;
     }
-        
+
     e.read     = (e.perms[0] == 'r');
     e.write    = (e.perms[1] == 'w');
     e.exec     = (e.perms[2] == 'x');
     e.mayshare = (e.perms[3] != 'p');
 
-    e.path = path;
+    e.path = line + path_index;
+    e.path.pop_back();      // trim trailing '\n'
 
     maps.push_back(e);
   }
