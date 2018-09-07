@@ -35,9 +35,10 @@ int ProcIdlePages::walk()
 {
     int err = 0;
     unsigned long read_completed;
-    unsigned long start, end;
+    unsigned long start, end, end_last;
     unsigned long parse_start, parsed_end;
     unsigned long overflow_barrier;
+    unsigned long seek_offset;
     /*
       step1. try begin read
       
@@ -66,10 +67,10 @@ int ProcIdlePages::walk()
         address_map.push_back(e);
         
 #endif
-        
         parse_start = 0;
         parsed_end = 0;
-        printf("+Parse start:\n");
+        end_last = 0;
+        printf("++++Parse start:++++\n");
         for (size_t i = 0; i < address_map.size(); ++i)
         {
 #if 1
@@ -91,22 +92,25 @@ int ProcIdlePages::walk()
              * to avoid overlape
              */
             if (parse_start >= end)
+            {
+                end_last = end;
                 continue;
+            }
             
             if (parse_start <= start)
                 parse_start = start;
-            
-            parse_start = va_to_offset(parse_start);
-            overflow_barrier = parse_start;
 
             printf("range: [%lx - %lx]\n", parse_start, end);
             
-            if (0 != seek_idlepages(parse_start))
+            seek_offset = va_to_offset(parse_start);
+            if (0 != seek_idlepages(seek_offset))
             {
-                printf(" error: seek for addr %lx failed, skip.\n", parse_start);
+                printf(" error: seek for addr %lx failed, skip.\n", seek_offset);
                 continue;
             }
 
+            parse_start = offset_to_va(seek_offset);
+            overflow_barrier = parse_start;
             while ((parse_start < end) && (parse_start >= overflow_barrier))
             {   
                 err = read_idlepages(data_buffer,
@@ -114,6 +118,13 @@ int ProcIdlePages::walk()
                                      read_completed);            
                 if (0 == err)
                 {
+                    if (0 == read_completed)
+                    {
+                        printf("  error: read 0 size, skip. now pause for debug\n");
+                        getchar();
+                        break;
+                    }
+
                     parse_idlepages(parse_start,
                                     end,
                                     data_buffer,
@@ -124,11 +135,14 @@ int ProcIdlePages::walk()
                 }
                 else
                 {
-                    printf("  error:  [%lx-%lx] failed, skip.\n",
+                    printf("  error:  [%lx-%lx] failed, skip. now pause for debug\n",
                            parse_start, end);
+                    getchar();
                     break;
                 }
             }
+
+            end_last = end;
         }
     }
     
@@ -146,6 +160,7 @@ int ProcIdlePages::count_refs_one(
     auto iter_end = page_refs.end();
     
     refs_count.clear();
+
     refs_count.reserve(nr_walks + 1);
     
     for (size_t i = 0; i < refs_count.capacity(); ++i)
@@ -246,12 +261,12 @@ int ProcIdlePages::read_idlepages(ProcIdleExtent* lp_idle_info,
         return -1;
     }
         
-    printf("start to read, size=%lu \n", read_size);
+    printf("    start to read, size=%lu \n", read_size);
     
     read_ret = fread(lp_idle_info, 1, read_size, lp_procfile);
     completed_size = read_ret;
     
-    printf("read done, completed size=%lu\n",completed_size);
+    printf("    read done, completed size=%lu\n",completed_size);
     
     return 0;  
 }
@@ -312,16 +327,19 @@ void ProcIdlePages::update_idlepages_info(page_refs_info& info,
                                           unsigned long page_size,
                                           unsigned long count)
 {
+    unsigned long vpfn;
+    
     for(unsigned long i = 0; i < count; ++i)
     {
-        auto find_iter = info.find(va);
+        vpfn = va / 4096;
+        auto find_iter = info.find(vpfn);
         if (find_iter == info.end())
         {
-            info[va] = 1;
+            info[vpfn] = 1;
         }
         else
         {
-            info[va] += 1;
+            info[vpfn] += 1;
         }
         
         va += page_size;
@@ -334,13 +352,14 @@ void ProcIdlePages::parse_idlepages(unsigned long start_va, unsigned long expect
                                     unsigned long& parsed_end)
 {
     ProcIdleExtent* lp_end = lp_idle_info + size/sizeof(*lp_idle_info);
+
+    unsigned long overflow_barrier = start_va;
     
     for(int i = 0;
         (lp_idle_info != lp_end)
-            && (start_va < expect_end_va);
-        ++lp_idle_info,++i)
+        && (start_va >= overflow_barrier); ++lp_idle_info,++i)
     {
-#if 0	    
+#if 0
 	printf("R[%d] type=%d, nr=%d\n",
 		        i,	
 			(int)lp_idle_info->type, 
@@ -395,6 +414,7 @@ int ProcIdlePages::seek_idlepages(unsigned long start_va)
 {
     int fseek_ret = 0;
 
+    printf("  seek to %lx\n", start_va);
     fseek_ret = fseek(lp_procfile, start_va, SEEK_SET);
 
     return fseek_ret;
@@ -405,10 +425,14 @@ unsigned long ProcIdlePages::va_to_offset(unsigned long start_va)
 {
     unsigned long offset = start_va;
 
-    offset /= 4*KiB;
+    // offset /= 4*KiB;
     offset &= ~(4*KiB - 1);
 
     return offset;
 }
 
 
+unsigned long ProcIdlePages::offset_to_va(unsigned long start_va)
+{
+    return start_va;
+}

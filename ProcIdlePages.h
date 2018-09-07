@@ -74,6 +74,7 @@ class ProcIdlePages
     int seek_idlepages(unsigned long start_va);
 
     unsigned long va_to_offset(unsigned long start_va);
+    unsigned long offset_to_va(unsigned long start_va);
     
   private:
     static const unsigned long PTE_SIZE = 1UL << 12;
