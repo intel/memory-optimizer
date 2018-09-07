@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <sys/types.h>
 #include <getopt.h>
 
@@ -5,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <iostream>
 
 #include "ProcMaps.h"
 #include "ProcIdlePages.h"
@@ -12,6 +14,8 @@
 
 #define DRAM_NUMA_NODE  0
 #define PMEM_NUMA_NODE  1
+
+using namespace std;
 
 struct task_refs_options {
   int debug_level;
@@ -153,7 +157,6 @@ int migrate(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
   std::vector<int> status;
   auto migration = std::make_unique<Migration>();
   page_refs_info page_refs_4k;
-  //ProcIdlePages::page_refs_info page_refs_2m;
 
   // for example:
   // migrate the top 20% frequency of being accessed to dram node
@@ -184,9 +187,7 @@ int migrate(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
                           option.cold_node,
                           false);
 
-
-  proc_idle_pages->get_page_refs_4k(page_refs_4k);
-  //proc_idle_pages->get_page_refs_2m(page_refs_2m);
+  page_refs_4k = proc_idle_pages->get_page_refs_info(TYPE_4K);
 
   err = migration->migrate(option.pid,
                            page_refs_4k,
@@ -199,11 +200,15 @@ int migrate(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
 
 int main(int argc, char *argv[])
 {
-  int err;
+  int err = 0;
   auto proc_idle_pages = std::make_unique<ProcIdlePages>();
 
   parse_cmdline(argc, argv);
   err = account_refs(proc_idle_pages);
+  if (err) {
+    cout << "return err " << err;
+	  return err;
+  }
 
   err = migrate(proc_idle_pages);
 

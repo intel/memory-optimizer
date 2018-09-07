@@ -61,9 +61,6 @@ class ProcIdlePages
 
     const page_refs_info& get_page_refs_info(ProcPageRefsInfoType Type);
 
-    void get_page_refs_4k(page_refs_info& page_refs) { page_refs = page_refs_4k; }
-    void get_page_refs_2m(page_refs_info& page_refs) { page_refs = page_refs_2m; }
-
   private:
     int walk();
     int count_refs_one(
