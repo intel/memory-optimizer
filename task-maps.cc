@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
   auto maps = proc_maps.load(pid);
 
   for (const proc_maps_entry& e: maps)
-    printf("%lx-%lx %4s %08lx %02d:%02d %-8lu\t\t%s\n",
+    printf("%lx-%lx %4s %08lx %02x:%02x %-8lu\t\t%s\n",
                  e.start,
                  e.end,
                  e.perms,

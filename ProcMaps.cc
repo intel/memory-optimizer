@@ -7,7 +7,7 @@
 #include "ProcMaps.h"
 
 
-#if 0
+#if 1
 static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
 {
   char filename[PATH_MAX];
@@ -27,7 +27,7 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
 
   while (fgets(line, sizeof(line), f))
   {
-    ret = sscanf(line, "%lx-%lx %4s %lx %d:%d %lu%*[ ]%n",
+    ret = sscanf(line, "%lx-%lx %4s %lx %x:%x %lu%*[ ]%n",
                  &e.start,
                  &e.end,
                  e.perms,
