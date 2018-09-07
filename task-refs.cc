@@ -52,7 +52,7 @@ static void usage(char *prog)
           "    -l|--loop       The number of times to scan\n"
           "    -o|--output     The output file, defaults to refs-count-PID\n"
           "    -m|--mtype      Migrate which types of pages; "
-                               "1 for hot, 2 for cold, 0 for all\n"
+                               "1 for hot, 2 for cold, 3 for all\n"
           "    -s|--samples    Set the samples_percent of migration policy\n"
           "    -g|--pages      Set the pages_percent of migration policy\n"
           "    -n|--hotnode    Set the numa node for hot pages\n"
