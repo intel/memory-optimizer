@@ -3,7 +3,7 @@ CXX = g++
 CFLAGS = -Wall
 CXXFLAGS = -lnuma -Wall --std=c++14
 LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
-CLASS_SOURCE_FILES = ProcIdlePages.cc ProcMaps.cc migration.cc
+CLASS_SOURCE_FILES = ProcIdlePages.cc ProcMaps.cc Migration.cc
 CLASS_HEADER_FILES = $(CLASS_SOURCE_FILES:.cc=.h)
 
 all: page-refs task-refs task-maps

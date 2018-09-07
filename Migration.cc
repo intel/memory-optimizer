@@ -7,7 +7,7 @@
 
 #include <numa.h>
 #include <numaif.h>
-#include "migration.h"
+#include "Migration.h"
 
 using namespace std;
 
