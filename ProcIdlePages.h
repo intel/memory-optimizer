@@ -33,7 +33,7 @@ struct ProcIdleExtent
 {
   unsigned type : 4;  // ProcIdlePageType
   unsigned nr   : 4;
-};
+}__attribute__((packed));
 
 class ProcIdlePages
 {
@@ -58,11 +58,11 @@ class ProcIdlePages
     
     int read_idlepages_begin(void);
     void read_idlepages_end(void);
-    int read_idlepages(unsigned long va_start,
-                       ProcIdleExtent* lp_idle_info,
+    int read_idlepages(ProcIdleExtent* lp_idle_info,
                        unsigned long read_size, unsigned long& completed_size);
     
     void parse_idlepages(unsigned long start_va,
+                         unsigned long expect_end_va,
                          ProcIdleExtent* lp_idle_info,
                          unsigned long size,
                          unsigned long& parsed_end);
@@ -70,6 +70,10 @@ class ProcIdlePages
     void update_idlepages_info(page_refs_info& info,
                                unsigned long va, unsigned long page_size,
                                unsigned long count);
+
+    int seek_idlepages(unsigned long start_va);
+
+    unsigned long va_to_offset(unsigned long start_va);
     
   private:
     static const unsigned long PTE_SIZE = 1UL << 12;
@@ -77,7 +81,8 @@ class ProcIdlePages
     static const unsigned long PUD_SIZE = 1UL << 30;
     static const unsigned long P4D_SIZE = 1UL << 39;
     static const unsigned long KiB = 1024;
-    static const unsigned int IDLE_BUFFER_COUNT = 512;
+    static const unsigned int IDLE_BUFFER_COUNT = 1024;
+    
     pid_t pid;
     ProcMaps proc_maps;
     int nr_walks;
