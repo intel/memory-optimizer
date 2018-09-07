@@ -35,11 +35,20 @@ struct ProcIdleExtent
   unsigned nr   : 4;
 }__attribute__((packed));
 
+
+enum ProcPageRefsInfoType
+{
+    BEGIN  = 0,
+    TYPE_4K,
+    TYPE_2M,
+    TYPE_1G,
+    
+    END,
+};
+typedef std::unordered_map<unsigned long, unsigned char> page_refs_info;
+
 class ProcIdlePages
 {
-  private:
-    typedef std::unordered_map<unsigned long, unsigned char> page_refs_info;
-    
   public:
     ProcIdlePages(): pid(0), lp_procfile(NULL) {};
     ~ProcIdlePages() {};
@@ -50,6 +59,8 @@ class ProcIdlePages
     int count_refs();
     int save_counts(std::string filename);
 
+    const page_refs_info& get_page_refs_info(ProcPageRefsInfoType Type);
+    
   private:
     int walk();
     int count_refs_one(
@@ -94,7 +105,9 @@ class ProcIdlePages
     std::unordered_map<unsigned long, unsigned char> page_refs_4k;
     std::unordered_map<unsigned long, unsigned char> page_refs_2m;
     std::unordered_map<unsigned long, unsigned char> page_refs_1g;
-    
+
+    //leave empty to as error case, because do NOT want to throw() something.
+    std::unordered_map<unsigned long, unsigned char> page_refs_unknow;
     // refs => page count
     // accumulated by count_refs()
     std::vector<unsigned long> refs_count_4k;

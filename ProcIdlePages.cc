@@ -219,6 +219,31 @@ int ProcIdlePages::save_counts(std::string filename)
   return err;
 }
 
+const page_refs_info&
+ProcIdlePages::get_page_refs_info(ProcPageRefsInfoType Type)
+{
+    switch(Type)
+    {
+    case ProcPageRefsInfoType::TYPE_4K:
+        return page_refs_4k;
+        break;
+    case ProcPageRefsInfoType::TYPE_2M:
+        return page_refs_2m;
+        break;
+    case ProcPageRefsInfoType::TYPE_1G:
+        return page_refs_1g;
+        break;
+
+        //fall ok
+    case ProcPageRefsInfoType::BEGIN:
+    case ProcPageRefsInfoType::END:
+    default:
+        return page_refs_unknow;
+        break;
+    }
+}
+
+
 int ProcIdlePages::read_idlepages_begin()
 {
     char filepath[PATH_MAX];
