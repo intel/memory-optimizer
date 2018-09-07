@@ -35,7 +35,7 @@ int ProcIdlePages::walk()
 {
     int err = 0;
     unsigned long read_completed;
-    unsigned long start, end, end_last;
+    unsigned long start, end;
     unsigned long parse_start, parsed_end;
     unsigned long overflow_barrier;
     unsigned long seek_offset;
@@ -69,7 +69,6 @@ int ProcIdlePages::walk()
 #endif
         parse_start = 0;
         parsed_end = 0;
-        end_last = 0;
         printf("++++Parse start:++++\n");
         for (size_t i = 0; i < address_map.size(); ++i)
         {
@@ -93,7 +92,6 @@ int ProcIdlePages::walk()
              */
             if (parse_start >= end)
             {
-                end_last = end;
                 continue;
             }
             
@@ -141,8 +139,6 @@ int ProcIdlePages::walk()
                     break;
                 }
             }
-
-            end_last = end;
         }
     }
     
