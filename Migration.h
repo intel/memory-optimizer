@@ -10,6 +10,12 @@
 #include <unordered_map>
 #include <vector>
 
+typedef enum {
+  MIGRATE_HOT_PAGES = 1,      // migrate hot pages
+  MIGRATE_COLD_PAGES = 2,     // migrate cold pages
+  MIGRATE_HOT_COLD_PAGES = 3, // migrate hot and cold pages
+}MIGRATE_TYPE;
+
 struct migrate_policy {
   int nr_samples_percent;
   int nr_pages_percent;
@@ -20,13 +26,15 @@ class Migration
 {
   public:
     // functions
+    Migration();
+    ~Migration() {};
 
 	// migrate pages to nodes
     int migrate(pid_t pid,
                 std::unordered_map<unsigned long, unsigned char>& page_refs,
                 std::vector<int>& status,
                 unsigned long nr_walks,
-                bool hot);
+                MIGRATE_TYPE type);
 
     // set samples and pages percent for policy
     int set_policy(int samples_percent, int pages_percent,
@@ -47,6 +55,11 @@ class Migration
     // variables
     static const int DRAM_NUMA_NODE = 0;
     static const int PMEM_NUMA_NODE = 1;
+    static const int DEFAULT_HOT_PERCENT = 20;
+    static const int DEFAULT_COLD_PERCENT = 30;
+
+    // which type of pages should be migrated
+    MIGRATE_TYPE type;
 
     // the policy for hot pages ?
     struct migrate_policy hot_policy;
