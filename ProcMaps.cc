@@ -7,7 +7,7 @@
 #include "ProcMaps.h"
 
 
-#if 1
+#if 0
 static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
 {
   char filename[PATH_MAX];
