@@ -422,6 +422,9 @@ void ProcIdlePages::parse_idlepages(unsigned long start_va, unsigned long expect
         case P4D_HOLE:
             start_va += P4D_SIZE * lp_idle_info->nr;
             break;
+        case PGDIR_HOLE:
+            start_va += PGDIR_SIZE * lp_idle_info->nr;
+            break;
         default:
             break;
         }
