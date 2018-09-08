@@ -70,22 +70,22 @@ int ProcIdlePages::walk()
     parse_start = 0;
     parsed_end = 0;
     printf("++++Parse start:++++\n");
-    for (size_t i = 0; i < address_map.size(); ++i)
+    for (auto &vma: address_map)
     {
 #if 1
         printf("start=%lx, end=%lx, offset=%lx, RWXS=%d%d%d%d, inode=%lu, path=%s\n",
-               address_map[i].start,
-               address_map[i].end,
-               address_map[i].offset,
-               address_map[i].read,
-               address_map[i].write,
-               address_map[i].exec,
-               address_map[i].mayshare,
-               address_map[i].ino,
-               address_map[i].path.c_str());
+               vma.start,
+               vma.end,
+               vma.offset,
+               vma.read,
+               vma.write,
+               vma.exec,
+               vma.mayshare,
+               vma.ino,
+               vma.path.c_str());
 #endif
-        start = address_map[i].start;
-        end = address_map[i].end;
+        start = vma.start;
+        end = vma.end;
 
         /*
          * to avoid overlape
