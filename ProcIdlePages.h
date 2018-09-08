@@ -97,7 +97,8 @@ class ProcIdlePages
     static const unsigned long P4D_SIZE = 1UL << 39;
     static const unsigned long PGDIR_SIZE = 1UL << 39;
     static const unsigned long PAGE_SIZE = 4096;
-    static const unsigned int IDLE_BUFFER_COUNT = 1024;
+
+    static const int IDLE_BUFFER_COUNT = PAGE_SIZE * 8;
 
     pid_t pid;
     ProcMaps proc_maps;
