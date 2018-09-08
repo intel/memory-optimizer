@@ -73,12 +73,11 @@ int Migration::get_pages(std::vector<void *>& pages,
 					     std::vector<int>& nodes,
                          bool hot)
 {
-  unsigned int i = 0;
   int node, ret = 0;
   vector<void *>::iterator it;
 
   //Retrieves numa node for the given page.
-  for (it = pages.begin(); it != pages.end(); ++it, ++i) {
+  for (it = pages.begin(); it != pages.end(); ++it) {
     cout << "it: " << *it;
     ret = get_mempolicy(&node, NULL, 0,
                         *it, MPOL_F_NODE | MPOL_F_ADDR);
