@@ -42,8 +42,9 @@ class Migration
   private:
     // functions
 
-    // walk the page_refs_4k and page_refs_2m
-    int walk(std::unordered_map<unsigned long, unsigned char>& page_refs);
+    // select max counted pages in page_refs_4k and page_refs_2m
+    int select_top_pages(MigrateType type, int max,
+			 std::unordered_map<unsigned long, unsigned char>& page_refs);
 
     // get the numa node in which the pages are
     int locate_numa_pages(MigrateType type);

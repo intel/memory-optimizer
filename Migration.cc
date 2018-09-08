@@ -11,17 +11,12 @@
 
 using namespace std;
 
-bool descend_by_value(void *lhs, void *rhs)
-{
-	return (unsigned long)lhs > (unsigned long)rhs;
-}
-
 Migration::Migration()
 {
   memset(&policies, 0, sizeof(policies));
 }
 
-int Migration::walk(
+int Migration::select_top_pages(MigrateType type, int max,
 		std::unordered_map<unsigned long,unsigned char>& page_refs)
 {
   int nr_pages, i;
@@ -33,18 +28,15 @@ int Migration::walk(
        it != page_refs.end(); ++it) {
     cout << "va: " << it->first << "count: " << it->second;
 
-    // insert to the end
-    pages_addr[0].push_back((void *)it->first);
-    pages_addr[1].push_back((void *)it->first);
+    if (it->second >= max)
+      pages_addr[type].push_back((void *)it->first);
   }
 
-  sort(pages_addr[0].begin(), pages_addr[0].end(), descend_by_value);
-  sort(pages_addr[1].begin(), pages_addr[1].end());
+  sort(pages_addr[type].begin(), pages_addr[type].end());
 
   // just for debug
   for (i = 0; i < nr_pages; ++i) {
-    cout << "hot page " << i << ": " << pages_addr[0][i];
-    cout << "cold page " << i << ": " << pages_addr[1][i];
+    cout << "page " << i << ": " << pages_addr[type][i];
   }
 
   return 0;
@@ -101,7 +93,7 @@ int Migration::migrate(pid_t pid,
   int nr_pages = 0;
   int ret = 0;
 
-  ret = walk(page_refs);
+  ret = select_top_pages(type, nr_walks, page_refs);
   if (ret) {
     cout << "error: return " << ret;
     return ret;
