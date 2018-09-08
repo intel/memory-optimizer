@@ -8,6 +8,13 @@
 #include <unordered_map>
 #include "ProcMaps.h"
 
+static const unsigned long PTE_SIZE = 1UL << 12;
+static const unsigned long PMD_SIZE = 1UL << 21;
+static const unsigned long PUD_SIZE = 1UL << 30;
+static const unsigned long P4D_SIZE = 1UL << 39;
+static const unsigned long PGDIR_SIZE = 1UL << 39;
+static const unsigned long PAGE_SIZE = 4096;
+
 enum ProcIdlePageType
 {
   // 4k page
@@ -39,21 +46,22 @@ struct ProcIdleExtent
 }__attribute__((packed));
 
 
-enum ProcPageRefsInfoType
+enum PageLevel
 {
     BEGIN  = 0,
-    TYPE_4K,
-    TYPE_2M,
-    TYPE_1G,
+    PAGE_4K,
+    PAGE_2M,
+    PAGE_1G,
 
     END,
 };
-typedef std::unordered_map<unsigned long, unsigned char> page_refs_info;
+
+typedef std::unordered_map<unsigned long, unsigned char> page_refs_map;
 
 class ProcIdlePages
 {
   public:
-    ProcIdlePages(): pid(0), lp_procfile(NULL) {};
+    ProcIdlePages(): pid(0) {};
     ~ProcIdlePages() {};
 
     void set_pid(pid_t i) { pid = i; }
@@ -62,43 +70,31 @@ class ProcIdlePages
     int count_refs();
     int save_counts(std::string filename);
 
-    const page_refs_info& get_page_refs_info(ProcPageRefsInfoType Type);
+    const page_refs_map& get_page_refs(PageLevel level);
 
   private:
     int walk();
+    int walk_vma(proc_maps_entry& vma);
     int count_refs_one(
-                   std::unordered_map<unsigned long, unsigned char>& page_refs,
+                   page_refs_map& page_refs,
                    std::vector<unsigned long>& refs_count);
 
-    int read_idlepages_begin(void);
-    void read_idlepages_end(void);
-    int read_idlepages(ProcIdleExtent* lp_idle_info,
-                       unsigned long read_size);
+    int open_file(void);
 
-    void parse_idlepages(unsigned long start_va,
-                         unsigned long expect_end_va,
-                         ProcIdleExtent* lp_idle_info,
-                         unsigned long size,
-                         unsigned long& parsed_end);
+    void parse_idlepages(proc_maps_entry& vma,
+                         unsigned long& va,
+                         int bytes);
 
-    void update_idlepages_info(page_refs_info& info,
-                               unsigned long va, unsigned long page_size,
-                               unsigned long count);
-
-    int seek_idlepages(unsigned long start_va);
+    void inc_page_refs(page_refs_map& page_refs,
+                       unsigned long va,
+                       unsigned long page_size,
+                       unsigned long count);
 
     unsigned long va_to_offset(unsigned long start_va);
     unsigned long offset_to_va(unsigned long start_va);
 
   private:
-    static const unsigned long PTE_SIZE = 1UL << 12;
-    static const unsigned long PMD_SIZE = 1UL << 21;
-    static const unsigned long PUD_SIZE = 1UL << 30;
-    static const unsigned long P4D_SIZE = 1UL << 39;
-    static const unsigned long PGDIR_SIZE = 1UL << 39;
-    static const unsigned long PAGE_SIZE = 4096;
-
-    static const int IDLE_BUFFER_COUNT = PAGE_SIZE * 8;
+    static const int READ_BUF_SIZE = PAGE_SIZE * 8;
 
     pid_t pid;
     ProcMaps proc_maps;
@@ -118,9 +114,8 @@ class ProcIdlePages
     std::vector<unsigned long> refs_count_4k;
     std::vector<unsigned long> refs_count_2m;
 
-    FILE* lp_procfile;
-
-    ProcIdleExtent data_buffer[IDLE_BUFFER_COUNT];
+    int idle_fd;
+    std::vector<ProcIdleExtent> read_buf;
 };
 
 #endif

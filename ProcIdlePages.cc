@@ -1,10 +1,34 @@
-#include <unistd.h>
+#include <fcntl.h>
 #include <iostream>
-#include <stdio.h>
 #include <linux/limits.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "ProcIdlePages.h"
+
+static unsigned long pagetype_size[16] = {
+	// 4k page
+	[PTE_HOLE] = PAGE_SIZE,
+	[PTE_IDLE] = PAGE_SIZE,
+	[PTE_ACCESSED] = PAGE_SIZE,
+
+	// 2M page
+	[PMD_HOLE] = PMD_SIZE,
+	[PMD_IDLE] = PMD_SIZE,
+	[PMD_ACCESSED] = PMD_SIZE,
+
+	// 1G page
+	[PUD_HOLE] = PUD_SIZE,
+	[PUD_IDLE] = PUD_SIZE,
+	[PUD_ACCESSED] = PUD_SIZE,
+
+	// 512G
+	[P4D_HOLE] = P4D_SIZE,
+	[PGDIR_HOLE] = PGDIR_SIZE,
+};
 
 int ProcIdlePages::walk_multi(int nr, float interval)
 {
@@ -31,114 +55,71 @@ int ProcIdlePages::walk_multi(int nr, float interval)
   return 0;
 }
 
-int ProcIdlePages::walk()
+int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 {
-    int err = 0;
-    unsigned long start, end;
-    unsigned long parse_start, parsed_end;
-    unsigned long overflow_barrier;
-    unsigned long seek_offset;
-    /*
-      step1. try begin read
+    unsigned long va = vma.start;
+    int rc = 0;
 
-      step2. got information from kernel
+    proc_maps.show(vma);
 
-      step3. iterate it, save data into maps
-
-      final:  end read
-    */
-    err = read_idlepages_begin();
-    if (err)
-      return err;
-
-    std::vector<proc_maps_entry> address_map;
-#if 1
-    address_map = proc_maps.load(pid);
-#else
-
-    proc_maps_entry e;
-    e.start = 0;
-    e.end = 0x1500;
-    address_map.push_back(e);
-
-    e.start = 0x4000;
-    e.end = 0x5000;
-    address_map.push_back(e);
-
-#endif
-    parse_start = 0;
-    parsed_end = 0;
-    printf("++++Parse start:++++\n");
-    for (auto &vma: address_map)
+    if (lseek(idle_fd, va_to_offset(va), SEEK_SET) == (off_t) -1)
     {
-#if 1
-        printf("start=%lx, end=%lx, offset=%lx, RWXS=%d%d%d%d, inode=%lu, path=%s\n",
-               vma.start,
-               vma.end,
-               vma.offset,
-               vma.read,
-               vma.write,
-               vma.exec,
-               vma.mayshare,
-               vma.ino,
-               vma.path.c_str());
-#endif
-        start = vma.start;
-        end = vma.end;
-
-        /*
-         * to avoid overlape
-         */
-        if (parse_start >= end)
-        {
-            continue;
-        }
-
-        if (parse_start <= start)
-            parse_start = start;
-
-        printf("range: [%lx - %lx]\n", parse_start, end);
-
-        seek_offset = va_to_offset(parse_start);
-        if (seek_idlepages(seek_offset))
-        {
-            printf(" error: seek for addr %lx failed, skip.\n", seek_offset);
-            continue;
-        }
-
-        parse_start = offset_to_va(seek_offset);
-        overflow_barrier = parse_start;
-        while ((parse_start < end) && (parse_start >= overflow_barrier))
-        {
-            err = read_idlepages(data_buffer, sizeof(data_buffer));
-            if (err < 0)
-            {
-                printf("  error:  [%lx-%lx] failed, skip. now pause for debug\n",
-                       parse_start, end);
-                getchar();
-                break;
-            }
-
-            if (!err)
-            {
-                printf("  error: read 0 size, skip. now pause for debug\n");
-                getchar();
-                break;
-            }
-
-            parse_idlepages(parse_start,
-                            end,
-                            data_buffer,
-                            err,
-                            parsed_end);
-            printf("  parsed: [%lx-%lx] \n", parse_start, parsed_end);
-            parse_start = parsed_end;
-        }
+      printf(" error: seek for addr %lx failed, skip.\n", va);
+      perror("lseek error");
+      return -1;
     }
 
-    read_idlepages_end();
+    for (; va < vma.end;)
+    {
+      off_t pos = lseek(idle_fd, 0, SEEK_CUR);
+      if (pos == (off_t) -1) {
+        perror("SEEK_CUR error");
+        return -1;
+      }
+      if ((unsigned long)pos != va) {
+        fprintf(stderr, "error pos != va: %lu %lu\n", pos, va);
+        return -2;
+      }
 
-    return err;
+      rc = read(idle_fd, read_buf.data(), read_buf.size());
+      if (rc < 0) {
+        if (rc == -ENXIO || rc == -ERANGE)
+          return 0;
+        perror("read error");
+        return rc;
+      }
+
+      if (!rc)
+      {
+        printf("read 0 size\n");
+        return 0;
+      }
+
+      parse_idlepages(vma, va, rc);
+    }
+
+    return 0;
+}
+
+int ProcIdlePages::walk()
+{
+    std::vector<proc_maps_entry> address_map = proc_maps.load(pid);
+
+    if (address_map.empty())
+      return -ESRCH;
+
+    int idle_fd = open_file();
+    if (idle_fd < 0)
+      return idle_fd;
+
+    read_buf.resize(READ_BUF_SIZE);
+
+    for (auto &vma: address_map)
+      walk_vma(vma);
+
+    close(idle_fd);
+
+    return 0;
 }
 
 int ProcIdlePages::count_refs_one(
@@ -213,24 +194,24 @@ int ProcIdlePages::save_counts(std::string filename)
   return err;
 }
 
-const page_refs_info&
-ProcIdlePages::get_page_refs_info(ProcPageRefsInfoType Type)
+const page_refs_map&
+ProcIdlePages::get_page_refs(PageLevel level)
 {
-    switch(Type)
+    switch(level)
     {
-    case ProcPageRefsInfoType::TYPE_4K:
+    case PageLevel::PAGE_4K:
         return page_refs_4k;
         break;
-    case ProcPageRefsInfoType::TYPE_2M:
+    case PageLevel::PAGE_2M:
         return page_refs_2m;
         break;
-    case ProcPageRefsInfoType::TYPE_1G:
+    case PageLevel::PAGE_1G:
         return page_refs_1g;
         break;
 
         //fall ok
-    case ProcPageRefsInfoType::BEGIN:
-    case ProcPageRefsInfoType::END:
+    case PageLevel::BEGIN:
+    case PageLevel::END:
     default:
         return page_refs_unknow;
         break;
@@ -238,203 +219,74 @@ ProcIdlePages::get_page_refs_info(ProcPageRefsInfoType Type)
 }
 
 
-int ProcIdlePages::read_idlepages_begin()
+int ProcIdlePages::open_file()
 {
     char filepath[PATH_MAX];
 
     memset(filepath, 0, sizeof(filepath));
     snprintf(filepath, sizeof(filepath), "/proc/%d/idle_bitmap", pid);
 
-    lp_procfile = fopen(filepath, "r");
-    if (!lp_procfile)
+    idle_fd = open(filepath, O_RDWR);
+    if (idle_fd < 0)
+      perror(filepath);
+
+    return idle_fd;
+}
+
+void ProcIdlePages::inc_page_refs(page_refs_map& page_refs,
+                                  unsigned long va,
+                                  unsigned long page_size,
+                                  unsigned long count)
+{
+  for (unsigned long i = 0; i < count; ++i)
+  {
+    unsigned long vpfn = va / PAGE_SIZE;
+    auto find_iter = page_refs.find(vpfn);
+
+    if (find_iter == page_refs.end())
+      page_refs[vpfn] = 1;
+    else
+      page_refs[vpfn] += 1;
+
+    va += page_size;
+  }
+}
+
+void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
+                                    unsigned long& va,
+                                    int bytes)
+{
+  for (int i = 0; i < bytes; ++i)
+  {
+    int nr = read_buf[i].nr;
+    switch (read_buf[i].type)
     {
-        printf("open proc file %s failed.\n", filepath);
-        return -1;
+    case PTE_ACCESSED:
+      inc_page_refs(page_refs_4k, va, PTE_SIZE, nr);
+      break;
+    case PMD_ACCESSED:
+      inc_page_refs(page_refs_2m, va, PMD_SIZE, nr);
+      break;
+    case PUD_ACCESSED:
+      inc_page_refs(page_refs_1g, va, PUD_SIZE, nr);
+      break;
     }
-
-    return 0;
+    va += pagetype_size[read_buf[i].type] * nr;
+  }
 }
 
-void ProcIdlePages::read_idlepages_end()
+unsigned long ProcIdlePages::va_to_offset(unsigned long va)
 {
-    if (lp_procfile)
-    {
-        fclose(lp_procfile);
-        lp_procfile = NULL;
-    }
-}
+  unsigned long offset = va;
 
-#if 1
-int ProcIdlePages::read_idlepages(ProcIdleExtent* lp_idle_info,
-                                  unsigned long read_size)
-{
-    if (!lp_procfile)
-        return -1;
+  // offset /= PAGE_SIZE;
+  offset &= ~(PAGE_SIZE - 1);
 
-    return fread(lp_idle_info, 1, read_size, lp_procfile);
-}
-#else
-int ProcIdlePages::read_idlepages(ProcIdleExtent* lp_idle_info,
-                                  unsigned long read_size)
-{
-  int i = 0;
-
-//  lp_idle_info[i++] = {PTE_ACCESSED, 1};
-//  lp_idle_info[i++] = {PTE_ACCESSED, 2};
-//  lp_idle_info[i++] = {PTE_ACCESSED, 4};
-
-  lp_idle_info[i++] = {PTE_HOLE, 1};
-
- // lp_idle_info[i++] = {PTE_HOLE, 2};
-#if 0
-  lp_idle_info[i++] = {PTE_HOLE, 4};
-
-  lp_idle_info[i++] = {PTE_IDLE, 1};
-  lp_idle_info[i++] = {PTE_IDLE, 2};
-  lp_idle_info[i++] = {PTE_IDLE, 4};
-
-  lp_idle_info[i++] = {PMD_ACCESSED, 1};
-  lp_idle_info[i++] = {PMD_ACCESSED, 2};
-  lp_idle_info[i++] = {PMD_ACCESSED, 4};
-
-  lp_idle_info[i++] = {PMD_HOLE, 1};
-  lp_idle_info[i++] = {PMD_HOLE, 2};
-  lp_idle_info[i++] = {PMD_HOLE, 4};
-
-  lp_idle_info[i++] = {PMD_IDLE, 1};
-  lp_idle_info[i++] = {PMD_IDLE, 2};
-  lp_idle_info[i++] = {PMD_IDLE, 4};
-  lp_idle_info[i++] = {PUD_ACCESSED, 1};
-  lp_idle_info[i++] = {PUD_ACCESSED, 2};
-  lp_idle_info[i++] = {PUD_ACCESSED, 4};
-
-  lp_idle_info[i++] = {PUD_HOLE, 1};
-  lp_idle_info[i++] = {PUD_HOLE, 2};
-  lp_idle_info[i++] = {PUD_HOLE, 4};
-
-  lp_idle_info[i++] = {PUD_IDLE, 1};
-  lp_idle_info[i++] = {PUD_IDLE, 2};
-  lp_idle_info[i++] = {PUD_IDLE, 4};
-#endif
-
-  return i * sizeof(*lp_idle_info);
-}
-
-#endif
-
-void ProcIdlePages::update_idlepages_info(page_refs_info& info,
-                                          unsigned long va,
-                                          unsigned long page_size,
-                                          unsigned long count)
-{
-    unsigned long vpfn;
-
-    for(unsigned long i = 0; i < count; ++i)
-    {
-        vpfn = va / 4096;
-        auto find_iter = info.find(vpfn);
-        if (find_iter == info.end())
-        {
-            info[vpfn] = 1;
-        }
-        else
-        {
-            info[vpfn] += 1;
-        }
-
-        va += page_size;
-    }
+  return offset;
 }
 
 
-void ProcIdlePages::parse_idlepages(unsigned long start_va, unsigned long expect_end_va,
-                                    ProcIdleExtent* lp_idle_info, unsigned long size,
-                                    unsigned long& parsed_end)
+unsigned long ProcIdlePages::offset_to_va(unsigned long va)
 {
-    ProcIdleExtent* lp_end = lp_idle_info + size/sizeof(*lp_idle_info);
-
-    unsigned long overflow_barrier = start_va;
-
-    for(int i = 0;
-        (lp_idle_info != lp_end)
-        && (start_va >= overflow_barrier); ++lp_idle_info,++i)
-    {
-#if 0
-      printf("R[%d] type=%d, nr=%d\n", i,
-             (int)lp_idle_info->type,
-             (int)lp_idle_info->nr);
-#endif
-
-        switch(lp_idle_info->type)
-        {
-        case PTE_ACCESSED:
-            update_idlepages_info(page_refs_4k,
-                                  start_va, PTE_SIZE,
-                                  lp_idle_info->nr);
-            start_va += PTE_SIZE * lp_idle_info->nr;
-            break;
-        case PMD_ACCESSED:
-            update_idlepages_info(page_refs_2m,
-                                  start_va, PMD_SIZE,
-                                  lp_idle_info->nr);
-            start_va += PMD_SIZE * lp_idle_info->nr;
-            break;
-        case PUD_ACCESSED:
-            update_idlepages_info(page_refs_1g,
-                                  start_va, PUD_SIZE,
-                                  lp_idle_info->nr);
-            start_va += PUD_SIZE * lp_idle_info->nr;
-            break;
-        case PTE_HOLE:
-        case PTE_IDLE:
-            start_va += PTE_SIZE * lp_idle_info->nr;
-            break;
-        case PMD_HOLE:
-        case PMD_IDLE:
-            start_va += PMD_IDLE * lp_idle_info->nr;
-            break;
-        case PUD_HOLE:
-        case PUD_IDLE:
-            start_va += PUD_SIZE * lp_idle_info->nr;
-            break;
-        case P4D_HOLE:
-            start_va += P4D_SIZE * lp_idle_info->nr;
-            break;
-        case PGDIR_HOLE:
-            start_va += PGDIR_SIZE * lp_idle_info->nr;
-            break;
-        default:
-            break;
-        }
-    }
-
-    parsed_end = start_va;
-}
-
-
-int ProcIdlePages::seek_idlepages(unsigned long start_va)
-{
-    int fseek_ret = 0;
-
-    printf("  seek to %lx\n", start_va);
-    fseek_ret = fseek(lp_procfile, start_va, SEEK_SET);
-
-    return fseek_ret;
-}
-
-
-unsigned long ProcIdlePages::va_to_offset(unsigned long start_va)
-{
-    unsigned long offset = start_va;
-
-    // offset /= PAGE_SIZE;
-    offset &= ~(PAGE_SIZE - 1);
-
-    return offset;
-}
-
-
-unsigned long ProcIdlePages::offset_to_va(unsigned long start_va)
-{
-    return start_va;
+  return va;
 }

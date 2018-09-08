@@ -156,7 +156,7 @@ int migrate(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
   bool hot = false, cold = false;
   std::vector<int> status;
   auto migration = std::make_unique<Migration>();
-  page_refs_info page_refs_4k;
+  page_refs_map page_refs_4k;
 
   // for example:
   // migrate the top 20% frequency of being accessed to dram node
@@ -187,7 +187,7 @@ int migrate(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
                           option.cold_node,
                           false);
 
-  page_refs_4k = proc_idle_pages->get_page_refs_info(TYPE_4K);
+  page_refs_4k = proc_idle_pages->get_page_refs(PageLevel::PAGE_4K);
 
   err = migration->migrate(option.pid,
                            page_refs_4k,
