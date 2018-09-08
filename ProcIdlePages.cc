@@ -116,28 +116,26 @@ int ProcIdlePages::walk()
                                  read_completed);
             if (!err)
             {
-                if (!read_completed)
-                {
-                    printf("  error: read 0 size, skip. now pause for debug\n");
-                    getchar();
-                    break;
-                }
-
-                parse_idlepages(parse_start,
-                                end,
-                                data_buffer,
-                                read_completed,
-                                parsed_end);
-                printf("  parsed: [%lx-%lx] \n", parse_start, parsed_end);
-                parse_start = parsed_end;
-            }
-            else
-            {
                 printf("  error:  [%lx-%lx] failed, skip. now pause for debug\n",
                        parse_start, end);
                 getchar();
                 break;
             }
+
+            if (!read_completed)
+            {
+                printf("  error: read 0 size, skip. now pause for debug\n");
+                getchar();
+                break;
+            }
+
+            parse_idlepages(parse_start,
+                            end,
+                            data_buffer,
+                            read_completed,
+                            parsed_end);
+            printf("  parsed: [%lx-%lx] \n", parse_start, parsed_end);
+            parse_start = parsed_end;
         }
     }
 
