@@ -14,7 +14,7 @@ typedef enum {
   MIGRATE_HOT_PAGES = 1,      // migrate hot pages
   MIGRATE_COLD_PAGES = 2,     // migrate cold pages
   MIGRATE_HOT_COLD_PAGES = 3, // migrate hot and cold pages
-}MIGRATE_TYPE;
+} MigrateType;
 
 struct migrate_policy {
   int nr_samples_percent;
@@ -29,12 +29,12 @@ class Migration
     Migration();
     ~Migration() {};
 
-	// migrate pages to nodes
+    // migrate pages to nodes
     int migrate(pid_t pid,
                 std::unordered_map<unsigned long, unsigned char>& page_refs,
                 std::vector<int>& status,
                 unsigned long nr_walks,
-                MIGRATE_TYPE type);
+                MigrateType type);
 
     // set samples and pages percent for policy
     int set_policy(int samples_percent, int pages_percent,
@@ -43,7 +43,7 @@ class Migration
   private:
     // functions
 
-	// walk the page_refs_4k and page_refs_2m
+    // walk the page_refs_4k and page_refs_2m
     int walk(std::unordered_map<unsigned long, unsigned char>& page_refs);
 
     // get the numa node in which the pages are
@@ -59,7 +59,7 @@ class Migration
     static const int DEFAULT_COLD_PERCENT = 30;
 
     // which type of pages should be migrated
-    MIGRATE_TYPE type;
+    MigrateType type;
 
     // the policy for hot pages ?
     struct migrate_policy hot_policy;

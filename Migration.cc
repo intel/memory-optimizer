@@ -108,7 +108,7 @@ int Migration::migrate(
             std::unordered_map<unsigned long, unsigned char>& page_refs,
             std::vector<int>& status,
             unsigned long nr_walks,
-            MIGRATE_TYPE type)
+            MigrateType type)
 {
   int hot_nr_pages = 0, cold_nr_pages = 0;
   int nr = 0, nr_samples = 0, nr_pages = 0;

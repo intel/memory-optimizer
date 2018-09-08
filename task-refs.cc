@@ -26,7 +26,7 @@ struct task_refs_options {
   int hot_node;        // the numa node for hot pages
   int cold_node;       // the numa node for cold pages
   float interval;
-  MIGRATE_TYPE migrate_type;
+  MigrateType migrate_type;
 
   std::string output_file;
 } option;
@@ -97,7 +97,7 @@ static void parse_cmdline(int argc, char *argv[])
       option.output_file = optarg;
       break;
     case 'm':
-      option.migrate_type = (MIGRATE_TYPE)atoi(optarg);
+      option.migrate_type = (MigrateType)atoi(optarg);
       break;
     case 's':
       option.samples_percent = atoi(optarg);
