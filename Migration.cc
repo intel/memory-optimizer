@@ -70,7 +70,7 @@ int Migration::locate_numa_pages(MigrateType type)
   auto& nodes = pages_node[type];
 
   //Retrieves numa node for the given page.
-  for (it = addrs.begin(); it != addrs.end(); ++it) {
+  for (it = addrs.begin(); it < addrs.end(); ++it) {
     cout << "it: " << *it;
     ret = get_mempolicy(&node, NULL, 0,
                         *it, MPOL_F_NODE | MPOL_F_ADDR);
