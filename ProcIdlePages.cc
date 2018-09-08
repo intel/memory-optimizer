@@ -34,7 +34,6 @@ int ProcIdlePages::walk_multi(int nr, float interval)
 int ProcIdlePages::walk()
 {
     int err = 0;
-    unsigned long read_completed;
     unsigned long start, end;
     unsigned long parse_start, parsed_end;
     unsigned long overflow_barrier;
@@ -111,10 +110,8 @@ int ProcIdlePages::walk()
         overflow_barrier = parse_start;
         while ((parse_start < end) && (parse_start >= overflow_barrier))
         {
-            err = read_idlepages(data_buffer,
-                                 sizeof(data_buffer),
-                                 read_completed);
-            if (!err)
+            err = read_idlepages(data_buffer, sizeof(data_buffer));
+            if (err < 0)
             {
                 printf("  error:  [%lx-%lx] failed, skip. now pause for debug\n",
                        parse_start, end);
@@ -122,7 +119,7 @@ int ProcIdlePages::walk()
                 break;
             }
 
-            if (!read_completed)
+            if (!err)
             {
                 printf("  error: read 0 size, skip. now pause for debug\n");
                 getchar();
@@ -132,7 +129,7 @@ int ProcIdlePages::walk()
             parse_idlepages(parse_start,
                             end,
                             data_buffer,
-                            read_completed,
+                            err,
                             parsed_end);
             printf("  parsed: [%lx-%lx] \n", parse_start, parsed_end);
             parse_start = parsed_end;
@@ -269,29 +266,16 @@ void ProcIdlePages::read_idlepages_end()
 
 #if 1
 int ProcIdlePages::read_idlepages(ProcIdleExtent* lp_idle_info,
-                                  unsigned long read_size,
-                                  unsigned long& completed_size)
+                                  unsigned long read_size)
 {
-    size_t read_ret;
-
     if (!lp_procfile)
-    {
         return -1;
-    }
 
-    printf("    start to read, size=%lu \n", read_size);
-
-    read_ret = fread(lp_idle_info, 1, read_size, lp_procfile);
-    completed_size = read_ret;
-
-    printf("    read done, completed size=%lu\n",completed_size);
-
-    return 0;
+    return fread(lp_idle_info, 1, read_size, lp_procfile);
 }
 #else
 int ProcIdlePages::read_idlepages(ProcIdleExtent* lp_idle_info,
-                                  unsigned long read_size,
-                                  unsigned long& completed_size)
+                                  unsigned long read_size)
 {
   int i = 0;
 
@@ -333,9 +317,7 @@ int ProcIdlePages::read_idlepages(ProcIdleExtent* lp_idle_info,
   lp_idle_info[i++] = {PUD_IDLE, 4};
 #endif
 
-  completed_size = i * sizeof(*lp_idle_info);
-
-  return 0;
+  return i * sizeof(*lp_idle_info);
 }
 
 #endif

@@ -73,7 +73,7 @@ class ProcIdlePages
     int read_idlepages_begin(void);
     void read_idlepages_end(void);
     int read_idlepages(ProcIdleExtent* lp_idle_info,
-                       unsigned long read_size, unsigned long& completed_size);
+                       unsigned long read_size);
 
     void parse_idlepages(unsigned long start_va,
                          unsigned long expect_end_va,
