@@ -61,8 +61,9 @@ int Migration::locate_numa_pages(MigrateType type)
   auto& addrs = pages_addr[type];
   auto& nodes = pages_node[type];
 
-  //Retrieves numa node for the given page.
-  for (it = addrs.begin(); it < addrs.end(); ++it) {
+  // Retrieves numa node for the given page.
+  // XXX: this costs lots of syscalls, use move_pages() will nodes=NULL instead
+  for (it = addrs.begin(); it < addrs.end();) {
     cout << "it: " << *it;
     ret = get_mempolicy(&node, NULL, 0,
                         *it, MPOL_F_NODE | MPOL_F_ADDR);
@@ -73,10 +74,11 @@ int Migration::locate_numa_pages(MigrateType type)
     if (node == params.node) {
       //don't need to migrate
       //the hot page in hot memory or the cold page in cold memory
-      addrs.erase(it);
+      it = addrs.erase(it);
     } else {
       migrate_status.push_back(0);
       nodes.push_back(params.node);
+      ++it;
     }
   }
 
