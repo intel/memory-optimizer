@@ -137,3 +137,22 @@ std::vector<proc_maps_entry> ProcMaps::load(pid_t pid)
 
   return maps;
 }
+
+void ProcMaps::show(const proc_maps_entry& vma)
+{
+  printf("%lx-%lx %4s %08lx %02x:%02x %-8lu\t\t%s\n",
+         vma.start,
+         vma.end,
+         vma.perms,
+         vma.offset,
+         vma.dev_major,
+         vma.dev_minor,
+         vma.ino,
+         vma.path.c_str());
+}
+
+void ProcMaps::show(const std::vector<proc_maps_entry>& maps)
+{
+  for (const proc_maps_entry& vma: maps)
+    show(vma);
+}
