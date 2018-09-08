@@ -101,7 +101,7 @@ int ProcIdlePages::walk()
         printf("range: [%lx - %lx]\n", parse_start, end);
 
         seek_offset = va_to_offset(parse_start);
-        if (0 != seek_idlepages(seek_offset))
+        if (seek_idlepages(seek_offset))
         {
             printf(" error: seek for addr %lx failed, skip.\n", seek_offset);
             continue;
@@ -114,9 +114,9 @@ int ProcIdlePages::walk()
             err = read_idlepages(data_buffer,
                                  sizeof(data_buffer),
                                  read_completed);
-            if (0 == err)
+            if (!err)
             {
-                if (0 == read_completed)
+                if (!read_completed)
                 {
                     printf("  error: read 0 size, skip. now pause for debug\n");
                     getchar();
@@ -196,7 +196,7 @@ int ProcIdlePages::save_counts(std::string filename)
 
   FILE *file;
   file = fopen(filename.c_str(), "w");
-  if (file == NULL) {
+  if (!file) {
     std::cerr << "open file " << filename << "failed" << std::endl;
     perror(filename.c_str());
     return -1;
@@ -251,7 +251,7 @@ int ProcIdlePages::read_idlepages_begin()
     snprintf(filepath, sizeof(filepath), "/proc/%d/idle_bitmap", pid);
 
     lp_procfile = fopen(filepath, "r");
-    if (NULL == lp_procfile)
+    if (!lp_procfile)
     {
         printf("open proc file %s failed.\n", filepath);
         return -1;
