@@ -56,7 +56,7 @@ static void usage(char *prog)
           "    -l|--loop       The number of times to scan\n"
           "    -o|--output     The output file, defaults to refs-count-PID\n"
           "    -m|--mtype      Migrate which types of pages; "
-                               "1 for hot, 2 for cold, 3 for all\n"
+                               "0 for hot, 1 for cold, 2 for all\n"
           "    -s|--samples    Set the samples_percent of migration policy\n"
           "    -g|--pages      Set the pages_percent of migration policy\n"
           "    -n|--hotnode    Set the numa node for hot pages\n"
@@ -176,24 +176,33 @@ int migrate(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
       break;
   }
 
-  if (hot)
+  page_refs_4k = proc_idle_pages->get_page_refs(PageLevel::PAGE_4K);
+
+  if (hot) {
     migration->set_policy(option.samples_percent,
                           option.pages_percent,
                           option.hot_node,
-                          true);
-  if (cold)
+                          MIGRATE_HOT_PAGES);
+
+    err = migration->migrate(option.pid,
+                             page_refs_4k,
+                             status,
+                             option.nr_walks,
+                             MIGRATE_HOT_PAGES);
+  }
+
+  if (cold) {
     migration->set_policy(option.samples_percent,
                           option.pages_percent,
                           option.cold_node,
-                          false);
+                          MIGRATE_COLD_PAGES);
 
-  page_refs_4k = proc_idle_pages->get_page_refs(PageLevel::PAGE_4K);
-
-  err = migration->migrate(option.pid,
-                           page_refs_4k,
-                           status,
-                           option.nr_walks,
-                           option.migrate_type);
+    err = migration->migrate(option.pid,
+                             page_refs_4k,
+                             status,
+                             option.nr_walks,
+                             MIGRATE_COLD_PAGES);
+  }
 
   return err;
 }

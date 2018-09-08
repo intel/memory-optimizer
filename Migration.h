@@ -11,12 +11,12 @@
 #include <vector>
 
 typedef enum {
-  MIGRATE_HOT_PAGES = 1,      // migrate hot pages
-  MIGRATE_COLD_PAGES = 2,     // migrate cold pages
-  MIGRATE_HOT_COLD_PAGES = 3, // migrate hot and cold pages
+  MIGRATE_HOT_PAGES,      // migrate hot pages
+  MIGRATE_COLD_PAGES,     // migrate cold pages
+  MIGRATE_HOT_COLD_PAGES, // migrate hot and cold pages
 } MigrateType;
 
-struct migrate_policy {
+struct MigratePolicy {
   int nr_samples_percent;
   int nr_pages_percent;
   int node;
@@ -37,8 +37,7 @@ class Migration
                 MigrateType type);
 
     // set samples and pages percent for policy
-    int set_policy(int samples_percent, int pages_percent,
-                   int node, bool hot);
+    int set_policy(int samples_percent, int pages_percent, int node, MigrateType type);
 
   private:
     // functions
@@ -47,9 +46,7 @@ class Migration
     int walk(std::unordered_map<unsigned long, unsigned char>& page_refs);
 
     // get the numa node in which the pages are
-    int get_pages(std::vector<void *>& pages,
-                  std::vector<int>& nodes,
-                  bool hot);
+    int locate_numa_pages(MigrateType type);
 
   private:
     // variables
@@ -58,31 +55,16 @@ class Migration
     static const int DEFAULT_HOT_PERCENT = 20;
     static const int DEFAULT_COLD_PERCENT = 30;
 
-    // which type of pages should be migrated
-    MigrateType type;
+    struct MigratePolicy policies[2];
 
-    // the policy for hot pages ?
-    struct migrate_policy hot_policy;
-    // the policy for cold pages ?
-    struct migrate_policy cold_policy;
-
-    // The nodes in which the hot pages are.
+    // The nodes in which the hot/cold pages are.
     // [0...n] = [TO_NODE0...TO_NODEn]
-    std::vector<int> hot_nodes;
+    std::vector<int> pages_node[2];
 
-    // The nodes in which the cold pages are.
-    // [0...n] = [TO_NODE0...TO_NODEn]
-    std::vector<int> cold_nodes;
-
-    // The Virtual Address of the hot pages.
+    // The Virtual Address of hot/cold pages.
     // [0...n] = [VA0...VAn]
     //std::vector<unsigned long> hot_pages;
-    std::vector<void *> hot_pages;
-
-    // The Virtual Address of the cold pages.
-    // [0...n] = [VA0...VAn]
-    //std::vector<unsigned long> cold_pages;
-    std::vector<void *> cold_pages;
+    std::vector<void *> pages_addr[2];
 
     // Get the status after migration
     std::vector<int> migrate_status;
