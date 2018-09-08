@@ -449,8 +449,8 @@ unsigned long ProcIdlePages::va_to_offset(unsigned long start_va)
 {
     unsigned long offset = start_va;
 
-    // offset /= 4*KiB;
-    offset &= ~(4*KiB - 1);
+    // offset /= PAGE_SIZE;
+    offset &= ~(PAGE_SIZE - 1);
 
     return offset;
 }
