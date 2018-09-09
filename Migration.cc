@@ -25,12 +25,12 @@ int Migration::select_top_pages(ProcIdlePageType type)
   int nr_pages;
 
   nr_pages = page_refs.size();
-  cout << "nr_pages: " << nr_pages;
+  cout << "nr_pages: " << nr_pages << endl;
 
   for (auto it = page_refs.begin();
        it != page_refs.end(); ++it) {
     if (debug_level() >= 2)
-      cout << "va: " << it->first << " count: " << it->second;
+      cout << "va: " << it->first << " count: " << it->second << endl;
 
     if (it->second >= nr_walks)
       pages_addr[type].push_back((void *)it->first);
@@ -40,7 +40,7 @@ int Migration::select_top_pages(ProcIdlePageType type)
 
   if (debug_level() >= 2)
     for (int i = 0; i < nr_pages; ++i) {
-      cout << "page " << i << ": " << pages_addr[type][i];
+      cout << "page " << i << ": " << pages_addr[type][i] << endl;
     }
 
   return 0;
@@ -68,11 +68,11 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
   // Retrieves numa node for the given page.
   // XXX: this costs lots of syscalls, use move_pages() will nodes=NULL instead
   for (it = addrs.begin(); it < addrs.end();) {
-    cout << "it: " << *it;
+    cout << "it: " << *it << endl;
     ret = get_mempolicy(&node, NULL, 0,
                         *it, MPOL_F_NODE | MPOL_F_ADDR);
     if (ret) {
-        cout << "get_mempolicy return %d" << ret;
+        cout << "get_mempolicy return " << ret << endl;
         return ret;
     }
     if (node == params.node) {
@@ -97,13 +97,13 @@ int Migration::migrate(ProcIdlePageType type)
 
   ret = select_top_pages(type);
   if (ret) {
-    cout << "error: return " << ret;
+    cout << "error: return " << ret << endl;
     return ret;
   }
 
   ret = locate_numa_pages(type);
   if (ret) {
-    cout << "error: return " << ret;
+    cout << "error: return " << ret << endl;
     return ret;
   }
 
@@ -111,7 +111,7 @@ int Migration::migrate(ProcIdlePageType type)
   auto& nodes = pages_node[type];
 
   nr_pages = addrs.size();
-  cout << "nr_pages: " << nr_pages;
+  cout << "nr_pages: " << nr_pages << endl;
 
   migrate_status.resize(nr_pages);
   ret = move_pages(pid, nr_pages, &addrs[0], &nodes[0],
