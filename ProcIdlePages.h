@@ -46,17 +46,18 @@ struct ProcIdleExtent
 }__attribute__((packed));
 
 
-enum PageLevel
-{
-    BEGIN  = 0,
-    PAGE_4K,
-    PAGE_2M,
-    PAGE_1G,
-
-    END,
-};
-
 typedef std::unordered_map<unsigned long, unsigned char> page_refs_map;
+
+struct ProcIdleRefs
+{
+  // VA => refs
+  // accumulated by walk()
+  page_refs_map page_refs;
+
+  // refs => page count
+  // accumulated by count_refs()
+  std::vector<unsigned long> refs_count;
+};
 
 class ProcIdlePages
 {
@@ -65,19 +66,21 @@ class ProcIdlePages
     ~ProcIdlePages() {};
 
     void set_pid(pid_t i) { pid = i; }
+    pid_t get_pid() { return pid; }
 
     int walk_multi(int nr, float interval);
     int count_refs();
     int save_counts(std::string filename);
 
-    const page_refs_map& get_page_refs(PageLevel level);
+    const ProcIdleRefs& get_pagetype_refs(ProcIdlePageType type)
+                   { return pagetype_refs[type]; }
+
+    int get_nr_walks() { return nr_walks; }
 
   private:
     int walk();
     int walk_vma(proc_maps_entry& vma);
-    int count_refs_one(
-                   page_refs_map& page_refs,
-                   std::vector<unsigned long>& refs_count);
+    int count_refs_one(ProcIdleRefs& prc);
 
     int open_file(void);
 
@@ -85,10 +88,8 @@ class ProcIdlePages
                          unsigned long& va,
                          int bytes);
 
-    void inc_page_refs(page_refs_map& page_refs,
-                       unsigned long va,
-                       unsigned long page_size,
-                       unsigned long count);
+    void inc_page_refs(ProcIdlePageType type,
+                       int nr, unsigned long va);
 
     unsigned long va_to_offset(unsigned long start_va);
     unsigned long offset_to_va(unsigned long start_va);
@@ -100,19 +101,7 @@ class ProcIdlePages
     ProcMaps proc_maps;
     int nr_walks;
 
-    // VA => refs
-    // accumulated by walk()
-
-    std::unordered_map<unsigned long, unsigned char> page_refs_4k;
-    std::unordered_map<unsigned long, unsigned char> page_refs_2m;
-    std::unordered_map<unsigned long, unsigned char> page_refs_1g;
-
-    //leave empty to as error case, because do NOT want to throw() something.
-    std::unordered_map<unsigned long, unsigned char> page_refs_unknow;
-    // refs => page count
-    // accumulated by count_refs()
-    std::vector<unsigned long> refs_count_4k;
-    std::vector<unsigned long> refs_count_2m;
+    ProcIdleRefs pagetype_refs[PUD_IDLE + 1];
 
     int idle_fd;
     std::vector<ProcIdleExtent> read_buf;

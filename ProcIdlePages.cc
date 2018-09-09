@@ -39,9 +39,11 @@ int ProcIdlePages::walk_multi(int nr, float interval)
     return -ENOENT;
 
   nr_walks = nr; // for use by count_refs()
-  page_refs_4k.clear();
-  page_refs_2m.clear();
-  page_refs_1g.clear();
+
+  for (auto& prc: pagetype_refs) {
+    prc.page_refs.clear();
+    prc.refs_count.clear();
+  }
 
   for (int i = 0; i < nr; ++i)
   {
@@ -122,16 +124,14 @@ int ProcIdlePages::walk()
     return 0;
 }
 
-int ProcIdlePages::count_refs_one(
-                   std::unordered_map<unsigned long, unsigned char>& page_refs,
-                   std::vector<unsigned long>& refs_count)
+int ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
 {
     int err = 0;
-    auto iter_beigin = page_refs.begin();
-    auto iter_end = page_refs.end();
+    auto iter_beigin = prc.page_refs.begin();
+    auto iter_end = prc.page_refs.end();
+    std::vector<unsigned long>& refs_count = prc.refs_count;
 
     refs_count.clear();
-
     refs_count.reserve(nr_walks + 1);
 
     for (size_t i = 0; i < refs_count.capacity(); ++i)
@@ -151,16 +151,10 @@ int ProcIdlePages::count_refs()
 {
   int err = 0;
 
-  err = count_refs_one(page_refs_4k, refs_count_4k);
-  if (err) {
-    std::cerr << "count 4K page out of range" << std::endl;
-    return err;
-  }
-
-  err = count_refs_one(page_refs_2m, refs_count_2m);
-  if (err) {
-    std::cerr << "count 2M page out of range" << std::endl;
-    return err;
+  for (auto& prc: pagetype_refs) {
+    err = count_refs_one(prc);
+    if (err)
+      return err;
   }
 
   return err;
@@ -178,46 +172,25 @@ int ProcIdlePages::save_counts(std::string filename)
     return -1;
   }
 
-  fprintf(file, "%-8s %-15s %-15s\n",
-                "refs", "count_4K",
-                "count_2M");
-  fprintf(file, "=========================================================\n");
+  fprintf(file, "%-8s %-15s %-15s %-15s %-15s\n",
+                "refs",
+                "hot_4k", "cold_4k",
+                "hot_2M", "cold_2M");
+  fprintf(file, "=========================================================");
 
-  for (int i = 0; i < nr_walks + 1; i++) {
-    fprintf(file, "%-8d %-15lu %-15lu\n",
-            i,
-            refs_count_4k[i],
-            refs_count_2m[i]);
+  for (int i = 0; i <= nr_walks; i++) {
+    fprintf(file, "%-8d", i);
+    fprintf(file, " %-15lu", pagetype_refs[PTE_ACCESSED].refs_count[i]);
+    fprintf(file, " %-15lu", pagetype_refs[PTE_IDLE].refs_count[nr_walks-i]);
+    fprintf(file, " %-15lu", pagetype_refs[PMD_ACCESSED].refs_count[i]);
+    fprintf(file, " %-15lu", pagetype_refs[PMD_IDLE].refs_count[nr_walks-i]);
+    fprintf(file, "\n");
   }
+
   fclose(file);
 
   return err;
 }
-
-const page_refs_map&
-ProcIdlePages::get_page_refs(PageLevel level)
-{
-    switch(level)
-    {
-    case PageLevel::PAGE_4K:
-        return page_refs_4k;
-        break;
-    case PageLevel::PAGE_2M:
-        return page_refs_2m;
-        break;
-    case PageLevel::PAGE_1G:
-        return page_refs_1g;
-        break;
-
-        //fall ok
-    case PageLevel::BEGIN:
-    case PageLevel::END:
-    default:
-        return page_refs_unknow;
-        break;
-    }
-}
-
 
 int ProcIdlePages::open_file()
 {
@@ -233,12 +206,13 @@ int ProcIdlePages::open_file()
     return idle_fd;
 }
 
-void ProcIdlePages::inc_page_refs(page_refs_map& page_refs,
-                                  unsigned long va,
-                                  unsigned long page_size,
-                                  unsigned long count)
+void ProcIdlePages::inc_page_refs(ProcIdlePageType type,
+                                  int nr, unsigned long va)
 {
-  for (unsigned long i = 0; i < count; ++i)
+  page_refs_map& page_refs = pagetype_refs[type].page_refs;
+  unsigned long page_size = pagetype_size[type];
+
+  for (int i = 0; i < nr; ++i)
   {
     unsigned long vpfn = va / PAGE_SIZE;
     auto find_iter = page_refs.find(vpfn);
@@ -258,20 +232,22 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
 {
   for (int i = 0; i < bytes; ++i)
   {
+    ProcIdlePageType type = (ProcIdlePageType) read_buf[i].type;
     int nr = read_buf[i].nr;
-    switch (read_buf[i].type)
+
+    switch (type)
     {
+    case PTE_IDLE:
     case PTE_ACCESSED:
-      inc_page_refs(page_refs_4k, va, PTE_SIZE, nr);
-      break;
+    case PMD_IDLE:
     case PMD_ACCESSED:
-      inc_page_refs(page_refs_2m, va, PMD_SIZE, nr);
-      break;
     case PUD_ACCESSED:
-      inc_page_refs(page_refs_1g, va, PUD_SIZE, nr);
+      inc_page_refs(type, nr, va);
+      break;
+    default:
       break;
     }
-    va += pagetype_size[read_buf[i].type] * nr;
+    va += pagetype_size[type] * nr;
   }
 }
 
