@@ -62,7 +62,6 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
 
   auto& params = policies[type];
   auto& addrs = pages_addr[type];
-  auto& nodes = pages_node[type];
 
   int nr_pages = addrs.size();
   migrate_status.resize(nr_pages);
@@ -81,15 +80,15 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
   }
 
   addrs.resize(j);
-  nodes.resize(j, params.node);
 
   return 0;
 }
 
-// migrate pages to nodes
 int Migration::migrate(ProcIdlePageType type)
 {
   pid_t pid = proc_idle_pages.get_pid();
+  std::vector<int> nodes;
+
   int ret;
 
   ret = select_top_pages(type);
@@ -100,13 +99,14 @@ int Migration::migrate(ProcIdlePageType type)
   if (ret)
     return ret;
 
+  auto& params = policies[type];
   auto& addrs = pages_addr[type];
-  auto& nodes = pages_node[type];
 
   int nr_pages = addrs.size();
   cout << "nr_pages: " << nr_pages << endl;
 
   migrate_status.resize(nr_pages);
+  nodes.resize(nr_pages, params.node);
   ret = move_pages(pid, nr_pages, &addrs[0], &nodes[0],
                    &migrate_status[0], MPOL_MF_MOVE);
   if (ret) {

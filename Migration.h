@@ -56,10 +56,6 @@ class Migration
     ProcIdlePages& proc_idle_pages;
     struct MigratePolicy policies[PMD_ACCESSED + 1];
 
-    // The nodes in which the hot/cold pages are.
-    // [0...n] = [TO_NODE0...TO_NODEn]
-    std::vector<int> pages_node[PMD_ACCESSED + 1];
-
     // The Virtual Address of hot/cold pages.
     // [0...n] = [VA0...VAn]
     //std::vector<unsigned long> hot_pages;
