@@ -71,7 +71,7 @@ class ProcIdlePages
     pid_t get_pid() { return pid; }
 
     int walk_multi(int nr, float interval);
-    int count_refs();
+    void count_refs();
     int save_counts(std::string filename);
 
     const ProcIdleRefs& get_pagetype_refs(ProcIdlePageType type)
@@ -82,7 +82,7 @@ class ProcIdlePages
   private:
     int walk();
     int walk_vma(proc_maps_entry& vma);
-    int count_refs_one(ProcIdleRefs& prc);
+    void count_refs_one(ProcIdleRefs& prc);
 
     int open_file(void);
 

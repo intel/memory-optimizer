@@ -131,35 +131,21 @@ int ProcIdlePages::walk()
     return 0;
 }
 
-int ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
+void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
 {
-    int err = 0;
-    auto iter_beigin = prc.page_refs.begin();
-    auto iter_end = prc.page_refs.end();
     std::vector<unsigned long>& refs_count = prc.refs_count;
 
     refs_count.clear();
     refs_count.resize(nr_walks + 1, 0);
 
-    for(;iter_beigin != iter_end; ++iter_beigin)
-    {
-        refs_count[iter_beigin->second] += 1;
-    }
-
-    return err;
+    for(const auto& kv: prc.page_refs)
+        refs_count.at(kv.second) += 1;
 }
 
-int ProcIdlePages::count_refs()
+void ProcIdlePages::count_refs()
 {
-  int err = 0;
-
-  for (auto& prc: pagetype_refs) {
-    err = count_refs_one(prc);
-    if (err)
-      return err;
-  }
-
-  return err;
+  for (auto& prc: pagetype_refs)
+    count_refs_one(prc);
 }
 
 int ProcIdlePages::save_counts(std::string filename)

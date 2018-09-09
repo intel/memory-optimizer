@@ -144,9 +144,7 @@ int account_refs(ProcIdlePages& proc_idle_pages)
   if (err)
     return err;
 
-  err = proc_idle_pages.count_refs();
-  if (err)
-    return err;
+  proc_idle_pages.count_refs();
 
   err = proc_idle_pages.save_counts(option.output_file);
   if (err)
