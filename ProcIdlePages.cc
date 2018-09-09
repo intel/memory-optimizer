@@ -139,12 +139,7 @@ int ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
     std::vector<unsigned long>& refs_count = prc.refs_count;
 
     refs_count.clear();
-    refs_count.reserve(nr_walks + 1);
-
-    for (size_t i = 0; i < refs_count.capacity(); ++i)
-    {
-        refs_count[i] = 0;
-    }
+    refs_count.resize(nr_walks + 1, 0);
 
     for(;iter_beigin != iter_end; ++iter_beigin)
     {
