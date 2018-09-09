@@ -63,6 +63,10 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     unsigned long va = vma.start;
     int rc = 0;
 
+    // skip [vsyscall] etc. special kernel sections
+    if (va > TASK_SIZE_MAX)
+      return 0;
+
     if (debug_level() >= 2)
       proc_maps.show(vma);
 
@@ -90,6 +94,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
         if (rc == -ENXIO || rc == -ERANGE)
           return 0;
         perror("read error");
+        proc_maps.show(vma);
         return rc;
       }
 
