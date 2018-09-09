@@ -91,8 +91,10 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 
       rc = read(idle_fd, read_buf.data(), read_buf.size());
       if (rc < 0) {
-        if (rc == -ENXIO || rc == -ERANGE)
+        if (rc == -ENXIO)
           return 0;
+        if (rc == -ERANGE)
+          continue;
         perror("read error");
         proc_maps.show(vma);
         return rc;
