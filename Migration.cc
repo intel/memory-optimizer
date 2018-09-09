@@ -31,7 +31,7 @@ int Migration::select_top_pages(ProcIdlePageType type)
     printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
 
     if (it->second >= nr_walks)
-      pages_addr[type].push_back((void *)it->first);
+      pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
   }
 
   sort(pages_addr[type].begin(), pages_addr[type].end());
