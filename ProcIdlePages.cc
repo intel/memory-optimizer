@@ -183,7 +183,7 @@ int ProcIdlePages::save_counts(std::string filename)
                 "refs",
                 "hot_4k", "cold_4k",
                 "hot_2M", "cold_2M");
-  fprintf(file, "=========================================================");
+  fprintf(file, "=====================================================================\n");
 
   for (int i = 0; i <= nr_walks; i++) {
     fprintf(file, "%-8d", i);
