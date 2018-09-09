@@ -194,8 +194,8 @@ int ProcIdlePages::open_file()
     return idle_fd;
 }
 
-void ProcIdlePages::inc_page_refs(ProcIdlePageType type,
-                                  int nr, unsigned long va)
+void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
+                                  unsigned long va, unsigned long end)
 {
   page_refs_map& page_refs = pagetype_refs[type].page_refs;
   unsigned long page_size = pagetype_size[type];
@@ -207,10 +207,16 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type,
 
     if (find_iter == page_refs.end())
       page_refs[vpfn] = 1;
-    else
+    else {
       page_refs[vpfn] += 1;
 
+      if (page_refs[vpfn] > nr_walks)
+        printf("error counted duplicate vpfn: %lx\n", vpfn);
+    }
+
     va += page_size;
+    if (va >= end)
+      break;
   }
 }
 
@@ -230,7 +236,17 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
     case PMD_IDLE:
     case PMD_ACCESSED:
     case PUD_ACCESSED:
-      inc_page_refs(type, nr, va);
+      if (va >= vma.end) {
+        printf("error va >= end: %lx %lx i=%d bytes=%d type=%d nr=%d\n",
+               va, vma.end, i, bytes, type, nr);
+        proc_maps.show(vma);
+        for (int j = 0; j < bytes; ++j)
+          printf("%x:%x  ", read_buf[j].type, read_buf[j].nr);
+        puts("");
+        return;
+      }
+
+      inc_page_refs(type, nr, va, vma.end);
       break;
     default:
       break;
