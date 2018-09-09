@@ -11,6 +11,7 @@
 #include "ProcMaps.h"
 #include "ProcIdlePages.h"
 #include "Migration.h"
+#include "lib/debug.h"
 
 #define DRAM_NUMA_NODE  0
 #define PMEM_NUMA_NODE  1
@@ -30,6 +31,11 @@ struct task_refs_options {
 
   std::string output_file;
 } option;
+
+int debug_level()
+{
+  return option.debug_level;
+}
 
 static const struct option opts[] = {
   {"pid",       required_argument,  NULL, 'p'},
@@ -127,7 +133,6 @@ static void parse_cmdline(int argc, char *argv[])
   if (option.output_file.empty())
     option.output_file = "refs-count-" + std::to_string(option.pid);
 }
-
 
 int account_refs(ProcIdlePages& proc_idle_pages)
 {

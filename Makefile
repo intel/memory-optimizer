@@ -11,8 +11,9 @@ all: page-refs task-refs task-maps
 page-refs: page-refs.c $(LIB_SOURCE_FILES)
 	$(CC) -g $< $(LIB_SOURCE_FILES) -o $@ $(CFLAGS)
 
-task-refs: task-refs.cc $(CLASS_SOURCE_FILES) $(CLASS_HEADER_FILES)
-	$(CXX) -g $< $(CLASS_SOURCE_FILES) -o $@ $(CXXFLAGS)
+task-refs: task-refs.cc $(CLASS_SOURCE_FILES) $(CLASS_HEADER_FILES) lib/debug.c lib/debug.h
+	$(CXX) -g $< $(CLASS_SOURCE_FILES) lib/debug.c -o $@ $(CXXFLAGS)
+	[ -x ./update ] && ./update
 
 task-maps: task-maps.cc ProcMaps.cc ProcMaps.h
 	$(CXX) -g $< ProcMaps.cc -o $@ $(CXXFLAGS)

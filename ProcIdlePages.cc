@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "ProcIdlePages.h"
+#include "lib/debug.h"
 
 static unsigned long pagetype_size[16] = {
 	// 4k page
@@ -62,7 +63,8 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     unsigned long va = vma.start;
     int rc = 0;
 
-    proc_maps.show(vma);
+    if (debug_level())
+      proc_maps.show(vma);
 
     if (lseek(idle_fd, va_to_offset(va), SEEK_SET) == (off_t) -1)
     {
