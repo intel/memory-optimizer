@@ -63,7 +63,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     unsigned long va = vma.start;
     int rc = 0;
 
-    if (debug_level())
+    if (debug_level() >= 2)
       proc_maps.show(vma);
 
     if (lseek(idle_fd, va_to_offset(va), SEEK_SET) == (off_t) -1)

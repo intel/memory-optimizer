@@ -8,6 +8,7 @@
 #include <numa.h>
 #include <numaif.h>
 #include "Migration.h"
+#include "lib/debug.h"
 
 using namespace std;
 
@@ -28,7 +29,8 @@ int Migration::select_top_pages(ProcIdlePageType type)
 
   for (auto it = page_refs.begin();
        it != page_refs.end(); ++it) {
-    cout << "va: " << it->first << "count: " << it->second;
+    if (debug_level() >= 2)
+      cout << "va: " << it->first << " count: " << it->second;
 
     if (it->second >= nr_walks)
       pages_addr[type].push_back((void *)it->first);
@@ -36,10 +38,10 @@ int Migration::select_top_pages(ProcIdlePageType type)
 
   sort(pages_addr[type].begin(), pages_addr[type].end());
 
-  // just for debug
-  for (int i = 0; i < nr_pages; ++i) {
-    cout << "page " << i << ": " << pages_addr[type][i];
-  }
+  if (debug_level() >= 2)
+    for (int i = 0; i < nr_pages; ++i) {
+      cout << "page " << i << ": " << pages_addr[type][i];
+    }
 
   return 0;
 }
