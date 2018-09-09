@@ -77,7 +77,7 @@ static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
 	int opt = 0;
-	const char *optstr = "hvp:i:l:o:";
+	const char *optstr = "hvp:i:l:o:m:s:g:n:d:";
 
   option.nr_walks = 10;
   option.interval = 0.1;
