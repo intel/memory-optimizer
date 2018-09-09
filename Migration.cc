@@ -70,7 +70,7 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
     ret = get_mempolicy(&node, NULL, 0,
                         *it, MPOL_F_NODE | MPOL_F_ADDR);
     if (ret) {
-        cout << "get_mempolicy return " << ret << endl;
+        perror("get_mempolicy");
         return ret;
     }
     if (node == params.node) {
@@ -94,16 +94,12 @@ int Migration::migrate(ProcIdlePageType type)
   pid_t pid = proc_idle_pages.get_pid();
 
   ret = select_top_pages(type);
-  if (ret) {
-    cout << "error: return " << ret << endl;
+  if (ret)
     return ret;
-  }
 
   ret = locate_numa_pages(type);
-  if (ret) {
-    cout << "error: return " << ret << endl;
+  if (ret)
     return ret;
-  }
 
   auto& addrs = pages_addr[type];
   auto& nodes = pages_node[type];
