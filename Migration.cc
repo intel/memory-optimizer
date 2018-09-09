@@ -56,32 +56,32 @@ int Migration::set_policy(int samples_percent, int pages_percent,
 
 int Migration::locate_numa_pages(ProcIdlePageType type)
 {
-  int node, ret = 0;
+  pid_t pid = proc_idle_pages.get_pid();
   vector<void *>::iterator it;
+  int ret;
 
   auto& params = policies[type];
   auto& addrs = pages_addr[type];
   auto& nodes = pages_node[type];
 
-  // Retrieves numa node for the given page.
-  // XXX: this costs lots of syscalls, use move_pages() will nodes=NULL instead
-  for (it = addrs.begin(); it < addrs.end();) {
-    cout << "it: " << *it << endl;
-    ret = get_mempolicy(&node, NULL, 0,
-                        *it, MPOL_F_NODE | MPOL_F_ADDR);
-    if (ret) {
-        perror("get_mempolicy");
-        return ret;
-    }
-    if (node == params.node) {
-      //don't need to migrate
-      //the hot page in hot memory or the cold page in cold memory
-      it = addrs.erase(it);
-    } else {
-      nodes.push_back(params.node);
-      ++it;
-    }
+  int nr_pages = addrs.size();
+  migrate_status.resize(nr_pages);
+  ret = move_pages(pid, nr_pages, &addrs[0], NULL,
+                   &migrate_status[0], MPOL_MF_MOVE);
+  if (ret) {
+    perror("move_pages");
+    return ret;
   }
+
+  int i, j;
+  for (i = 0, j = 0; i < nr_pages; ++i) {
+    if (migrate_status[i] >= 0 &&
+        migrate_status[i] != params.node)
+      addrs[j++] = addrs[i];
+  }
+
+  addrs.resize(j);
+  nodes.resize(j, params.node);
 
   return 0;
 }
@@ -89,9 +89,8 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
 // migrate pages to nodes
 int Migration::migrate(ProcIdlePageType type)
 {
-  int nr_pages = 0;
-  int ret = 0;
   pid_t pid = proc_idle_pages.get_pid();
+  int ret;
 
   ret = select_top_pages(type);
   if (ret)
@@ -104,14 +103,14 @@ int Migration::migrate(ProcIdlePageType type)
   auto& addrs = pages_addr[type];
   auto& nodes = pages_node[type];
 
-  nr_pages = addrs.size();
+  int nr_pages = addrs.size();
   cout << "nr_pages: " << nr_pages << endl;
 
   migrate_status.resize(nr_pages);
   ret = move_pages(pid, nr_pages, &addrs[0], &nodes[0],
                    &migrate_status[0], MPOL_MF_MOVE);
   if (ret) {
-    cout << "error: return " << ret;
+    perror("move_pages");
     return ret;
   }
 
