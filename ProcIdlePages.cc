@@ -221,7 +221,7 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type,
 
   for (int i = 0; i < nr; ++i)
   {
-    unsigned long vpfn = va / PAGE_SIZE;
+    unsigned long vpfn = va >> PAGE_SHIFT;
     auto find_iter = page_refs.find(vpfn);
 
     if (find_iter == page_refs.end())
