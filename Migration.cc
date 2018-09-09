@@ -27,10 +27,8 @@ int Migration::select_top_pages(ProcIdlePageType type)
   nr_pages = page_refs.size();
   cout << "nr_pages: " << nr_pages << endl;
 
-  for (auto it = page_refs.begin();
-       it != page_refs.end(); ++it) {
-    if (debug_level() >= 2)
-      cout << "va: " << it->first << " count: " << it->second << endl;
+  for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
+    printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
 
     if (it->second >= nr_walks)
       pages_addr[type].push_back((void *)it->first);
