@@ -11,23 +11,23 @@
 
 static unsigned long pagetype_size[16] = {
 	// 4k page
-	[PTE_HOLE] = PAGE_SIZE,
-	[PTE_IDLE] = PAGE_SIZE,
-	[PTE_ACCESSED] = PAGE_SIZE,
+	[PTE_HOLE]      = PAGE_SIZE,
+	[PTE_IDLE]      = PAGE_SIZE,
+	[PTE_ACCESSED]  = PAGE_SIZE,
 
 	// 2M page
-	[PMD_HOLE] = PMD_SIZE,
-	[PMD_IDLE] = PMD_SIZE,
-	[PMD_ACCESSED] = PMD_SIZE,
+	[PMD_HOLE]      = PMD_SIZE,
+	[PMD_IDLE]      = PMD_SIZE,
+	[PMD_ACCESSED]  = PMD_SIZE,
 
 	// 1G page
-	[PUD_HOLE] = PUD_SIZE,
-	[PUD_IDLE] = PUD_SIZE,
-	[PUD_ACCESSED] = PUD_SIZE,
+	[PUD_HOLE]      = PUD_SIZE,
+	[PUD_IDLE]      = PUD_SIZE,
+	[PUD_ACCESSED]  = PUD_SIZE,
 
 	// 512G
-	[P4D_HOLE] = P4D_SIZE,
-	[PGDIR_HOLE] = PGDIR_SIZE,
+	[P4D_HOLE]      = P4D_SIZE,
+	[PGDIR_HOLE]    = PGDIR_SIZE,
 };
 
 int ProcIdlePages::walk_multi(int nr, float interval)
