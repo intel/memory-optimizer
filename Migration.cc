@@ -11,15 +11,17 @@
 
 using namespace std;
 
-Migration::Migration()
+Migration::Migration(ProcIdlePages& pip)
+  : proc_idle_pages(pip)
 {
   memset(&policies, 0, sizeof(policies));
 }
 
-int Migration::select_top_pages(MigrateType type, int max,
-		std::unordered_map<unsigned long,unsigned char>& page_refs)
+int Migration::select_top_pages(ProcIdlePageType type)
 {
-  int nr_pages, i;
+  const page_refs_map& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs;
+  int nr_walks = proc_idle_pages.get_nr_walks();
+  int nr_pages;
 
   nr_pages = page_refs.size();
   cout << "nr_pages: " << nr_pages;
@@ -28,14 +30,14 @@ int Migration::select_top_pages(MigrateType type, int max,
        it != page_refs.end(); ++it) {
     cout << "va: " << it->first << "count: " << it->second;
 
-    if (it->second >= max)
+    if (it->second >= nr_walks)
       pages_addr[type].push_back((void *)it->first);
   }
 
   sort(pages_addr[type].begin(), pages_addr[type].end());
 
   // just for debug
-  for (i = 0; i < nr_pages; ++i) {
+  for (int i = 0; i < nr_pages; ++i) {
     cout << "page " << i << ": " << pages_addr[type][i];
   }
 
@@ -43,7 +45,7 @@ int Migration::select_top_pages(MigrateType type, int max,
 }
 
 int Migration::set_policy(int samples_percent, int pages_percent,
-                          int node, MigrateType type)
+                          int node, ProcIdlePageType type)
 {
   policies[type].nr_samples_percent = samples_percent;
   policies[type].nr_pages_percent = pages_percent;
@@ -52,7 +54,7 @@ int Migration::set_policy(int samples_percent, int pages_percent,
   return 0;
 }
 
-int Migration::locate_numa_pages(MigrateType type)
+int Migration::locate_numa_pages(ProcIdlePageType type)
 {
   int node, ret = 0;
   vector<void *>::iterator it;
@@ -76,7 +78,6 @@ int Migration::locate_numa_pages(MigrateType type)
       //the hot page in hot memory or the cold page in cold memory
       it = addrs.erase(it);
     } else {
-      migrate_status.push_back(0);
       nodes.push_back(params.node);
       ++it;
     }
@@ -86,16 +87,13 @@ int Migration::locate_numa_pages(MigrateType type)
 }
 
 // migrate pages to nodes
-int Migration::migrate(pid_t pid,
-                       std::unordered_map<unsigned long, unsigned char>& page_refs,
-                       std::vector<int>& status,
-                       unsigned long nr_walks,
-                       MigrateType type)
+int Migration::migrate(ProcIdlePageType type)
 {
   int nr_pages = 0;
   int ret = 0;
+  pid_t pid = proc_idle_pages.get_pid();
 
-  ret = select_top_pages(type, nr_walks, page_refs);
+  ret = select_top_pages(type);
   if (ret) {
     cout << "error: return " << ret;
     return ret;
@@ -113,8 +111,9 @@ int Migration::migrate(pid_t pid,
   nr_pages = addrs.size();
   cout << "nr_pages: " << nr_pages;
 
+  migrate_status.resize(nr_pages);
   ret = move_pages(pid, nr_pages, &addrs[0], &nodes[0],
-                   &status[0], MPOL_MF_MOVE);
+                   &migrate_status[0], MPOL_MF_MOVE);
   if (ret) {
     cout << "error: return " << ret;
     return ret;

@@ -129,34 +129,32 @@ static void parse_cmdline(int argc, char *argv[])
 }
 
 
-int account_refs(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
+int account_refs(ProcIdlePages& proc_idle_pages)
 {
   int err;
 
-  proc_idle_pages->set_pid(option.pid);
+  proc_idle_pages.set_pid(option.pid);
 
-  err = proc_idle_pages->walk_multi(option.nr_walks, option.interval);
+  err = proc_idle_pages.walk_multi(option.nr_walks, option.interval);
   if (err)
     return err;
 
-  err = proc_idle_pages->count_refs();
+  err = proc_idle_pages.count_refs();
   if (err)
     return err;
 
-  err = proc_idle_pages->save_counts(option.output_file);
+  err = proc_idle_pages.save_counts(option.output_file);
   if (err)
     return err;
 
   return 0;
 }
 
-int migrate(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
+int migrate(ProcIdlePages& proc_idle_pages)
 {
   int err = 0;
   bool hot = false, cold = false;
-  std::vector<int> status;
-  auto migration = std::make_unique<Migration>();
-  page_refs_map page_refs_4k;
+  auto migration = std::make_unique<Migration>(proc_idle_pages);
 
   // for example:
   // migrate the top 20% frequency of being accessed to dram node
@@ -176,32 +174,22 @@ int migrate(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
       break;
   }
 
-  page_refs_4k = proc_idle_pages->get_page_refs(PageLevel::PAGE_4K);
-
   if (hot) {
     migration->set_policy(option.samples_percent,
                           option.pages_percent,
                           option.hot_node,
-                          MIGRATE_HOT_PAGES);
+                          PTE_ACCESSED);
 
-    err = migration->migrate(option.pid,
-                             page_refs_4k,
-                             status,
-                             option.nr_walks,
-                             MIGRATE_HOT_PAGES);
+    err = migration->migrate(PTE_ACCESSED);
   }
 
   if (cold) {
     migration->set_policy(option.samples_percent,
                           option.pages_percent,
                           option.cold_node,
-                          MIGRATE_COLD_PAGES);
+                          PTE_IDLE);
 
-    err = migration->migrate(option.pid,
-                             page_refs_4k,
-                             status,
-                             option.nr_walks,
-                             MIGRATE_COLD_PAGES);
+    err = migration->migrate(PTE_IDLE);
   }
 
   return err;
@@ -210,7 +198,7 @@ int migrate(std::unique_ptr<ProcIdlePages>& proc_idle_pages)
 int main(int argc, char *argv[])
 {
   int err = 0;
-  auto proc_idle_pages = std::make_unique<ProcIdlePages>();
+  ProcIdlePages proc_idle_pages;
 
   parse_cmdline(argc, argv);
   err = account_refs(proc_idle_pages);
