@@ -37,7 +37,7 @@ int Migration::select_top_pages(ProcIdlePageType type)
   sort(pages_addr[type].begin(), pages_addr[type].end());
 
   if (debug_level() >= 2)
-    for (int i = 0; i < nr_pages; ++i) {
+    for (size_t i = 0; i < pages_addr[type].size(); ++i) {
       cout << "page " << i << ": " << pages_addr[type][i] << endl;
     }
 
