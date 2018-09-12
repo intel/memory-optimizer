@@ -62,6 +62,7 @@ int ProcIdlePages::walk_multi(int nr, float interval)
   for (auto& prc: pagetype_refs) {
     prc.page_refs.clear();
     prc.refs_count.clear();
+    prc.refs_count.resize(nr + 1);
   }
 
   for (int i = 0; i < nr; ++i)
@@ -180,11 +181,12 @@ int ProcIdlePages::save_counts(std::string filename)
     return -1;
   }
 
-  fprintf(file, "%-8s %-15s %-15s %-15s %-15s\n",
+  fprintf(file, "%-8s %-15s %-15s %-15s %-15s %-15s\n",
                 "refs",
                 "hot_4k", "cold_4k",
-                "hot_2M", "cold_2M");
-  fprintf(file, "=====================================================================\n");
+                "hot_2M", "cold_2M",
+                "hot_1G");
+  fprintf(file, "================================================================================\n");
 
   for (int i = 0; i <= nr_walks; i++) {
     fprintf(file, "%-8d", i);
@@ -192,6 +194,7 @@ int ProcIdlePages::save_counts(std::string filename)
     fprintf(file, " %-15lu", pagetype_refs[PTE_IDLE].refs_count[nr_walks-i]);
     fprintf(file, " %-15lu", pagetype_refs[PMD_ACCESSED].refs_count[i]);
     fprintf(file, " %-15lu", pagetype_refs[PMD_IDLE].refs_count[nr_walks-i]);
+    fprintf(file, " %-15lu", pagetype_refs[PUD_ACCESSED].refs_count[i]);
     fprintf(file, "\n");
   }
 

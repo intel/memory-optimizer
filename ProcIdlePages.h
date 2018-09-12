@@ -105,7 +105,7 @@ class ProcIdlePages
     ProcMaps proc_maps;
     int nr_walks;
 
-    ProcIdleRefs pagetype_refs[PUD_IDLE + 1];
+    ProcIdleRefs pagetype_refs[PUD_ACCESSED + 1];
 
     int idle_fd;
     std::vector<ProcIdleExtent> read_buf;
