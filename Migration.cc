@@ -12,6 +12,42 @@
 
 using namespace std;
 
+static const char* page_type_to_size[IDLE_PAGE_TYPE_MAX] = {
+  [PTE_HOLE]     = "unsupported pages",
+  [PTE_IDLE]     = "4KB pages",
+  [PTE_ACCESSED] = "4KB pages",
+
+  [PMD_HOLE]     = "unsupported pages",
+  [PMD_IDLE]     = "2MB pages",
+  [PMD_ACCESSED] = "2MB pages",
+
+  [PUD_HOLE]     = "unsupported pages",
+  [PUD_IDLE]     = "1GB pages",
+  [PUD_ACCESSED] = "1GB pages",
+
+  [P4D_HOLE]     = "unsupported pages",
+  [PGDIR_HOLE]   = "unsupported pages",
+};
+
+
+static const char* page_type_to_migration_type[IDLE_PAGE_TYPE_MAX] = {
+  [PTE_HOLE]     = "unsupported type",
+  [PTE_IDLE]     = "COLD",
+  [PTE_ACCESSED] = "HOT",
+
+  [PMD_HOLE]     = "unsupported type",
+  [PMD_IDLE]     = "COLD",
+  [PMD_ACCESSED] = "HOT",
+
+  [PUD_HOLE]     = "unsupported type",
+  [PUD_IDLE]     = "COLD",
+  [PUD_ACCESSED] = "HOT",
+
+  [P4D_HOLE]     = "unsupported type",
+  [PGDIR_HOLE]   = "unsupported type",
+};
+
+
 Migration::Migration(ProcIdlePages& pip)
   : proc_idle_pages(pip)
 {
@@ -114,5 +150,53 @@ int Migration::migrate(ProcIdlePageType type)
     return ret;
   }
 
+  show(type);
+
   return ret;
+}
+
+
+void Migration::get_migration_result(std::unordered_map<int, int> &result_detail)
+{
+  for(auto &i : migrate_status)
+  {
+    auto find_iter = result_detail.find(i);
+
+    if (find_iter == result_detail.end()) {
+        result_detail[i] = 1;
+    } else {
+        result_detail[i] += 1;
+    }
+  }
+}
+
+
+// show the migration information
+void Migration::show(ProcIdlePageType type)
+{
+  if (pages_addr[type].size() > 0)
+  {
+    std::unordered_map<int, int> result;
+
+    get_migration_result(result);
+
+    printf("Moving %s %s to node %d:\n",
+           page_type_to_migration_type[type],
+           page_type_to_size[type],
+           policies[type].node);
+
+    printf("Total: %04lu\n",
+           pages_addr[type].size());
+
+    for(auto &i : result) {
+      printf("  %s(err = %03d): %d\n",
+             i.first >= 0 ? "Success":"Failure",
+             i.first, i.second);
+    }
+  }
+  else
+  {
+    printf("No %s pages need to move.\n",
+           page_type_to_migration_type[type]);
+  }
 }

@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include <unordered_map>
 #include <vector>
-
 #include "ProcIdlePages.h"
 
 typedef enum {
@@ -37,7 +36,7 @@ class Migration
     // set samples and pages percent for policy
     int set_policy(int samples_percent, int pages_percent, int node, ProcIdlePageType type);
 
-  private:
+ private:
     // functions
 
     // select max counted pages in page_refs_4k and page_refs_2m
@@ -45,6 +44,12 @@ class Migration
 
     // get the numa node in which the pages are
     int locate_numa_pages(ProcIdlePageType type);
+
+    // return: key is status value from move_pages, value is count
+    void get_migration_result(std::unordered_map<int, int> &result_detail);
+
+    // show the migration information
+    void show(ProcIdlePageType type);
 
   private:
     // variables
