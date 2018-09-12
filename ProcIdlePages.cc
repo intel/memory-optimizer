@@ -9,6 +9,7 @@
 
 #include "ProcIdlePages.h"
 #include "lib/debug.h"
+#include "lib/stats.h"
 
 static unsigned long pagetype_size[16] = {
 	// 4k page
@@ -222,16 +223,11 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
   for (int i = 0; i < nr; ++i)
   {
     unsigned long vpfn = va >> PAGE_SHIFT;
-    auto find_iter = page_refs.find(vpfn);
 
-    if (find_iter == page_refs.end())
-      page_refs[vpfn] = 1;
-    else {
-      page_refs[vpfn] += 1;
+    inc_count(page_refs, vpfn);
 
-      if (page_refs[vpfn] > nr_walks)
-        printf("error counted duplicate vpfn: %lx\n", vpfn);
-    }
+    if (page_refs[vpfn] > nr_walks)
+      printf("error counted duplicate vpfn: %lx\n", vpfn);
 
     va += page_size;
     if (va >= end)

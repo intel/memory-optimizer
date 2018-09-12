@@ -9,6 +9,7 @@
 #include <numaif.h>
 #include "Migration.h"
 #include "lib/debug.h"
+#include "lib/stats.h"
 
 using namespace std;
 
@@ -124,15 +125,7 @@ std::unordered_map<int, int> Migration::calc_migrate_stats()
   std::unordered_map<int, int> stats;
 
   for(int &i : migrate_status)
-  {
-    auto find_iter = stats.find(i);
-
-    if (find_iter == stats.end()) {
-        stats[i] = 1;
-    } else {
-        stats[i] += 1;
-    }
-  }
+    inc_count(stats, i);
 
   return stats;
 }
