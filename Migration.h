@@ -48,7 +48,7 @@ class Migration
     // status => count
     std::unordered_map<int, int> calc_migrate_stats();
 
-    void show_migrate_stats(ProcIdlePageType type);
+    void show_migrate_stats(ProcIdlePageType type, const char stage[]);
 
   private:
     // variables

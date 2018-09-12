@@ -23,10 +23,6 @@ int Migration::select_top_pages(ProcIdlePageType type)
 {
   const page_refs_map& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs;
   int nr_walks = proc_idle_pages.get_nr_walks();
-  int nr_pages;
-
-  nr_pages = page_refs.size();
-  cout << "nr_pages: " << nr_pages << endl;
 
   for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
     printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
@@ -80,6 +76,8 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
       addrs[j++] = addrs[i];
   }
 
+  show_migrate_stats(type, "before migrate");
+
   addrs.resize(j);
 
   return 0;
@@ -104,7 +102,6 @@ int Migration::migrate(ProcIdlePageType type)
   auto& addrs = pages_addr[type];
 
   int nr_pages = addrs.size();
-  cout << "nr_pages: " << nr_pages << endl;
 
   migrate_status.resize(nr_pages);
   nodes.resize(nr_pages, params.node);
@@ -115,7 +112,7 @@ int Migration::migrate(ProcIdlePageType type)
     return ret;
   }
 
-  show_migrate_stats(type);
+  show_migrate_stats(type, "after migrate");
 
   return ret;
 }
@@ -130,13 +127,11 @@ std::unordered_map<int, int> Migration::calc_migrate_stats()
   return stats;
 }
 
-void Migration::show_migrate_stats(ProcIdlePageType type)
+void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
 {
     auto stats = calc_migrate_stats();
 
-    printf("Moving %s to node %d:\n",
-           pagetype_name[type],
-           policies[type].node);
+    printf("%s: %s\n", pagetype_name[type], stage);
 
     printf("%9lu    Total\n", pages_addr[type].size());
 
@@ -146,7 +141,7 @@ void Migration::show_migrate_stats(ProcIdlePageType type)
       int count = kv.second;
 
       if (status >= 0)
-        printf("%9d    To_node %d\n", count, status);
+        printf("%9d    IN_node %d\n", count, status);
       else
         printf("%9d    %s\n", count, strerror(-status));
     }
