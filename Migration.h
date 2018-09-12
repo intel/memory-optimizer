@@ -45,11 +45,10 @@ class Migration
     // get the numa node in which the pages are
     int locate_numa_pages(ProcIdlePageType type);
 
-    // return: key is status value from move_pages, value is count
-    void get_migration_result(std::unordered_map<int, int> &result_detail);
+    // status => count
+    std::unordered_map<int, int> calc_migrate_stats();
 
-    // show the migration information
-    void show(ProcIdlePageType type);
+    void show_migrate_stats(ProcIdlePageType type);
 
   private:
     // variables

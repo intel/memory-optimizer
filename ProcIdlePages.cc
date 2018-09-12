@@ -31,6 +31,23 @@ static unsigned long pagetype_size[16] = {
 	[PGDIR_HOLE]    = PGDIR_SIZE,
 };
 
+const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
+  [PTE_HOLE]     = "4K_hole",
+  [PTE_IDLE]     = "4K_idle",
+  [PTE_ACCESSED] = "4K_accessed",
+
+  [PMD_HOLE]     = "2M_hole",
+  [PMD_IDLE]     = "2M_idle",
+  [PMD_ACCESSED] = "2M_accessed",
+
+  [PUD_HOLE]     = "1G_hole",
+  [PUD_IDLE]     = "1G_idle",
+  [PUD_ACCESSED] = "1G_accessed",
+
+  [P4D_HOLE]     = "512G_hole",
+  [PGDIR_HOLE]   = "512G_hole",
+};
+
 int ProcIdlePages::walk_multi(int nr, float interval)
 {
   int err;
