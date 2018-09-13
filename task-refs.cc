@@ -177,6 +177,15 @@ int migrate(ProcIdlePages& proc_idle_pages)
       break;
   }
 
+  if (cold) {
+    migration->set_policy(option.samples_percent,
+                          option.pages_percent,
+                          option.cold_node,
+                          PTE_IDLE);
+
+    err = migration->migrate(PTE_IDLE);
+  }
+
   if (hot) {
     migration->set_policy(option.samples_percent,
                           option.pages_percent,
@@ -191,15 +200,6 @@ int migrate(ProcIdlePages& proc_idle_pages)
                           PMD_ACCESSED);
 
     err = migration->migrate(PMD_ACCESSED);
-  }
-
-  if (cold) {
-    migration->set_policy(option.samples_percent,
-                          option.pages_percent,
-                          option.cold_node,
-                          PTE_IDLE);
-
-    err = migration->migrate(PTE_IDLE);
   }
 
   return err;
