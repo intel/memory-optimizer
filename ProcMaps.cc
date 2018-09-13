@@ -159,8 +159,19 @@ void ProcMaps::show(const std::vector<proc_maps_entry>& maps)
 
 bool ProcMaps::is_anonymous(proc_maps_entry& vma)
 {
-  if (!vma.path.compare("[heap]")
-      || !vma.path.compare(""))
+  if (vma.mayshare)
+    return false;
+
+  if (vma.exec)
+    return false;
+
+  // 560dd67c9000-560dd67ea000 rw-p 00000000 00:00 0                          [heap]
+  // 7ffdcc7fe000-7ffdcc820000 rw-p 00000000 00:00 0                          [stack]
+  if (vma.ino == 0)
+    return true;
+
+  // 7f3b6a034000-7f3b6a036000 rw-p 001eb000 00:11 3016841                    /lib/x86_64-linux-gnu/libc-2.27.so
+  if (vma.write)
     return true;
 
   return false;
