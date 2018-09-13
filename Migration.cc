@@ -22,31 +22,25 @@ Migration::Migration(ProcIdlePages& pip)
 int Migration::select_top_pages(ProcIdlePageType type)
 {
   const page_refs_map& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs;
+  vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count;
   int nr_walks = proc_idle_pages.get_nr_walks();
 
   unsigned long sum_of_page_refs = page_refs.size();
   unsigned long sum_of_migrate_page = (unsigned long) ((double) sum_of_page_refs *
                                       (double)policies[type].nr_samples_percent / 100.00);
-
-
-  vector<pair<unsigned long, unsigned char>> vtMap;
-  for (auto it = page_refs.begin(); it != page_refs.end(); it++)
-    vtMap.push_back(make_pair(it->first, it->second));
-
-  sort(vtMap.begin(), vtMap.end(),
-    [](const pair<unsigned long, unsigned char> &x, const pair<unsigned long, unsigned char> &y) -> unsigned char {
-    return x.second > y.second;
-  });
-
-  unsigned long remain_pages = sum_of_migrate_page;
-  for (auto it = vtMap.begin(); it != vtMap.end(); it++) {
-    if (remain_pages >= 0) {
-      pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
-      remain_pages--;
+  int i = 0;
+  for (i = nr_walks; i > nr_walks / 2; i--) {
+    if (sum_of_migrate_page >= refs_count[i]) {
+      sum_of_migrate_page -= refs_count[i];
     }
-
-    if (it->second < nr_walks / 2)
+    else
       break;
+  }
+
+  for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
+    printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
+    if (it->second >= i)
+      pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
   }
 
   sort(pages_addr[type].begin(), pages_addr[type].end());
