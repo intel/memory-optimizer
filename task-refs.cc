@@ -184,6 +184,13 @@ int migrate(ProcIdlePages& proc_idle_pages)
                           PTE_ACCESSED);
 
     err = migration->migrate(PTE_ACCESSED);
+
+    migration->set_policy(option.samples_percent,
+                          option.pages_percent,
+                          option.hot_node,
+                          PMD_ACCESSED);
+
+    err = migration->migrate(PMD_ACCESSED);
   }
 
   if (cold) {
