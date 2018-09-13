@@ -86,6 +86,9 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     if (va > TASK_SIZE_MAX)
       return 0;
 
+    if (!proc_maps.is_anonymous(vma))
+      return 0;
+
     if (debug_level() >= 2)
       proc_maps.show(vma);
 

@@ -156,3 +156,12 @@ void ProcMaps::show(const std::vector<proc_maps_entry>& maps)
   for (const proc_maps_entry& vma: maps)
     show(vma);
 }
+
+bool ProcMaps::is_anonymous(proc_maps_entry& vma)
+{
+  if (!vma.path.compare("[heap]")
+      || !vma.path.compare(""))
+    return true;
+
+  return false;
+}

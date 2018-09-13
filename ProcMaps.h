@@ -33,6 +33,7 @@ class ProcMaps
     std::vector<proc_maps_entry> load(pid_t pid);
     void show(const std::vector<proc_maps_entry>& maps);
     void show(const proc_maps_entry &vma);
+    bool is_anonymous(proc_maps_entry& vma);
 };
 
 #endif
