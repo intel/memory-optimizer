@@ -257,7 +257,7 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
     case PMD_IDLE:
     case PMD_ACCESSED:
     case PUD_ACCESSED:
-      if (va >= vma.end) {
+      if (debug_level() >=2 && va >= vma.end) {
         printf("error va >= end: %lx %lx i=%d bytes=%d type=%d nr=%d\n",
                va, vma.end, i, bytes, type, nr);
         proc_maps.show(vma);
