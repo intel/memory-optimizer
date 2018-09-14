@@ -26,12 +26,17 @@ int Migration::select_top_pages(ProcIdlePageType type)
   int nr_walks = proc_idle_pages.get_nr_walks();
 
   unsigned long sum_of_page_refs = page_refs.size();
+  // sum of migrate pages: by -g parameter
   unsigned long sum_of_migrate_page = (unsigned long) ((double) sum_of_page_refs *
-                                      (double)policies[type].nr_samples_percent / 100.00);
-  int i = 0;
-  for (i = nr_walks; i > nr_walks / 2; i--) {
-    if (sum_of_migrate_page >= refs_count[i]) {
-      sum_of_migrate_page -= refs_count[i];
+                                      (double)policies[type].nr_pages_percent / 100.00);
+  int nr_count = 0;
+  // migrate sample not less than percentage: by -s parameter
+  int nr_end = (int)((double)nr_walks * (double)policies[type].nr_samples_percent / 100.00);
+
+  for (nr_count = nr_walks; nr_count > (nr_walks - nr_end + 1); nr_count--) {
+    unsigned long tmp_refs = refs_count[nr_count];
+    if (sum_of_migrate_page >= tmp_refs) {
+      sum_of_migrate_page -= tmp_refs;
     }
     else
       break;
@@ -39,7 +44,7 @@ int Migration::select_top_pages(ProcIdlePageType type)
 
   for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
     printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
-    if (it->second >= i)
+    if (it->second >= nr_count)
       pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
   }
 
@@ -77,7 +82,7 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
   ret = move_pages(pid, nr_pages, &addrs[0], NULL,
                    &migrate_status[0], MPOL_MF_MOVE);
   if (ret) {
-    perror("move_pages");
+    perror("locate_numa_pages: move_pages");
     return ret;
   }
 
@@ -120,7 +125,7 @@ int Migration::migrate(ProcIdlePageType type)
   ret = move_pages(pid, nr_pages, &addrs[0], &nodes[0],
                    &migrate_status[0], MPOL_MF_MOVE);
   if (ret) {
-    perror("move_pages");
+    perror("migrate: move_pages");
     return ret;
   }
 

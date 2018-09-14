@@ -63,8 +63,8 @@ static void usage(char *prog)
           "    -o|--output     The output file, defaults to refs-count-PID\n"
           "    -m|--mtype      Migrate which types of pages; "
                                "0 for hot, 1 for cold, 2 for all\n"
-          "    -s|--samples    Set the samples_percent of migration policy\n"
-          "    -g|--pages      Set the pages_percent of migration policy\n"
+          "    -s|--samples    Set the top percent sample counts of migration policy\n"
+          "    -g|--pages      Set the top percent of to-migrated pages of migration policy\n"
           "    -n|--hotnode    Set the numa node for hot pages\n"
           "    -d|--coldnode   Set the numa node for cold pages\n"
           "    -v|--verbose    Show debug info\n",
@@ -85,6 +85,10 @@ static void parse_cmdline(int argc, char *argv[])
   option.cold_node = PMEM_NUMA_NODE;
   // migrate the hot pages
   option.migrate_type = MIGRATE_HOT_PAGES;
+  // default percentage of refcounts: 50%
+  option.samples_percent = 50;
+  // default percentage of to-migrated pages: 5%
+  option.pages_percent = 5;
 
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
