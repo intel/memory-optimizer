@@ -20,21 +20,24 @@ static const unsigned long TASK_SIZE_MAX = (1UL << 47) - PAGE_SIZE;
 enum ProcIdlePageType
 {
   // 4k page
-  PTE_HOLE,
   PTE_IDLE,
   PTE_ACCESSED,
 
+  PAGE_ACCESSED_MASK = PTE_ACCESSED,
+
   // 2M page
-  PMD_HOLE,
   PMD_IDLE,
   PMD_ACCESSED,
 
   // 1G page
-  PUD_HOLE,
   PUD_IDLE,
   PUD_ACCESSED,
 
-  // 512G
+  MAX_ACCESSED = PUD_ACCESSED,
+
+  PTE_HOLE,
+  PMD_HOLE,
+  PUD_HOLE,
   P4D_HOLE,
   PGDIR_HOLE,
 
@@ -105,7 +108,7 @@ class ProcIdlePages
     ProcMaps proc_maps;
     int nr_walks;
 
-    ProcIdleRefs pagetype_refs[PUD_ACCESSED + 1];
+    ProcIdleRefs pagetype_refs[MAX_ACCESSED + 1];
 
     int idle_fd;
     std::vector<ProcIdleExtent> read_buf;

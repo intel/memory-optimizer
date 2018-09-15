@@ -13,38 +13,37 @@
 
 static unsigned long pagetype_size[16] = {
 	// 4k page
-	[PTE_HOLE]      = PAGE_SIZE,
 	[PTE_IDLE]      = PAGE_SIZE,
 	[PTE_ACCESSED]  = PAGE_SIZE,
 
 	// 2M page
-	[PMD_HOLE]      = PMD_SIZE,
 	[PMD_IDLE]      = PMD_SIZE,
 	[PMD_ACCESSED]  = PMD_SIZE,
 
 	// 1G page
-	[PUD_HOLE]      = PUD_SIZE,
 	[PUD_IDLE]      = PUD_SIZE,
 	[PUD_ACCESSED]  = PUD_SIZE,
 
-	// 512G
+	[PTE_HOLE]      = PAGE_SIZE,
+	[PMD_HOLE]      = PMD_SIZE,
+	[PUD_HOLE]      = PUD_SIZE,
 	[P4D_HOLE]      = P4D_SIZE,
 	[PGDIR_HOLE]    = PGDIR_SIZE,
 };
 
 const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
-  [PTE_HOLE]     = "4K_hole",
   [PTE_IDLE]     = "4K_idle",
   [PTE_ACCESSED] = "4K_accessed",
 
-  [PMD_HOLE]     = "2M_hole",
   [PMD_IDLE]     = "2M_idle",
   [PMD_ACCESSED] = "2M_accessed",
 
-  [PUD_HOLE]     = "1G_hole",
   [PUD_IDLE]     = "1G_idle",
   [PUD_ACCESSED] = "1G_accessed",
 
+  [PTE_HOLE]     = "4K_hole",
+  [PMD_HOLE]     = "2M_hole",
+  [PUD_HOLE]     = "1G_hole",
   [P4D_HOLE]     = "512G_hole",
   [PGDIR_HOLE]   = "512G_hole",
 };
