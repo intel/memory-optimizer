@@ -58,6 +58,10 @@ int ProcIdlePages::walk_multi(int nr, float interval)
     return -ENOENT;
 
   nr_walks = nr; // for use by count_refs()
+  if (nr_walks > 0xff) {
+    printf("limiting nr_walks to uint8_t size\n");
+    nr_walks = 0xff;
+  }
 
   for (auto& prc: pagetype_refs) {
     prc.page_refs.clear();

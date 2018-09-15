@@ -50,7 +50,7 @@ struct ProcIdleExtent
 
 extern const char* pagetype_name[IDLE_PAGE_TYPE_MAX];
 
-typedef std::unordered_map<unsigned long, unsigned char> page_refs_map;
+typedef std::unordered_map<unsigned long, uint8_t> page_refs_map;
 
 struct ProcIdleRefs
 {
