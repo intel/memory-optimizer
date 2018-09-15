@@ -153,10 +153,13 @@ int migrate(ProcIdlePages& proc_idle_pages)
 
   if (cold) {
     err = migration->migrate(PTE_IDLE);
+    if (!err)
+    err = migration->migrate(PMD_IDLE);
   }
 
   if (hot) {
     err = migration->migrate(PTE_ACCESSED);
+    if (!err)
     err = migration->migrate(PMD_ACCESSED);
   }
 
