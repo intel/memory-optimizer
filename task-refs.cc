@@ -22,10 +22,6 @@ struct task_refs_options {
   int debug_level;
   pid_t pid;
   int nr_walks;
-  int samples_percent; // samples percent for migration
-  int pages_percent;   // pages percent for migration
-  int hot_node;        // the numa node for hot pages
-  int cold_node;       // the numa node for cold pages
   float interval;
   MigrateType migrate_type;
 
@@ -42,10 +38,6 @@ static const struct option opts[] = {
   {"interval",  required_argument,  NULL, 'i'},
   {"loop",      required_argument,  NULL, 'l'},
   {"output",    required_argument,  NULL, 'o'},
-  {"samples",   required_argument,  NULL, 's'},
-  {"pages",     required_argument,  NULL, 'g'},
-  {"hotnode",   required_argument,  NULL, 'n'},
-  {"coldnode",  required_argument,  NULL, 'd'},
   {"mtype",     required_argument,  NULL, 'm'},
   {"verbose",   required_argument,  NULL, 'v'},
   {"help",      no_argument,        NULL, 'h'},
@@ -63,10 +55,6 @@ static void usage(char *prog)
           "    -o|--output     The output file, defaults to refs-count-PID\n"
           "    -m|--mtype      Migrate which types of pages; "
                                "0 for hot, 1 for cold, 2 for all\n"
-          "    -s|--samples    Set the top percent sample counts of migration policy\n"
-          "    -g|--pages      Set the top percent of to-migrated pages of migration policy\n"
-          "    -n|--hotnode    Set the numa node for hot pages\n"
-          "    -d|--coldnode   Set the numa node for cold pages\n"
           "    -v|--verbose    Show debug info\n",
           prog);
 
@@ -77,18 +65,12 @@ static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
 	int opt = 0;
-	const char *optstr = "hvp:i:l:o:m:s:g:n:d:";
+	const char *optstr = "hvp:i:l:o:m:";
 
   option.nr_walks = 10;
   option.interval = 0.1;
-  option.hot_node = DRAM_NUMA_NODE;
-  option.cold_node = PMEM_NUMA_NODE;
   // migrate the hot pages
   option.migrate_type = MIGRATE_HOT_PAGES;
-  // default percentage of refcounts: 50%
-  option.samples_percent = 50;
-  // default percentage of to-migrated pages: 5%
-  option.pages_percent = 5;
 
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
@@ -108,18 +90,6 @@ static void parse_cmdline(int argc, char *argv[])
       break;
     case 'm':
       option.migrate_type = (MigrateType)atoi(optarg);
-      break;
-    case 's':
-      option.samples_percent = atoi(optarg);
-      break;
-    case 'g':
-      option.pages_percent = atoi(optarg);
-      break;
-    case 'n':
-      option.hot_node = atoi(optarg);
-      break;
-    case 'd':
-      option.cold_node = atoi(optarg);
       break;
     case 'v':
       ++option.debug_level;
@@ -182,27 +152,11 @@ int migrate(ProcIdlePages& proc_idle_pages)
   }
 
   if (cold) {
-    migration->set_policy(option.samples_percent,
-                          option.pages_percent,
-                          option.cold_node,
-                          PTE_IDLE);
-
     err = migration->migrate(PTE_IDLE);
   }
 
   if (hot) {
-    migration->set_policy(option.samples_percent,
-                          option.pages_percent,
-                          option.hot_node,
-                          PTE_ACCESSED);
-
     err = migration->migrate(PTE_ACCESSED);
-
-    migration->set_policy(option.samples_percent,
-                          option.pages_percent,
-                          option.hot_node,
-                          PMD_ACCESSED);
-
     err = migration->migrate(PMD_ACCESSED);
   }
 
