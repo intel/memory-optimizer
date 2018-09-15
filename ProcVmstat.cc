@@ -74,3 +74,23 @@ unsigned long ProcVmstat::vmstat(int nid, std::string name)
 
   return numa_vmstat.at(nid).at(name);
 }
+
+unsigned long ProcVmstat::anon_capacity()
+{
+  unsigned long sum = vmstat("nr_free_pages");
+
+  sum += vmstat("nr_inactive_anon");
+  sum += vmstat("nr_active_anon");
+
+  return sum;
+}
+
+unsigned long ProcVmstat::anon_capacity(int nid)
+{
+  unsigned long sum = vmstat(nid, "nr_free_pages");
+
+  sum += vmstat(nid, "nr_inactive_anon");
+  sum += vmstat(nid, "nr_active_anon");
+
+  return sum;
+}

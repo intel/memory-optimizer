@@ -18,6 +18,9 @@ class ProcVmstat
     unsigned long vmstat(std::string name);
     unsigned long vmstat(int nid, std::string name);
 
+    unsigned long anon_capacity();
+    unsigned long anon_capacity(int nid);
+
   private:
     vmstat_map __load_vmstat(const char *path);
 
