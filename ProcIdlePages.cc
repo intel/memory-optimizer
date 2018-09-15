@@ -250,6 +250,20 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
     ProcIdlePageType type = (ProcIdlePageType) read_buf[i].type;
     int nr = read_buf[i].nr;
 
+    if (va >= vma.end) {
+      // This can happen infrequently when VMA changed. The new pages can be
+      // simply ignored -- they arrive too late to have accurate accounting.
+      if (debug_level() >= 2) {
+        printf("WARNING: va >= end: %lx %lx i=%d bytes=%d type=%d nr=%d\n",
+               va, vma.end, i, bytes, type, nr);
+        proc_maps.show(vma);
+        for (int j = 0; j < bytes; ++j)
+          printf("%x:%x  ", read_buf[j].type, read_buf[j].nr);
+        puts("");
+      }
+      return;
+    }
+
     switch (type)
     {
     case PTE_IDLE:
@@ -257,16 +271,6 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
     case PMD_IDLE:
     case PMD_ACCESSED:
     case PUD_ACCESSED:
-      if (debug_level() >=2 && va >= vma.end) {
-        printf("error va >= end: %lx %lx i=%d bytes=%d type=%d nr=%d\n",
-               va, vma.end, i, bytes, type, nr);
-        proc_maps.show(vma);
-        for (int j = 0; j < bytes; ++j)
-          printf("%x:%x  ", read_buf[j].type, read_buf[j].nr);
-        puts("");
-        return;
-      }
-
       inc_page_refs(type, nr, va, vma.end);
       break;
     default:
