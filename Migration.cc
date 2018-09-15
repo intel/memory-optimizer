@@ -30,6 +30,9 @@ int Migration::select_top_pages(ProcIdlePageType type)
   vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count;
   int nr_walks = proc_idle_pages.get_nr_walks();
 
+  if (page_refs.empty())
+    return 1;
+
   // XXX: this assumes all processes have same hot/cold distribution
   long portion = ((double) page_refs.size() *
                   proc_vmstat.anon_capacity(migrate_target_node[type]) /
@@ -63,6 +66,9 @@ int Migration::select_top_pages(ProcIdlePageType type)
     }
   }
 
+  if (pages_addr[type].empty())
+    return 1;
+
   sort(pages_addr[type].begin(), pages_addr[type].end());
 
   if (debug_level() >= 2)
@@ -82,6 +88,10 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
   auto& addrs = pages_addr[type];
 
   int nr_pages = addrs.size();
+
+  if (!nr_pages)
+    return 1;
+
   migrate_status.resize(nr_pages);
   ret = move_pages(pid, nr_pages, &addrs[0], NULL,
                    &migrate_status[0], MPOL_MF_MOVE);
@@ -124,6 +134,9 @@ int Migration::migrate(ProcIdlePageType type)
 
   migrate_status.resize(nr_pages);
   nodes.resize(nr_pages, migrate_target_node[type]);
+  if (!nr_pages)
+    return 1;
+
   ret = move_pages(pid, nr_pages, &addrs[0], &nodes[0],
                    &migrate_status[0], MPOL_MF_MOVE);
   if (ret) {
