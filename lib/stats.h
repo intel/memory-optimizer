@@ -4,12 +4,12 @@
 template<class M, class K>
 void inc_count(M& map, const K& key)
 {
-    auto search = map.find(key);
+  auto search = map.find(key);
 
-    if (search != map.end())
-	    ++search->second;
-    else
-        map[key] = 1;
+  if (search != map.end())
+    ++search->second;
+  else
+    map[key] = 1;
 }
 
 template<class T>
