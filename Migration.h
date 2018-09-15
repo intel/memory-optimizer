@@ -39,6 +39,8 @@ class Migration
     // get the numa node in which the pages are
     int locate_numa_pages(ProcIdlePageType type);
 
+    long do_move_pages(ProcIdlePageType type, const int *nodes);
+
     // status => count
     std::unordered_map<int, int> calc_migrate_stats();
 

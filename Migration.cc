@@ -81,27 +81,15 @@ int Migration::select_top_pages(ProcIdlePageType type)
 
 int Migration::locate_numa_pages(ProcIdlePageType type)
 {
-  pid_t pid = proc_idle_pages.get_pid();
-  vector<void *>::iterator it;
+  auto& addrs = pages_addr[type];
   int ret;
 
-  auto& addrs = pages_addr[type];
-
-  int nr_pages = addrs.size();
-
-  if (!nr_pages)
-    return 1;
-
-  migrate_status.resize(nr_pages);
-  ret = move_pages(pid, nr_pages, &addrs[0], NULL,
-                   &migrate_status[0], MPOL_MF_MOVE);
-  if (ret) {
-    perror("locate_numa_pages: move_pages");
+  ret = do_move_pages(type, NULL);
+  if (ret)
     return ret;
-  }
 
-  int i, j;
-  for (i = 0, j = 0; i < nr_pages; ++i) {
+  size_t j = 0;
+  for (size_t i = 0; i < addrs.size(); ++i) {
     if (migrate_status[i] >= 0 &&
         migrate_status[i] != migrate_target_node[type])
       addrs[j++] = addrs[i];
@@ -116,7 +104,6 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
 
 int Migration::migrate(ProcIdlePageType type)
 {
-  pid_t pid = proc_idle_pages.get_pid();
   std::vector<int> nodes;
   int ret;
 
@@ -128,23 +115,39 @@ int Migration::migrate(ProcIdlePageType type)
   if (ret)
     return ret;
 
-  auto& addrs = pages_addr[type];
+  nodes.clear();
+  nodes.resize(pages_addr[type].size(), migrate_target_node[type]);
 
-  int nr_pages = addrs.size();
-
-  migrate_status.resize(nr_pages);
-  nodes.resize(nr_pages, migrate_target_node[type]);
-  if (!nr_pages)
-    return 1;
-
-  ret = move_pages(pid, nr_pages, &addrs[0], &nodes[0],
-                   &migrate_status[0], MPOL_MF_MOVE);
-  if (ret) {
-    perror("migrate: move_pages");
+  ret = do_move_pages(type, &nodes[0]);
+  if (ret)
     return ret;
-  }
 
   show_migrate_stats(type, "after migrate");
+
+  return ret;
+}
+
+long Migration::do_move_pages(ProcIdlePageType type, const int *nodes)
+{
+  pid_t pid = proc_idle_pages.get_pid();
+  auto& addrs = pages_addr[type];
+  long nr_pages = addrs.size();
+  long batch_size = 1 << 12;
+  long ret;
+
+  migrate_status.resize(nr_pages);
+
+  for (long i = 0; i < nr_pages; i += batch_size) {
+    ret = move_pages(pid,
+                     min(batch_size, nr_pages - i),
+                     &addrs[i],
+                     nodes ? nodes + i : NULL,
+                     &migrate_status[i], MPOL_MF_MOVE);
+    if (ret) {
+      perror("move_pages");
+      break;
+    }
+  }
 
   return ret;
 }
