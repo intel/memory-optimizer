@@ -11,7 +11,7 @@
 #include "lib/debug.h"
 #include "lib/stats.h"
 
-static unsigned long pagetype_size[16] = {
+unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX] = {
 	// 4k page
 	[PTE_IDLE]      = PAGE_SIZE,
 	[PTE_ACCESSED]  = PAGE_SIZE,

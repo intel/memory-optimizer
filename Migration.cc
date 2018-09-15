@@ -150,18 +150,18 @@ void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
 {
     auto stats = calc_migrate_stats();
 
-    printf("%s: %s\n", pagetype_name[type], stage);
+    printf("    %s:  %s\n", pagetype_name[type], stage);
 
-    printf("%9lu    Total\n", pages_addr[type].size());
+    printf("%'15lu   Total\n", pages_addr[type].size() * (pagetype_size[type] >> 10));
 
     for(auto &kv : stats)
     {
       int status = kv.first;
-      int count = kv.second;
+      int kb = kv.second * (pagetype_size[type] >> 10);
 
       if (status >= 0)
-        printf("%9d    IN_node %d\n", count, status);
+        printf("%'15d   IN_node %d\n", kb, status);
       else
-        printf("%9d    %s\n", count, strerror(-status));
+        printf("%'15d   %s\n", kb, strerror(-status));
     }
 }
