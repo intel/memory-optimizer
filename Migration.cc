@@ -109,8 +109,6 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
       addrs[j++] = addrs[i];
   }
 
-  show_migrate_stats(type, "before migrate");
-
   addrs.resize(j);
 
   return 0;
@@ -133,11 +131,6 @@ int Migration::migrate(ProcIdlePageType type)
   nodes.resize(pages_addr[type].size(), migrate_target_node[type]);
 
   ret = do_move_pages(type, &nodes[0]);
-  if (ret)
-    return ret;
-
-  show_migrate_stats(type, "after migrate");
-
   return ret;
 }
 
@@ -162,6 +155,9 @@ long Migration::do_move_pages(ProcIdlePageType type, const int *nodes)
       break;
     }
   }
+
+  if (!ret)
+    show_migrate_stats(type, nodes ? "after migrate" : "before migrate");
 
   return ret;
 }
