@@ -24,14 +24,12 @@ Migration::Migration(ProcIdlePages& pip)
   migrate_target_node[PMD_ACCESSED]  = DRAM_NUMA_NODE;
 }
 
-int Migration::select_top_pages(ProcIdlePageType type)
+void Migration::get_threshold_refs(ProcIdlePageType type,
+                                   int& min_refs, int& max_refs)
 {
   const page_refs_map& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs;
-  vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count;
   int nr_walks = proc_idle_pages.get_nr_walks();
-
-  if (page_refs.empty())
-    return 1;
+  vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count;
 
   // XXX: this assumes all processes have same hot/cold distribution
   long portion = ((double) page_refs.size() *
@@ -39,31 +37,41 @@ int Migration::select_top_pages(ProcIdlePageType type)
                   proc_vmstat.anon_capacity());
 
   if (type & PAGE_ACCESSED_MASK) {
-    int min_refs = nr_walks;
-    for (; min_refs > nr_walks / 2; min_refs--) {
+    min_refs = nr_walks;
+    max_refs = nr_walks;
+    for (; min_refs > nr_walks / 2; --min_refs) {
       portion -= refs_count[min_refs];
       if (portion <= 0)
         break;
     }
-
-    for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
-      printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
-      if (it->second >= min_refs)
-        pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
-    }
   } else {
-    int max_refs = 0;
-    for (; max_refs <= nr_walks / 2; max_refs++) {
+    min_refs = 0;
+    max_refs = 0;
+    for (; max_refs < nr_walks / 2; ++max_refs) {
       portion -= refs_count[max_refs];
       if (portion <= 0)
         break;
     }
+  }
 
-    for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
-      printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
-      if (it->second <= max_refs)
-        pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
-    }
+}
+
+int Migration::select_top_pages(ProcIdlePageType type)
+{
+  const page_refs_map& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs;
+  int min_refs;
+  int max_refs;
+
+  if (page_refs.empty())
+    return 1;
+
+  get_threshold_refs(type, min_refs, max_refs);
+
+  for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
+    printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
+    if (it->second >= min_refs &&
+        it->second <= max_refs)
+      pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
   }
 
   if (pages_addr[type].empty())
