@@ -16,7 +16,12 @@ using namespace std;
 Migration::Migration(ProcIdlePages& pip)
   : proc_idle_pages(pip)
 {
-  memset(&policies, 0, sizeof(policies));
+  migrate_target_node.resize(PMD_ACCESSED + 1);
+  migrate_target_node[PTE_IDLE]      = PMEM_NUMA_NODE;
+  migrate_target_node[PTE_ACCESSED]  = DRAM_NUMA_NODE;
+
+  migrate_target_node[PMD_IDLE]      = PMEM_NUMA_NODE;
+  migrate_target_node[PMD_ACCESSED]  = DRAM_NUMA_NODE;
 }
 
 int Migration::select_top_pages(ProcIdlePageType type)
@@ -25,26 +30,21 @@ int Migration::select_top_pages(ProcIdlePageType type)
   vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count;
   int nr_walks = proc_idle_pages.get_nr_walks();
 
-  unsigned long sum_of_page_refs = page_refs.size();
-  // sum of migrate pages: by -g parameter
-  unsigned long sum_of_migrate_page = (unsigned long) ((double) sum_of_page_refs *
-                                      (double)policies[type].nr_pages_percent / 100.00);
-  int nr_count = 0;
-  // migrate sample not less than percentage: by -s parameter
-  int nr_end = (int)((double)nr_walks * (double)policies[type].nr_samples_percent / 100.00);
+  // XXX: this assumes all processes have same hot/cold distribution
+  long portion = ((double) page_refs.size() *
+                  proc_vmstat.anon_capacity(migrate_target_node[type]) /
+                  proc_vmstat.anon_capacity());
 
-  for (nr_count = nr_walks; nr_count > (nr_walks - nr_end + 1); nr_count--) {
-    unsigned long tmp_refs = refs_count[nr_count];
-    if (sum_of_migrate_page >= tmp_refs) {
-      sum_of_migrate_page -= tmp_refs;
-    }
-    else
+  int min_refs = nr_walks;
+  for (; min_refs > nr_walks / 2; min_refs--) {
+    portion -= refs_count[min_refs];
+    if (portion <= 0)
       break;
   }
 
   for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
     printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
-    if (it->second >= nr_count)
+    if (it->second >= min_refs)
       pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
   }
 
@@ -58,23 +58,12 @@ int Migration::select_top_pages(ProcIdlePageType type)
   return 0;
 }
 
-int Migration::set_policy(int samples_percent, int pages_percent,
-                          int node, ProcIdlePageType type)
-{
-  policies[type].nr_samples_percent = samples_percent;
-  policies[type].nr_pages_percent = pages_percent;
-  policies[type].node = node;
-
-  return 0;
-}
-
 int Migration::locate_numa_pages(ProcIdlePageType type)
 {
   pid_t pid = proc_idle_pages.get_pid();
   vector<void *>::iterator it;
   int ret;
 
-  auto& params = policies[type];
   auto& addrs = pages_addr[type];
 
   int nr_pages = addrs.size();
@@ -89,7 +78,7 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
   int i, j;
   for (i = 0, j = 0; i < nr_pages; ++i) {
     if (migrate_status[i] >= 0 &&
-        migrate_status[i] != params.node)
+        migrate_status[i] != migrate_target_node[type])
       addrs[j++] = addrs[i];
   }
 
@@ -104,7 +93,6 @@ int Migration::migrate(ProcIdlePageType type)
 {
   pid_t pid = proc_idle_pages.get_pid();
   std::vector<int> nodes;
-
   int ret;
 
   ret = select_top_pages(type);
@@ -115,13 +103,12 @@ int Migration::migrate(ProcIdlePageType type)
   if (ret)
     return ret;
 
-  auto& params = policies[type];
   auto& addrs = pages_addr[type];
 
   int nr_pages = addrs.size();
 
   migrate_status.resize(nr_pages);
-  nodes.resize(nr_pages, params.node);
+  nodes.resize(nr_pages, migrate_target_node[type]);
   ret = move_pages(pid, nr_pages, &addrs[0], &nodes[0],
                    &migrate_status[0], MPOL_MF_MOVE);
   if (ret) {
