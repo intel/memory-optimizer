@@ -41,16 +41,22 @@ void Migration::get_threshold_refs(ProcIdlePageType type,
     max_refs = nr_walks;
     for (; min_refs > nr_walks / 2; --min_refs) {
       portion -= refs_count[min_refs];
-      if (portion <= 0)
+      if (portion <= 0) {
+        if (min_refs < nr_walks)
+          ++min_refs;
         break;
+      }
     }
   } else {
     min_refs = 0;
     max_refs = 0;
     for (; max_refs < nr_walks / 2; ++max_refs) {
       portion -= refs_count[max_refs];
-      if (portion <= 0)
+      if (portion <= 0) {
+        if (max_refs > 0)
+          --max_refs;
         break;
+      }
     }
   }
 
