@@ -48,7 +48,8 @@ vmstat_map ProcVmstat::__load_vmstat(const char *path)
   {
     int ret = sscanf(line, "%49s %lu\n", key, &val);
     if (ret < 2) {
-      fprintf(stderr, "parse failed: %d %s\n%s", ret, path, line);
+      if (line[0] != ' ') // ignore known kernel bug
+        fprintf(stderr, "parse failed: %d %s\n%s", ret, path, line);
       continue;
     }
     map[key] = val;
