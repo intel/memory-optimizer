@@ -161,20 +161,23 @@ std::unordered_map<int, int> Migration::calc_migrate_stats()
 
 void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
 {
+    unsigned long total_kb = proc_idle_pages.get_pagetype_refs(type).page_refs.size() * (pagetype_size[type] >> 10);
+    unsigned long to_migrate = pages_addr[type].size() * (pagetype_size[type] >> 10);
+
+    printf("    %s: %s\n", pagetype_name[type], stage);
+
+    printf("%'15lu       TOTAL\n", total_kb);
+    printf("%'15lu  %2d%%  TO_migrate\n", to_migrate, percent(to_migrate, total_kb));
+
     auto stats = calc_migrate_stats();
-
-    printf("    %s:  %s\n", pagetype_name[type], stage);
-
-    printf("%'15lu   Total\n", pages_addr[type].size() * (pagetype_size[type] >> 10));
-
     for(auto &kv : stats)
     {
       int status = kv.first;
-      int kb = kv.second * (pagetype_size[type] >> 10);
+      unsigned long kb = kv.second * (pagetype_size[type] >> 10);
 
       if (status >= 0)
-        printf("%'15d   IN_node %d\n", kb, status);
+        printf("%'15lu  %2d%%  IN_node %d\n", kb, percent(kb, total_kb), status);
       else
-        printf("%'15d   %s\n", kb, strerror(-status));
+        printf("%'15lu  %2d%%  %s\n", kb, percent(kb, total_kb), strerror(-status));
     }
 }

@@ -12,4 +12,11 @@ void inc_count(M& map, const K& key)
         map[key] = 1;
 }
 
+template<class T>
+inline int percent(T n, T total)
+{
+  return (n * 100) / total;
+}
+
 #endif
+// vim:set ts=2 sw=2 et:
