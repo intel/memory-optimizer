@@ -198,14 +198,27 @@ int ProcIdlePages::save_counts(std::string filename)
                 "1G_page");
   fprintf(file, "======================================================\n");
 
+  unsigned long sum_kb[IDLE_PAGE_TYPE_MAX] = {};
+
   for (int i = 0; i <= nr_walks; i++) {
     fprintf(file, "%4d", i);
     for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_ACCESSED}) {
       unsigned long pages = pagetype_refs[type].refs_count[i];
-      fprintf(file, " %'15lu", pages * (pagetype_size[type] >> 10));
+      unsigned long kb = pages * (pagetype_size[type] >> 10);
+      fprintf(file, " %'15lu", kb);
+      sum_kb[type] += kb;
     }
     fprintf(file, "\n");
   }
+
+  fprintf(file, "SUM ");
+  unsigned long total_kb = 0;
+  for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_ACCESSED}) {
+    unsigned long kb = sum_kb[type];
+    fprintf(file, " %'15lu", kb);
+    total_kb += kb;
+  }
+  fprintf(file, "\nALL  %'15lu\n", total_kb);
 
   fclose(file);
 
