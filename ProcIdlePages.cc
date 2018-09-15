@@ -191,18 +191,19 @@ int ProcIdlePages::save_counts(std::string filename)
     return -1;
   }
 
-  fprintf(file, "%-8s %-15s %-15s %-15s\n",
+  fprintf(file, "%4s %15s %15s %15s\n",
                 "refs",
-                "hot_4k", "cold_4k",
-                "hot_2M", "cold_2M",
-                "hot_1G");
-  fprintf(file, "================================================================================\n");
+                "4k_page",
+                "2M_page",
+                "1G_page");
+  fprintf(file, "======================================================\n");
 
   for (int i = 0; i <= nr_walks; i++) {
-    fprintf(file, "%-8d", i);
-    fprintf(file, " %-15lu", pagetype_refs[PTE_ACCESSED].refs_count[i]);
-    fprintf(file, " %-15lu", pagetype_refs[PMD_ACCESSED].refs_count[i]);
-    fprintf(file, " %-15lu", pagetype_refs[PUD_ACCESSED].refs_count[i]);
+    fprintf(file, "%4d", i);
+    for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_ACCESSED}) {
+      unsigned long pages = pagetype_refs[type].refs_count[i];
+      fprintf(file, " %'15lu", pages * (pagetype_size[type] >> 10));
+    }
     fprintf(file, "\n");
   }
 

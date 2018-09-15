@@ -171,6 +171,8 @@ int main(int argc, char *argv[])
   int err = 0;
   ProcIdlePages proc_idle_pages;
 
+  setlocale(LC_NUMERIC, "");
+
   parse_cmdline(argc, argv);
   err = account_refs(proc_idle_pages);
   if (err) {
