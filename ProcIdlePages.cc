@@ -162,8 +162,12 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
     refs_count.clear();
     refs_count.resize(nr_walks + 1, 0);
 
+    // In the rare case of changed VMAs, their start/end boundary may not align
+    // with the underlying huge page size. If the same huge page is covered by
+    // 2 VMAs, there will be duplicate accounting for the same page. The easy
+    // workaround is to enforce min() check here.
     for(const auto& kv: prc.page_refs)
-        refs_count.at(kv.second) += 1;
+      refs_count[std::min(kv.second, (uint8_t)nr_walks)] += 1;
 }
 
 void ProcIdlePages::count_refs()
