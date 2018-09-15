@@ -61,10 +61,16 @@ out:
 
 unsigned long ProcVmstat::vmstat(std::string name)
 {
+  if (proc_vmstat.empty())
+    load_vmstat();
+
   return proc_vmstat.at(name);
 }
 
 unsigned long ProcVmstat::vmstat(int nid, std::string name)
 {
+  if (proc_vmstat.empty())
+    load_numa_vmstat();
+
   return numa_vmstat.at(nid).at(name);
 }
