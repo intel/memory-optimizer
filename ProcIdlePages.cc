@@ -191,7 +191,7 @@ int ProcIdlePages::save_counts(std::string filename)
     return -1;
   }
 
-  fprintf(file, "%-8s %-15s %-15s %-15s %-15s %-15s\n",
+  fprintf(file, "%-8s %-15s %-15s %-15s\n",
                 "refs",
                 "hot_4k", "cold_4k",
                 "hot_2M", "cold_2M",
@@ -201,9 +201,7 @@ int ProcIdlePages::save_counts(std::string filename)
   for (int i = 0; i <= nr_walks; i++) {
     fprintf(file, "%-8d", i);
     fprintf(file, " %-15lu", pagetype_refs[PTE_ACCESSED].refs_count[i]);
-    fprintf(file, " %-15lu", pagetype_refs[PTE_IDLE].refs_count[nr_walks-i]);
     fprintf(file, " %-15lu", pagetype_refs[PMD_ACCESSED].refs_count[i]);
-    fprintf(file, " %-15lu", pagetype_refs[PMD_IDLE].refs_count[nr_walks-i]);
     fprintf(file, " %-15lu", pagetype_refs[PUD_ACCESSED].refs_count[i]);
     fprintf(file, "\n");
   }
@@ -230,14 +228,21 @@ int ProcIdlePages::open_file()
 void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
                                   unsigned long va, unsigned long end)
 {
-  page_refs_map& page_refs = pagetype_refs[type].page_refs;
+  page_refs_map& page_refs = pagetype_refs[type | PAGE_ACCESSED_MASK].page_refs;
   unsigned long page_size = pagetype_size[type];
 
   for (int i = 0; i < nr; ++i)
   {
     unsigned long vpfn = va >> PAGE_SHIFT;
 
-    inc_count(page_refs, vpfn);
+    if (type & PAGE_ACCESSED_MASK)
+      inc_count(page_refs, vpfn);
+    else {
+      auto search = page_refs.find(vpfn);
+
+      if (search == page_refs.end())
+        page_refs[vpfn] = 0;
+    }
 
     if (page_refs[vpfn] > nr_walks)
       printf("error counted duplicate vpfn: %lx\n", vpfn);
@@ -271,18 +276,9 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
       return;
     }
 
-    switch (type)
-    {
-    case PTE_IDLE:
-    case PTE_ACCESSED:
-    case PMD_IDLE:
-    case PMD_ACCESSED:
-    case PUD_ACCESSED:
+    if (type <= MAX_ACCESSED)
       inc_page_refs(type, nr, va, vma.end);
-      break;
-    default:
-      break;
-    }
+
     va += pagetype_size[type] * nr;
   }
 }

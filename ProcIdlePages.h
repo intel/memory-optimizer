@@ -80,7 +80,7 @@ class ProcIdlePages
     int save_counts(std::string filename);
 
     const ProcIdleRefs& get_pagetype_refs(ProcIdlePageType type)
-                   { return pagetype_refs[type]; }
+                   { return pagetype_refs[type | PAGE_ACCESSED_MASK]; }
 
     int get_nr_walks() { return nr_walks; }
 

@@ -35,17 +35,32 @@ int Migration::select_top_pages(ProcIdlePageType type)
                   proc_vmstat.anon_capacity(migrate_target_node[type]) /
                   proc_vmstat.anon_capacity());
 
-  int min_refs = nr_walks;
-  for (; min_refs > nr_walks / 2; min_refs--) {
-    portion -= refs_count[min_refs];
-    if (portion <= 0)
-      break;
-  }
+  if (type & PAGE_ACCESSED_MASK) {
+    int min_refs = nr_walks;
+    for (; min_refs > nr_walks / 2; min_refs--) {
+      portion -= refs_count[min_refs];
+      if (portion <= 0)
+        break;
+    }
 
-  for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
-    printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
-    if (it->second >= min_refs)
-      pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
+    for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
+      printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
+      if (it->second >= min_refs)
+        pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
+    }
+  } else {
+    int max_refs = 0;
+    for (; max_refs <= nr_walks / 2; max_refs++) {
+      portion -= refs_count[max_refs];
+      if (portion <= 0)
+        break;
+    }
+
+    for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
+      printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
+      if (it->second <= max_refs)
+        pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
+    }
   }
 
   sort(pages_addr[type].begin(), pages_addr[type].end());
