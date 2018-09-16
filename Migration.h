@@ -36,7 +36,7 @@ class Migration
  private:
     // functions
 
-    void get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
+    size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
 
     // select max counted pages in page_refs_4k and page_refs_2m
     int select_top_pages(ProcIdlePageType type);

@@ -52,24 +52,26 @@ MigrateWhat Migration::parse_migrate_name(std::string name)
   return MIGRATE_NONE;
 }
 
-void Migration::get_threshold_refs(ProcIdlePageType type,
-                                   int& min_refs, int& max_refs)
+size_t Migration::get_threshold_refs(ProcIdlePageType type,
+                                     int& min_refs, int& max_refs)
 {
   const page_refs_map& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs;
   int nr_walks = proc_idle_pages.get_nr_walks();
   vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count;
 
+  double ratio = (double) proc_vmstat.anon_capacity(migrate_target_node[type]) / proc_vmstat.anon_capacity();
   // XXX: this assumes all processes have same hot/cold distribution
-  long portion = ((double) page_refs.size() *
-                  proc_vmstat.anon_capacity(migrate_target_node[type]) /
-                  proc_vmstat.anon_capacity());
+  size_t portion = page_refs.size() * ratio;
+  long quota = portion;
+
+  printf("migrate ratio: %.2f\n", ratio);
 
   if (type & PAGE_ACCESSED_MASK) {
     min_refs = nr_walks;
     max_refs = nr_walks;
     for (; min_refs > nr_walks / 2; --min_refs) {
-      portion -= refs_count[min_refs];
-      if (portion <= 0) {
+      quota -= refs_count[min_refs];
+      if (quota <= 0) {
         if (min_refs < nr_walks)
           ++min_refs;
         break;
@@ -79,14 +81,15 @@ void Migration::get_threshold_refs(ProcIdlePageType type,
     min_refs = 0;
     max_refs = 0;
     for (; max_refs < nr_walks / 2; ++max_refs) {
-      portion -= refs_count[max_refs];
-      if (portion <= 0) {
+      quota -= refs_count[max_refs];
+      if (quota <= 0) {
         max_refs >>= 1;
         break;
       }
     }
   }
 
+  return portion;
 }
 
 int Migration::select_top_pages(ProcIdlePageType type)
