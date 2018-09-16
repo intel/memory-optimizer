@@ -71,22 +71,20 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
     max_refs = nr_walks;
     for (; min_refs > nr_walks / 2; --min_refs) {
       quota -= refs_count[min_refs];
-      if (quota <= 0) {
-        if (min_refs < nr_walks)
-          ++min_refs;
+      if (quota <= 0)
         break;
-      }
     }
+    if (min_refs < nr_walks)
+      ++min_refs;
   } else {
     min_refs = 0;
     max_refs = 0;
     for (; max_refs < nr_walks / 2; ++max_refs) {
       quota -= refs_count[max_refs];
-      if (quota <= 0) {
-        max_refs >>= 1;
+      if (quota <= 0)
         break;
-      }
     }
+    max_refs >>= 1;
   }
 
   printf("refs range: %d-%d\n", min_refs, max_refs);
