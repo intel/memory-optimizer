@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <ctype.h>
+
 #include <map>
 #include <string>
 #include <iostream>
@@ -13,6 +15,13 @@
 
 using namespace std;
 
+std::unordered_map<std::string, MigrateWhat> Migration::migrate_name_map = {
+	    {"none", MIGRATE_NONE},
+	    {"hot",  MIGRATE_HOT},
+	    {"cold", MIGRATE_COLD},
+	    {"both", MIGRATE_BOTH},
+};
+
 Migration::Migration(ProcIdlePages& pip)
   : proc_idle_pages(pip)
 {
@@ -22,6 +31,25 @@ Migration::Migration(ProcIdlePages& pip)
 
   migrate_target_node[PMD_IDLE]      = PMEM_NUMA_NODE;
   migrate_target_node[PMD_ACCESSED]  = DRAM_NUMA_NODE;
+}
+
+MigrateWhat Migration::parse_migrate_name(std::string name)
+{
+  if (isdigit(name[0])) {
+    int m = atoi(name.c_str());
+    if (m <= MIGRATE_BOTH)
+      return (MigrateWhat)m;
+    cerr << "invalid migrate type: " << name << endl;
+    return MIGRATE_NONE;
+  }
+
+  auto search = migrate_name_map.find(name);
+
+  if (search != migrate_name_map.end())
+    return search->second;
+
+  cerr << "invalid migrate type: " << name << endl;
+  return MIGRATE_NONE;
 }
 
 void Migration::get_threshold_refs(ProcIdlePageType type,

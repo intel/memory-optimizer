@@ -23,7 +23,7 @@ struct task_refs_options {
   pid_t pid;
   int nr_walks;
   float interval;
-  MigrateType migrate_type;
+  MigrateWhat migrate_what;
 
   std::string output_file;
 } option;
@@ -38,7 +38,7 @@ static const struct option opts[] = {
   {"interval",  required_argument,  NULL, 'i'},
   {"loop",      required_argument,  NULL, 'l'},
   {"output",    required_argument,  NULL, 'o'},
-  {"mtype",     required_argument,  NULL, 'm'},
+  {"migrate",   required_argument,  NULL, 'm'},
   {"verbose",   required_argument,  NULL, 'v'},
   {"help",      no_argument,        NULL, 'h'},
   {NULL,        0,                  NULL, 0}
@@ -53,8 +53,7 @@ static void usage(char *prog)
           "    -i|--interval   The scan interval in seconds\n"
           "    -l|--loop       The number of times to scan\n"
           "    -o|--output     The output file, defaults to refs-count-PID\n"
-          "    -m|--mtype      Migrate which types of pages; "
-                               "0 for hot, 1 for cold, 2 for all\n"
+          "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
           "    -v|--verbose    Show debug info\n",
           prog);
 
@@ -69,8 +68,7 @@ static void parse_cmdline(int argc, char *argv[])
 
   option.nr_walks = 10;
   option.interval = 0.1;
-  // migrate the hot pages
-  option.migrate_type = MIGRATE_HOT_PAGES;
+  option.migrate_what = MIGRATE_BOTH;
 
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
@@ -89,7 +87,7 @@ static void parse_cmdline(int argc, char *argv[])
       option.output_file = optarg;
       break;
     case 'm':
-      option.migrate_type = (MigrateType)atoi(optarg);
+      option.migrate_what = Migration::parse_migrate_name(optarg);
       break;
     case 'v':
       ++option.debug_level;
@@ -130,34 +128,15 @@ int account_refs(ProcIdlePages& proc_idle_pages)
 int migrate(ProcIdlePages& proc_idle_pages)
 {
   int err = 0;
-  bool hot = false, cold = false;
   auto migration = std::make_unique<Migration>(proc_idle_pages);
 
-  // for example:
-  // migrate the top 20% frequency of being accessed to dram node
-  // migrate not more than 20% number of hot pages to dram node
-  switch (option.migrate_type) {
-    case MIGRATE_HOT_COLD_PAGES:
-      hot = cold = true;
-      break;
-    case MIGRATE_HOT_PAGES:
-      hot = true;
-      break;
-    case MIGRATE_COLD_PAGES:
-      cold = true;
-      break;
-    default:
-      hot = cold = true;
-      break;
-  }
-
-  if (cold) {
+  if (option.migrate_what & MIGRATE_COLD) {
     err = migration->migrate(PTE_IDLE);
     if (!err)
     err = migration->migrate(PMD_IDLE);
   }
 
-  if (hot) {
+  if (option.migrate_what & MIGRATE_HOT) {
     err = migration->migrate(PTE_ACCESSED);
     if (!err)
     err = migration->migrate(PMD_ACCESSED);

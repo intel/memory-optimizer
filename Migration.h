@@ -15,10 +15,11 @@
 #include "ProcIdlePages.h"
 
 typedef enum {
-  MIGRATE_HOT_PAGES,      // migrate hot pages
-  MIGRATE_COLD_PAGES,     // migrate cold pages
-  MIGRATE_HOT_COLD_PAGES, // migrate hot and cold pages
-} MigrateType;
+  MIGRATE_NONE,
+  MIGRATE_HOT,
+  MIGRATE_COLD,
+  MIGRATE_BOTH = MIGRATE_HOT | MIGRATE_COLD,
+} MigrateWhat;
 
 class Migration
 {
@@ -26,6 +27,8 @@ class Migration
     // functions
     Migration(ProcIdlePages& pip);
     ~Migration() {};
+
+    static MigrateWhat parse_migrate_name(std::string name);
 
     // migrate pages to nodes
     int migrate(ProcIdlePageType type);
@@ -52,6 +55,8 @@ class Migration
     // variables
     static const int DRAM_NUMA_NODE = 0;
     static const int PMEM_NUMA_NODE = 1;
+
+    static std::unordered_map<std::string, MigrateWhat> migrate_name_map;
 
     ProcVmstat proc_vmstat;
     ProcIdlePages& proc_idle_pages;
