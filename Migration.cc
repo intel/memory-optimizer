@@ -64,7 +64,7 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
   size_t portion = page_refs.size() * ratio;
   long quota = portion;
 
-  printf("migrate ratio: %.2f\n", ratio);
+  printf("migrate ratio: %.2f = %lu / %lu\n", ratio, portion, page_refs.size());
 
   if (type & PAGE_ACCESSED_MASK) {
     min_refs = nr_walks;
@@ -88,6 +88,8 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
       }
     }
   }
+
+  printf("refs range: %d-%d\n", min_refs, max_refs);
 
   return portion;
 }
