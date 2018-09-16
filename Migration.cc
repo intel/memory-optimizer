@@ -199,12 +199,38 @@ std::unordered_map<int, int> Migration::calc_migrate_stats()
   return stats;
 }
 
+void Migration::show_numa_stats()
+{
+  proc_vmstat.load_vmstat();
+  proc_vmstat.load_numa_vmstat();
+
+  const auto& numa_vmstat = proc_vmstat.get_numa_vmstat();
+  unsigned long total_anon_kb = proc_vmstat.vmstat("nr_inactive_anon") +
+                                proc_vmstat.vmstat("nr_active_anon") +
+                                proc_vmstat.vmstat("nr_isolated_anon");
+
+  total_anon_kb *= PAGE_SIZE >> 10;
+  printf("%'15lu       anon total\n", total_anon_kb);
+
+  int nid = 0;
+  for (auto& map: numa_vmstat) {
+    unsigned long anon_kb = map.at("nr_inactive_anon") +
+                            map.at("nr_active_anon") +
+                            map.at("nr_isolated_anon");
+    anon_kb *= PAGE_SIZE >> 10;
+    printf("%'15lu  %2d%%  anon node %d\n", anon_kb, percent(anon_kb, total_anon_kb), nid);
+    ++nid;
+  }
+}
+
 void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
 {
     unsigned long total_kb = proc_idle_pages.get_pagetype_refs(type).page_refs.size() * (pagetype_size[type] >> 10);
     unsigned long to_migrate = pages_addr[type].size() * (pagetype_size[type] >> 10);
 
     printf("    %s: %s\n", pagetype_name[type], stage);
+
+    show_numa_stats();
 
     printf("%'15lu       TOTAL\n", total_kb);
     printf("%'15lu  %2d%%  TO_migrate\n", to_migrate, percent(to_migrate, total_kb));

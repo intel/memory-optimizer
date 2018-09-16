@@ -18,6 +18,9 @@ class ProcVmstat
     unsigned long vmstat(std::string name);
     unsigned long vmstat(int nid, std::string name);
 
+    const std::vector<vmstat_map>& get_numa_vmstat() { return numa_vmstat; }
+    const             vmstat_map & get_proc_vmstat() { return proc_vmstat; }
+
     unsigned long anon_capacity();
     unsigned long anon_capacity(int nid);
 

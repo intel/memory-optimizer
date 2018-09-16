@@ -50,6 +50,7 @@ class Migration
     std::unordered_map<int, int> calc_migrate_stats();
 
     void show_migrate_stats(ProcIdlePageType type, const char stage[]);
+    void show_numa_stats();
 
   private:
     // variables
