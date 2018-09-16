@@ -259,3 +259,92 @@ void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
         printf("%'15lu  %2d%%  %s\n", kb, percent(kb, total_kb), strerror(-status));
     }
 }
+
+void Migration::fill_addrs(std::vector<void *>& addrs, unsigned long start)
+{
+    void **p = &addrs[0];
+    void **pp = &addrs[addrs.size()-1];
+
+    for (; p <= pp; ++p) {
+      *p = (void *)start;
+      start += PAGE_SIZE;
+    }
+}
+
+void Migration::dump_node_percent()
+{
+  auto stats = calc_migrate_stats();
+  size_t nr_node0 = (size_t)stats[0];
+  size_t nr_err = 0;
+
+  for(auto &kv : stats)
+  {
+    int status = kv.first;
+
+    if (status < 0)
+      ++nr_err;
+  }
+
+  printf("%3u ", percent(nr_node0, migrate_status.size()));
+  if (nr_err)
+    printf("(-%u) ", percent(nr_err, migrate_status.size()));
+}
+
+int Migration::dump_vma_nodes(proc_maps_entry& vma)
+{
+  pid_t pid = proc_idle_pages.get_pid();
+  unsigned long nr_pages;
+  int err = 0;
+
+  if (vma.end - vma.start < 1<<30)
+    return 0;
+
+  nr_pages = (vma.end - vma.start) >> PAGE_SHIFT;
+
+  unsigned long total_kb = (vma.end - vma.start) >> 10;
+  printf("VMA size: %'15lu \n", total_kb);
+
+  const int nr_slots = 10;
+  unsigned long slot_pages = nr_pages / nr_slots;
+
+  std::vector<void *> addrs;
+  addrs.resize(slot_pages);
+  migrate_status.resize(slot_pages);
+
+  for (int i = 0; i < nr_slots; ++i)
+  {
+    fill_addrs(addrs, vma.start + i * addrs.size() * PAGE_SIZE);
+
+    err = move_pages(pid,
+                     slot_pages,
+                     &addrs[0],
+                     NULL,
+                     &migrate_status[0], MPOL_MF_MOVE);
+    if (err) {
+      perror("move_pages");
+      return err;
+    }
+
+    dump_node_percent();
+  }
+
+  return err;
+}
+
+int Migration::dump_task_nodes()
+{
+  pid_t pid = proc_idle_pages.get_pid();
+  ProcMaps proc_maps;
+  int err = 0;
+
+  auto maps = proc_maps.load(pid);
+
+  for (auto &vma: maps) {
+    err = dump_vma_nodes(vma);
+    if (err)
+      break;
+  }
+
+  return err;
+}
+

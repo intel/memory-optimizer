@@ -33,6 +33,9 @@ class Migration
     // migrate pages to nodes
     int migrate(ProcIdlePageType type);
 
+    int dump_task_nodes();
+    int dump_vma_nodes(proc_maps_entry& vma);
+
  private:
     // functions
 
@@ -43,6 +46,9 @@ class Migration
 
     // get the numa node in which the pages are
     int locate_numa_pages(ProcIdlePageType type);
+
+    void fill_addrs(std::vector<void *>& addrs, unsigned long start);
+    void dump_node_percent();
 
     long __move_pages(pid_t pid, unsigned long nr_pages,
 		      void **addrs, const int *nodes);

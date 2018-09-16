@@ -142,6 +142,8 @@ int migrate(ProcIdlePages& proc_idle_pages)
     err = migration->migrate(PMD_ACCESSED);
   }
 
+  migration->dump_task_nodes();
+
   return err;
 }
 
