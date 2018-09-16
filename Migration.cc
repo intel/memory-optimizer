@@ -164,20 +164,18 @@ int Migration::migrate(ProcIdlePageType type)
   return ret;
 }
 
-long Migration::do_move_pages(ProcIdlePageType type, const int *nodes)
+long Migration::__move_pages(pid_t pid, unsigned long nr_pages,
+                             void **addrs, const int *nodes)
 {
-  pid_t pid = proc_idle_pages.get_pid();
-  auto& addrs = pages_addr[type];
-  long nr_pages = addrs.size();
-  long batch_size = 1 << 12;
-  long ret;
+  long ret = 0;
 
   migrate_status.resize(nr_pages);
 
-  for (long i = 0; i < nr_pages; i += batch_size) {
+  unsigned long batch_size = 1 << 12;
+  for (unsigned long i = 0; i < nr_pages; i += batch_size) {
     ret = move_pages(pid,
                      min(batch_size, nr_pages - i),
-                     &addrs[i],
+                     addrs + i,
                      nodes ? nodes + i : NULL,
                      &migrate_status[i], MPOL_MF_MOVE);
     if (ret) {
@@ -186,6 +184,17 @@ long Migration::do_move_pages(ProcIdlePageType type, const int *nodes)
     }
   }
 
+  return ret;
+}
+
+long Migration::do_move_pages(ProcIdlePageType type, const int *nodes)
+{
+  pid_t pid = proc_idle_pages.get_pid();
+  auto& addrs = pages_addr[type];
+  long nr_pages = addrs.size();
+  long ret;
+
+  ret = __move_pages(pid, nr_pages, &addrs[0], nodes);
   if (!ret)
     show_migrate_stats(type, nodes ? "after migrate" : "before migrate");
 

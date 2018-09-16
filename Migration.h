@@ -44,6 +44,9 @@ class Migration
     // get the numa node in which the pages are
     int locate_numa_pages(ProcIdlePageType type);
 
+    long __move_pages(pid_t pid, unsigned long nr_pages,
+		      void **addrs, const int *nodes);
+
     long do_move_pages(ProcIdlePageType type, const int *nodes);
 
     // status => count
