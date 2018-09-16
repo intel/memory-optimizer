@@ -81,8 +81,7 @@ void Migration::get_threshold_refs(ProcIdlePageType type,
     for (; max_refs < nr_walks / 2; ++max_refs) {
       portion -= refs_count[max_refs];
       if (portion <= 0) {
-        if (max_refs > 0)
-          --max_refs;
+        max_refs >>= 1;
         break;
       }
     }
