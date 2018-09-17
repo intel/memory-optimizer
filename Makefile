@@ -14,7 +14,7 @@ page-refs: page-refs.c $(LIB_SOURCE_FILES)
 
 task-refs: task-refs.cc $(CLASS_SOURCE_FILES) $(CLASS_HEADER_FILES) lib/debug.c lib/debug.h lib/stats.h
 	$(CXX) $< $(CLASS_SOURCE_FILES) lib/debug.c -o $@ $(CXXFLAGS) -lnuma
-	[ -x ./update ] && ./update
+	[ -x ./update ] && ./update || true
 
 task-maps: task-maps.cc ProcMaps.cc ProcMaps.h
 	$(CXX) $< ProcMaps.cc -o $@ $(CXXFLAGS)
