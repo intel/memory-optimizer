@@ -1,6 +1,9 @@
 #!/bin/bash
 
-cd /c/pmem2dram || exit
+script_path=$(realpath $0)
+tests_dir=$(dirname $script_path)
+project_dir=$(dirname $tests_dir)
+cd "$tests_dir" || exit
 
 # task-refs params on thp=never
 setup_migration_thp_never()
@@ -20,7 +23,7 @@ setup_sys()
 	echo $thp > /sys/kernel/mm/transparent_hugepage/enabled
 	echo 0 > /proc/sys/kernel/numa_balancing
 
-	lsmod | grep -q kvm_ept_idle || insmod kvm-ept-idle.ko
+	lsmod | grep -q kvm_ept_idle || insmod $tests_dir/kvm-ept-idle.ko
 }
 
 run_migrations()
@@ -32,8 +35,8 @@ run_migrations()
 	do
 		sleep $i
 		echo
-		echo ./task-refs -l $loop -i $interval -m $what -p $sysbench_pid
-		time ./task-refs -l $loop -i $interval -m $what -p $sysbench_pid
+		echo $project_dir/task-refs -l $loop -i $interval -m $what -p $sysbench_pid
+		time $project_dir/task-refs -l $loop -i $interval -m $what -p $sysbench_pid
 		cat refs-count-$sysbench_pid
 	done
 }
