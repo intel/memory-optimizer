@@ -23,6 +23,7 @@ struct task_refs_options {
   pid_t pid;
   int nr_walks;
   float interval;
+  int dram_percent;
   MigrateWhat migrate_what;
 
   std::string output_file;
@@ -38,6 +39,7 @@ static const struct option opts[] = {
   {"interval",  required_argument,  NULL, 'i'},
   {"loop",      required_argument,  NULL, 'l'},
   {"output",    required_argument,  NULL, 'o'},
+  {"dram",      required_argument,  NULL, 'd'},
   {"migrate",   required_argument,  NULL, 'm'},
   {"verbose",   required_argument,  NULL, 'v'},
   {"help",      no_argument,        NULL, 'h'},
@@ -53,6 +55,7 @@ static void usage(char *prog)
           "    -i|--interval   The scan interval in seconds\n"
           "    -l|--loop       The number of times to scan\n"
           "    -o|--output     The output file, defaults to refs-count-PID\n"
+          "    -d|--dram       The DRAM percent, wrt. DRAM+PMEM total size\n"
           "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
           "    -v|--verbose    Show debug info\n",
           prog);
@@ -64,7 +67,7 @@ static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
 	int opt = 0;
-	const char *optstr = "hvp:i:l:o:m:";
+	const char *optstr = "hvp:i:l:o:d:m:";
 
   option.nr_walks = 10;
   option.interval = 0.1;
@@ -85,6 +88,9 @@ static void parse_cmdline(int argc, char *argv[])
       break;
     case 'o':
       option.output_file = optarg;
+      break;
+    case 'd':
+      option.dram_percent = atoi(optarg);
       break;
     case 'm':
       option.migrate_what = Migration::parse_migrate_name(optarg);
@@ -129,6 +135,8 @@ int migrate(ProcIdlePages& proc_idle_pages)
 {
   int err = 0;
   auto migration = std::make_unique<Migration>(proc_idle_pages);
+
+  migration->set_dram_percent(option.dram_percent);
 
   if (option.migrate_what & MIGRATE_COLD) {
     err = migration->migrate(PTE_IDLE);

@@ -23,7 +23,7 @@ std::unordered_map<std::string, MigrateWhat> Migration::migrate_name_map = {
 };
 
 Migration::Migration(ProcIdlePages& pip)
-  : proc_idle_pages(pip)
+  : proc_idle_pages(pip), dram_percent(0)
 {
   migrate_target_node.resize(PMD_ACCESSED + 1);
   migrate_target_node[PTE_IDLE]      = PMEM_NUMA_NODE;
@@ -52,6 +52,17 @@ MigrateWhat Migration::parse_migrate_name(std::string name)
   return MIGRATE_NONE;
 }
 
+int Migration::set_dram_percent(int dp)
+{
+  if (dp < 0 || dp > 100) {
+    cerr << "dram percent out of range [0, 100]" << endl;
+    return -ERANGE;
+  }
+
+  dram_percent = dp;
+  return 0;
+}
+
 size_t Migration::get_threshold_refs(ProcIdlePageType type,
                                      int& min_refs, int& max_refs)
 {
@@ -59,7 +70,16 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
   int nr_walks = proc_idle_pages.get_nr_walks();
   vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count;
 
-  double ratio = (double) proc_vmstat.anon_capacity(migrate_target_node[type]) / proc_vmstat.anon_capacity();
+  double ratio;
+
+  if (dram_percent) {
+    if (migrate_target_node[type] == DRAM_NUMA_NODE)
+      ratio = dram_percent / 100.0;
+    else
+      ratio = (100.0 - dram_percent) / 100.0;
+  } else
+    ratio = (double) proc_vmstat.anon_capacity(migrate_target_node[type]) / proc_vmstat.anon_capacity();
+
   // XXX: this assumes all processes have same hot/cold distribution
   size_t portion = page_refs.size() * ratio;
   long quota = portion;

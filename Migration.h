@@ -36,6 +36,8 @@ class Migration
     int dump_task_nodes();
     int dump_vma_nodes(proc_maps_entry& vma);
 
+    int set_dram_percent(int dp);
+
  private:
     // functions
 
@@ -70,6 +72,8 @@ class Migration
 
     ProcVmstat proc_vmstat;
     ProcIdlePages& proc_idle_pages;
+
+    int dram_percent;
 
     // The Virtual Address of hot/cold pages.
     // [0...n] = [VA0...VAn]
