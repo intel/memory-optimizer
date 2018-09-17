@@ -1,0 +1,121 @@
+#!/bin/bash
+
+cd /c/pmem2dram || exit
+
+# task-refs params on thp=never
+setup_migration_thp_never()
+{
+	loop=10
+	interval=$(echo "0.1 * $mem_gb" | bc)
+}
+
+setup_migration_thp_always()
+{
+	loop=20
+	interval=$(echo "0.01 * $mem_gb" | bc)
+}
+
+setup_sys()
+{
+	echo $thp > /sys/kernel/mm/transparent_hugepage/enabled
+	echo 0 > /proc/sys/kernel/numa_balancing
+
+	lsmod | grep -q kvm_ept_idle || insmod kvm-ept-idle.ko
+}
+
+run_migrations()
+{
+	local what=$1
+
+	local i
+	for i in 2 1 1
+	do
+		sleep $i
+		echo
+		echo ./task-refs -l $loop -i $interval -m $what -p $sysbench_pid
+		time ./task-refs -l $loop -i $interval -m $what -p $sysbench_pid
+		cat refs-count-$sysbench_pid
+	done
+}
+
+run_test()
+{
+	local suffix=$1
+	local mempolicy="$2"
+
+	sysbench_cmd=(
+		#numactl
+		#--interleave=all
+
+		# perf stat
+		# -e dTLB-load-misses,iTLB-load-misses
+		# --
+
+		sysbench
+		--time=$time
+		memory
+		--memory-block-size=$memory_block_size
+		--memory-total-size=1T
+		--memory-oper=$memory_oper
+		--memory-access-mode=rnd
+		--rand-type=$rand_type
+		run
+	)
+
+	exec > $log-$memory_oper-$rand_type-$thp.$suffix 2>&1
+
+	echo numactl $mempolicy "${sysbench_cmd[@]}"
+	numactl $mempolicy "${sysbench_cmd[@]}" &
+
+	local sysbench_pid=$!
+
+	if [[ $suffix == 'h' ]]; then
+		run_migrations hot
+	elif [[ $suffix == 'c' ]]; then
+		run_migrations cold
+	elif [[ $suffix == 'b' ]]; then
+		run_migrations both
+	else
+		sleep 2
+	fi
+
+	grep active_anon /sys/devices/system/node/node*/vmstat
+
+	wait
+}
+
+run_tests()
+{
+	setup_sys
+	setup_migration_thp_$thp
+
+	run_test 0 "-m0"
+	run_test 1 "-m1"
+	# run_test i "-i all"
+	run_test h "-m1"
+	# run_test c "-m0"
+}
+
+log=sysbench-$(date +'%Y%m%d_%H%M%S')
+echo vimdiff $log-*
+
+thp=never
+thp=always
+mem_gb=2
+
+# sysbench params
+time=10
+rand_type=pareto
+memory_oper=read
+memory_block_size=${mem_gb}G
+
+run_tests
+# memory_oper=write
+# run_tests
+# this requires adjusting interval
+# thp=always
+# run_tests
+# memory_oper=read
+# run_tests
+#rand_type=zipfian
+#run_tests
