@@ -7,7 +7,7 @@ LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
 CLASS_SOURCE_FILES = ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc
 CLASS_HEADER_FILES = $(CLASS_SOURCE_FILES:.cc=.h)
 
-all: page-refs task-refs task-maps show-vmstat
+all: page-refs task-refs task-maps show-vmstat addr-seq
 
 page-refs: page-refs.c $(LIB_SOURCE_FILES)
 	$(CC) $< $(LIB_SOURCE_FILES) -o $@ $(CFLAGS)
@@ -21,3 +21,6 @@ task-maps: task-maps.cc ProcMaps.cc ProcMaps.h
 
 show-vmstat: show-vmstat.cc ProcVmstat.cc
 	$(CXX) $< ProcVmstat.cc -o $@ $(CXXFLAGS) -lnuma
+
+addr-seq: AddrSequence.cc AddrSequence.h
+	$(CXX) AddrSequence.cc -o $@ $(CXXFLAGS) -DADDR_SEQ_SELF_TEST
