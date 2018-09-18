@@ -200,15 +200,16 @@ int AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long add
 DeltaPayload* AddrSequence::addr_to_delta_ptr(AddrCluster& cluster,
                                               unsigned long addr)
 {
-    int delta_val = 0;
+    unsigned long delta_addr;
     
     if (addr < cluster.start || addr > cluster_end(cluster))
         return NULL;
-    
-    for (int i = 0; i < cluster.size; ++i) {
-        delta_val += cluster.deltas[i].delta;
 
-        if (cluster.start + delta_val * pagesize == addr)
+    delta_addr = cluster.start;
+    for (int i = 0; i < cluster.size; ++i) {
+        delta_addr += cluster.deltas[i].delta * pagesize;
+
+        if (delta_addr == addr)
             return &cluster.deltas[i];
     }
     
