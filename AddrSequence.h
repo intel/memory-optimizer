@@ -124,6 +124,11 @@ class AddrSequence
     std::vector<buf_type*>   bufs_ptr_recorder;
     
     int buf_item_used;
+
+    std::map<unsigned long, AddrCluster>::iterator iter_cluster;
+    int iter_delta_index;
+    int iter_delta_val;
+
 };
 
 #endif
