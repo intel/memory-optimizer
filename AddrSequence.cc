@@ -200,20 +200,21 @@ int AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long add
 DeltaPayload* AddrSequence::addr_to_delta_ptr(AddrCluster& cluster,
                                               unsigned long addr)
 {
-    int delta;
+    int delta_val = 0;
     
     if (addr < cluster.start || addr > cluster_end(cluster))
         return NULL;
     
-    delta = addr_to_delta(cluster, addr);
-
     for (int i = 0; i < cluster.size; ++i) {
-        if (cluster.deltas[i].delta == delta)
+        delta_val += cluster.deltas[i].delta;
+
+        if (cluster.start + delta_val * pagesize == addr)
             return &cluster.deltas[i];
     }
     
     return NULL;
 }
+
 
 int AddrSequence::allocate_buf(int count)
 {
@@ -247,7 +248,9 @@ int main(int argc, char* argv[])
     
     as.set_pageshift(12);
     ret_val = as.inc_payload(0x1000, 0);
-    ret_val = as.inc_payload(0x2000, 0);
+    ret_val = as.inc_payload(0x3000, 0);
+    ret_val = as.inc_payload(0x5000, 0);
+    ret_val = as.inc_payload(0x8000, 0);
     ret_val = as.inc_payload(0x1000 + 4096 * 255, 1);
     ret_val = as.inc_payload(0x1000 + 4096 * 256, 1);
 
@@ -256,18 +259,25 @@ int main(int argc, char* argv[])
     as.rewind();
     
     as.set_pageshift(12);
-    for (i = 0; i < 16; ++i)
-    {
-        ret_val = as.inc_payload(0x1000 + 4096*i, 1);
-    }
+    ret_val = as.inc_payload(0x11000, 0);
+    ret_val = as.inc_payload(0x13000, 0);
+    ret_val = as.inc_payload(0x15000, 0);
+    ret_val = as.inc_payload(0x18000, 0);
+    ret_val = as.inc_payload(0x21000, 0);
+    ret_val = as.inc_payload(0x23000, 0);
+    ret_val = as.inc_payload(0x25000, 0);
+    ret_val = as.inc_payload(0x28000, 0);
     
     as.rewind();
-    
-    for (i = 0; i < 16; ++i)
-    {
-        ret_val = as.inc_payload(0x1000 + 4096*i, 1);
-    }
-
+    ret_val = as.inc_payload(0x11000, 1);
+    ret_val = as.inc_payload(0x13000, 0);
+    ret_val = as.inc_payload(0x15000, 1);
+    ret_val = as.inc_payload(0x18000, 0);
+    ret_val = as.inc_payload(0x21000, 1);
+    ret_val = as.inc_payload(0x23000, 0);
+    ret_val = as.inc_payload(0x25000, 1);
+    ret_val = as.inc_payload(0x28000, 1);
+     
     as.clear();
     
     return 0;

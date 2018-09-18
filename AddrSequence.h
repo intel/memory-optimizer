@@ -76,8 +76,8 @@ class AddrSequence
     DeltaPayload* addr_to_delta_ptr(AddrCluster& cluster, unsigned long addr);
     
     DeltaPayload* raw_buffer_ptr() {
-        uint8_t* ptr = (uint8_t*)bufs_ptr_recorder.back();
-        return (DeltaPayload*)(ptr + buf_item_used * BUF_ITEM_SIZE);
+      uint8_t* ptr = (uint8_t*)bufs_ptr_recorder.back();
+      return (DeltaPayload*)(ptr + buf_item_used * BUF_ITEM_SIZE);
     }
     
     int is_buffer_full() {
@@ -85,15 +85,17 @@ class AddrSequence
     }
 
     int  addr_to_delta(AddrCluster& cluster, unsigned long addr) {
-      return (addr - cluster.start) / pagesize;
+      return (addr - cluster_end(cluster)) / pagesize;
     }
 
     unsigned long cluster_end(AddrCluster& cluster) {
-        if (cluster.size)
-            return cluster.start
-                   + cluster.deltas[cluster.size - 1].delta * pagesize;
+        int delta_val= 0;
         
-        return cluster.start;
+        for (int i = 0; i < cluster.size; ++i) {
+            delta_val += cluster.deltas[i].delta;
+        }
+        
+        return cluster.start + delta_val * pagesize;
     }
 
     int allocate_buf(int count);
@@ -101,7 +103,7 @@ class AddrSequence
     void free_all_buf();
     
   private:        
-    const static int BUF_SIZE = 0x8; //0x10000; // 64KB;
+    const static int BUF_SIZE = 0x10000; // 64KB;
     const static int BUF_ITEM_SIZE = sizeof(struct DeltaPayload);
     const static int BUF_ITEM_COUNT = BUF_SIZE / BUF_ITEM_SIZE;
     typedef uint8_t buf_type[BUF_SIZE];
