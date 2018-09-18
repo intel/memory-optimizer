@@ -11,12 +11,17 @@ AddrSequence::AddrSequence()
   buf_item_used = BUF_ITEM_COUNT;
 }
 
+AddrSequence::~AddrSequence()
+{
+  clear();
+}
+
 void AddrSequence::clear()
 {
   addr_size = 0;
   nr_walks = 0;
   addr_clusters.clear();
-  bufs.clear();
+  free_all_buf();
 
   buf_item_used = BUF_ITEM_COUNT;
 }
@@ -50,8 +55,22 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
 
 int AddrSequence::update_addr(unsigned long addr, int n)
 {
+    //find if the addr already in the cluster, return if not
+    int ret_val = 0;
+    DeltaPayload *delta_ptr;
+    auto begin = addr_clusters.begin();
+    auto end = addr_clusters.end();
     
-    return 0;
+    for (; begin != end; ++begin) {
+        delta_ptr = addr_to_delta_ptr(begin->second, addr);
+        if (delta_ptr) {
+          if (n)
+              ++delta_ptr->payload;
+          break;
+        }
+    }
+    
+    return ret_val;
 }
 
 int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
@@ -79,7 +98,7 @@ int AddrSequence::append_addr(unsigned long addr, int n)
         //try put into the cluster or create new cluster
         if (addr >= cluster.start) {            
             if (can_merge_into_cluster(cluster, addr)) 
-                ret_val = save_into_cluster(cluster, addr, n, false);
+                ret_val = save_into_cluster(cluster, addr, n);
             else
                 ret_val = create_cluster(addr, n);
         } else {
@@ -112,7 +131,7 @@ int AddrSequence::create_cluster(unsigned long addr, int n)
         auto insert_ret = addr_clusters.insert(new_item);        
         if (insert_ret.second) {
             ret_val = save_into_cluster(insert_ret.first->second,
-                                        addr, n, false);
+                                        addr, n);
 
             return ret_val;
         }
@@ -138,7 +157,9 @@ void* AddrSequence::get_free_buffer()
 {
     if (is_buffer_full()) {
         //todo: try catch exception here for fail
-        bufs.resize(bufs.size() + 1);
+        if (allocate_buf(1))
+            return NULL;
+
         buf_item_used = 0;
     }
     
@@ -147,19 +168,14 @@ void* AddrSequence::get_free_buffer()
 
 
 int AddrSequence::save_into_cluster(AddrCluster& cluster,
-                                    unsigned long addr, int n, bool is_update)
+                                    unsigned long addr, int n)
 {
     uint8_t delta = addr_to_delta(cluster, addr);
     
     int index = cluster.size;
     
     cluster.deltas[index].delta = delta;
-    
-    if (is_update)
-        cluster.deltas[index].payload = n;
-    else
-        ++cluster.deltas[index].payload;
-    
+    cluster.deltas[index].payload = n;
 
     ++cluster.size;
     ++buf_item_used;
@@ -180,6 +196,47 @@ int AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long add
 }
 
 
+
+DeltaPayload* AddrSequence::addr_to_delta_ptr(AddrCluster& cluster,
+                                              unsigned long addr)
+{
+    int delta;
+    
+    if (addr < cluster.start || addr > cluster_end(cluster))
+        return NULL;
+    
+    delta = addr_to_delta(cluster, addr);
+
+    for (int i = 0; i < cluster.size; ++i) {
+        if (cluster.deltas[i].delta == delta)
+            return &cluster.deltas[i];
+    }
+    
+    return NULL;
+}
+
+int AddrSequence::allocate_buf(int count)
+{
+    buf_type* new_buf_ptr;
+
+    //todo: catch exception for fail case
+    new_buf_ptr = bufs.allocate(count);
+
+    bufs_ptr_recorder.push_back(new_buf_ptr);
+
+    return 0;
+}
+
+void AddrSequence::free_all_buf()
+{
+    for(auto& i : bufs_ptr_recorder)
+        bufs.deallocate(i, 1);
+
+    bufs_ptr_recorder.clear();
+}
+
+
+
 //self-testing
 #ifdef ADDR_SEQ_SELF_TEST
 int main(int argc, char* argv[])
@@ -196,11 +253,22 @@ int main(int argc, char* argv[])
 
     as.clear();
 
+    as.rewind();
+    
     as.set_pageshift(12);
-    for (i = 0; i < 65535; ++i)
+    for (i = 0; i < 16; ++i)
     {
         ret_val = as.inc_payload(0x1000 + 4096*i, 1);
     }
+    
+    as.rewind();
+    
+    for (i = 0; i < 16; ++i)
+    {
+        ret_val = as.inc_payload(0x1000 + 4096*i, 1);
+    }
+
+    as.clear();
     
     return 0;
 }

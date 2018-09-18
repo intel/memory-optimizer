@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include <memory>
 
 struct DeltaPayload
 {
@@ -30,6 +31,7 @@ class AddrSequence
 {
   public:
     AddrSequence();
+    ~AddrSequence();
     size_t size() { return addr_size; }
     bool empty()  { return addr_size > 0; }
 
@@ -67,13 +69,15 @@ class AddrSequence
 
     void* get_free_buffer();
 
-    int save_into_cluster(AddrCluster& cluster, unsigned long addr, int n,
-                          bool is_update);
+    int save_into_cluster(AddrCluster& cluster, unsigned long addr, int n);
 
     int can_merge_into_cluster(AddrCluster& cluster, unsigned long addr);
+
+    DeltaPayload* addr_to_delta_ptr(AddrCluster& cluster, unsigned long addr);
     
     DeltaPayload* raw_buffer_ptr() {
-      return (DeltaPayload*)&(bufs[bufs.size() - 1][buf_item_used * BUF_ITEM_SIZE]);
+        uint8_t* ptr = (uint8_t*)bufs_ptr_recorder.back();
+        return (DeltaPayload*)(ptr + buf_item_used * BUF_ITEM_SIZE);
     }
     
     int is_buffer_full() {
@@ -83,12 +87,25 @@ class AddrSequence
     int  addr_to_delta(AddrCluster& cluster, unsigned long addr) {
       return (addr - cluster.start) / pagesize;
     }
+
+    unsigned long cluster_end(AddrCluster& cluster) {
+        if (cluster.size)
+            return cluster.start
+                   + cluster.deltas[cluster.size - 1].delta * pagesize;
+        
+        return cluster.start;
+    }
+
+    int allocate_buf(int count);
+
+    void free_all_buf();
     
   private:        
-    const static int BUF_SIZE = 0x10000; // 64KB;
+    const static int BUF_SIZE = 0x8; //0x10000; // 64KB;
     const static int BUF_ITEM_SIZE = sizeof(struct DeltaPayload);
     const static int BUF_ITEM_COUNT = BUF_SIZE / BUF_ITEM_SIZE;
-
+    typedef uint8_t buf_type[BUF_SIZE];
+    
     int nr_walks;
     int pageshift;
     int pagesize;
@@ -99,8 +116,11 @@ class AddrSequence
     // inc_payload() will allocate new fixed size buf on demand,
     // avoiding internal/external fragmentations.
     // Only freed on clear().
-    std::vector<std::array<uint8_t, BUF_SIZE>> bufs;
-
+    //std::vector<std::array<uint8_t, BUF_SIZE>> bufs;
+    
+    std::allocator<buf_type> bufs;
+    std::vector<buf_type*>   bufs_ptr_recorder;
+    
     int buf_item_used;
 };
 
