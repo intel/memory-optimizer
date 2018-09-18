@@ -70,17 +70,49 @@ int AddrSequence::update_addr(unsigned long addr, int n)
         }
     }
     
-    return ret_val;
+  return ret_val;
 }
 
 int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
 {
-    return 0;
+    iter_cluster = addr_clusters.begin();
+    iter_delta_index = 0;
+    iter_delta_val = 0;
+
+    return get_next(addr, payload);
 }
 
 int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
 {
-    return 0;
+    int ret_val = -1;
+
+    if (iter_cluster != addr_clusters.end()) {
+        AddrCluster &cluster = iter_cluster->second;
+        DeltaPayload *delta_ptr = cluster.deltas;
+
+        if (iter_delta_index >= cluster.size) {
+            iter_delta_index = 0;
+            iter_delta_val = 0;
+            ++iter_cluster;
+
+            // check again because we moved iter_cluster
+            if (iter_cluster == addr_clusters.end())
+                return -1;
+
+            cluster = iter_cluster->second;
+            delta_ptr = cluster.deltas;
+        }
+
+        iter_delta_val += delta_ptr[iter_delta_index].delta;
+        addr = cluster.start + iter_delta_val * pagesize;
+        payload = delta_ptr[iter_delta_index].payload;
+
+        ++iter_delta_index;
+
+        ret_val = 0;
+    }
+
+    return ret_val;
 }
 
 int AddrSequence::append_addr(unsigned long addr, int n)
@@ -245,7 +277,8 @@ int main(int argc, char* argv[])
 {
     AddrSequence  as;
     int ret_val;
-    int i;
+    unsigned long addr;
+    uint8_t  payload;
     
     as.set_pageshift(12);
     ret_val = as.inc_payload(0x1000, 0);
@@ -268,6 +301,8 @@ int main(int argc, char* argv[])
     ret_val = as.inc_payload(0x23000, 0);
     ret_val = as.inc_payload(0x25000, 0);
     ret_val = as.inc_payload(0x28000, 0);
+    ret_val = as.inc_payload(0x30000, 0);
+    ret_val = as.inc_payload(0x32000, 0);
     
     as.rewind();
     ret_val = as.inc_payload(0x11000, 1);
@@ -278,9 +313,19 @@ int main(int argc, char* argv[])
     ret_val = as.inc_payload(0x23000, 0);
     ret_val = as.inc_payload(0x25000, 1);
     ret_val = as.inc_payload(0x28000, 1);
-     
+    ret_val = as.inc_payload(0x30000, 0);
+    ret_val = as.inc_payload(0x32000, 1);
+    ret_val = as.inc_payload(0x40000, 1); //should not update
+    ret_val = as.inc_payload(0x40000, 1); //should not update
+
+    ret_val = as.get_first(addr, payload);
+    while(!ret_val) {
+        printf("addr = %lx, payload = %u\n", addr, payload);
+        ret_val = as.get_next(addr, payload);
+    }
+
     as.clear();
-    
+
     return 0;
 }
 #endif
