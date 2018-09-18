@@ -8,14 +8,14 @@ struct DeltaPayload
 {
   uint8_t delta;    // in pagesize unit
   uint8_t payload;  // stores refs count
-}
+}__attribute__((packed));
 
 struct AddrCluster
 {
   unsigned long start;
   int size;
   DeltaPayload *deltas; // points into AddrSequence::bufs
-}
+};
 
 // A sparse array for ordered addresses.
 // There will be 2 such arrays, one for 4K pages, another or 2M pages.
@@ -30,8 +30,8 @@ class AddrSequence
 {
   public:
     AddrSequence();
-    size_t size() { return size; }
-    bool empty()  { return size > 0; }
+    size_t size() { return addr_size; }
+    bool empty()  { return addr_size > 0; }
 
     void set_pageshift(int shift);
     void clear();
@@ -56,13 +56,43 @@ class AddrSequence
     int get_first(unsigned long& addr, uint8_t& payload);
     int get_next(unsigned long& addr, uint8_t& payload);
 
-  private:
-    const int BUF_SIZE = 0x10000; // 64KB;
+    // private:
+    int append_addr(unsigned long addr, int n);
+
+    int update_addr(unsigned long addr, int n);
+    
+    int create_cluster(unsigned long addr, int n);
+
+    AddrCluster new_cluster(unsigned long addr, void* buffer);
+
+    void* get_free_buffer();
+
+    int save_into_cluster(AddrCluster& cluster, unsigned long addr, int n,
+                          bool is_update);
+
+    int can_merge_into_cluster(AddrCluster& cluster, unsigned long addr);
+    
+    DeltaPayload* raw_buffer_ptr() {
+      return (DeltaPayload*)&(bufs[bufs.size() - 1][buf_item_used * BUF_ITEM_SIZE]);
+    }
+    
+    int is_buffer_full() {
+      return buf_item_used == BUF_ITEM_COUNT;
+    }
+
+    int  addr_to_delta(AddrCluster& cluster, unsigned long addr) {
+      return (addr - cluster.start) / pagesize;
+    }
+    
+  private:        
+    const static int BUF_SIZE = 0x10000; // 64KB;
+    const static int BUF_ITEM_SIZE = sizeof(struct DeltaPayload);
+    const static int BUF_ITEM_COUNT = BUF_SIZE / BUF_ITEM_SIZE;
 
     int nr_walks;
     int pageshift;
     int pagesize;
-    unsigned long size;  // # of addrs stored
+    unsigned long addr_size;  // # of addrs stored
 
     std::map<unsigned long, AddrCluster> addr_clusters;
 
@@ -70,7 +100,9 @@ class AddrSequence
     // avoiding internal/external fragmentations.
     // Only freed on clear().
     std::vector<std::array<uint8_t, BUF_SIZE>> bufs;
-}
+
+    int buf_item_used;
+};
 
 #endif
 // vim:set ts=2 sw=2 et:
