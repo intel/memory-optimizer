@@ -175,7 +175,7 @@ int AddrSequence::append_addr(unsigned long addr, int n)
         AddrCluster& cluster = last->second;
 
         //try put into the cluster or create new cluster
-        if (addr >= cluster.start) {            
+        if (addr > cluster_end(cluster)) {
             if (can_merge_into_cluster(cluster, addr)) 
                 ret_val = save_into_cluster(cluster, addr, n);
             else
@@ -213,6 +213,10 @@ int AddrSequence::create_cluster(unsigned long addr, int n)
             //a new cluster created, so update this
             //new cluster's end = strat of cause
             current_cluster_end = addr;
+
+            //set the find iterator because we added new cluster
+            cluster_added_for_update(insert_ret.first);
+
             ret_val = save_into_cluster(insert_ret.first->second,
                                         addr, n);
 
@@ -375,6 +379,7 @@ int AddrSequence::self_test_walk()
     delta = rand() & 0xff;
     addr += delta;
     int val = rand() & 1;
+    
     int err = inc_payload(addr, val);
     if (err < 0) {
       fprintf(stderr, "inc_payload error %d\n", err);

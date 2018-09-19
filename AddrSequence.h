@@ -109,6 +109,13 @@ class AddrSequence
         delta_update_sum = 0;
         delta_update_index = 0;
     }
+
+    void cluster_added_for_update(std::map<unsigned long, AddrCluster>::iterator& new_start) {
+        //move iter_update to last one, because we grow at end
+        iter_update = new_start;
+        delta_update_sum = 0;
+        delta_update_index = 0;
+    }
   private:        
     const static int BUF_SIZE = 8;//0x10000; // 64KB;
     const static int BUF_ITEM_SIZE = sizeof(struct DeltaPayload);
