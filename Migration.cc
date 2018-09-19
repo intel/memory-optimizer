@@ -12,6 +12,7 @@
 #include "Migration.h"
 #include "lib/debug.h"
 #include "lib/stats.h"
+#include "AddrSequence.h"
 
 using namespace std;
 
@@ -66,9 +67,9 @@ int Migration::set_dram_percent(int dp)
 size_t Migration::get_threshold_refs(ProcIdlePageType type,
                                      int& min_refs, int& max_refs)
 {
-  const page_refs_map& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs;
+  const AddrSequence& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs2;
   int nr_walks = proc_idle_pages.get_nr_walks();
-  vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count;
+  vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count2;
 
   double ratio;
 
@@ -114,22 +115,39 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
 
 int Migration::select_top_pages(ProcIdlePageType type)
 {
-  const page_refs_map& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs;
+  AddrSequence& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs2;
   int min_refs;
   int max_refs;
-
+  unsigned long addr;
+  uint8_t ref_count;
+  int iter_ret;
+  
   if (page_refs.empty())
     return 1;
 
   get_threshold_refs(type, min_refs, max_refs);
 
+  /*
   for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
     printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
     if (it->second >= min_refs &&
         it->second <= max_refs)
       pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
   }
+  */
 
+  iter_ret = page_refs.get_first(addr, ref_count);
+  while(!iter_ret) {
+    printdd("vpfn: %lx count: %d\n", addr, (int)ref_count);
+    if (ref_count >= min_refs &&
+        ref_count <= max_refs)
+      pages_addr[type].push_back((void *)addr);
+    
+    iter_ret = page_refs.get_next(addr, ref_count);
+  }
+  
+
+  
   if (pages_addr[type].empty())
     return 1;
 
@@ -257,7 +275,7 @@ void Migration::show_numa_stats()
 
 void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
 {
-    unsigned long total_kb = proc_idle_pages.get_pagetype_refs(type).page_refs.size() * (pagetype_size[type] >> 10);
+    unsigned long total_kb = proc_idle_pages.get_pagetype_refs(type).page_refs2.size() * (pagetype_size[type] >> 10);
     unsigned long to_migrate = pages_addr[type].size() * (pagetype_size[type] >> 10);
 
     printf("    %s: %s\n", pagetype_name[type], stage);
