@@ -422,8 +422,13 @@ void test_static()
 
 int main(int argc, char* argv[])
 {
+#if 1
+  AddrSequence as;
+  return as.self_test();
+#else
   test_static();
   return 0;
+#endif
 }
 
 #endif
