@@ -1,4 +1,9 @@
+#include <stdlib.h>
+#include <iostream>
+
 #include "AddrSequence.h"
+
+using namespace std;
 
 AddrSequence::AddrSequence()
 {
@@ -77,13 +82,17 @@ int AddrSequence::update_addr(unsigned long addr, int n)
     return ret_val;
 }
 
-int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
+void AddrSequence::prepare_get()
 {
     iter_cluster = addr_clusters.begin();
     iter_delta_index = 0;
     iter_delta_val = 0;
+}
 
-    return get_next(addr, payload);
+int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
+{
+  prepare_get();
+  return get_next(addr, payload);
 }
 
 int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
@@ -281,10 +290,82 @@ void AddrSequence::free_all_buf()
     bufs_ptr_recorder.clear();
 }
 
-
-
 //self-testing
 #ifdef ADDR_SEQ_SELF_TEST
+
+int AddrSequence::self_test_compare()
+{
+  unsigned long addr;
+  uint8_t payload;
+
+  cout << "self_test_compare" << endl;
+
+  prepare_get();
+
+  for (auto& kv: test_map)
+  {
+    int err = get_next(addr, payload);
+    if (err < 0)
+      return err;
+
+    if (addr != kv.first) {
+      fprintf(stderr, "addr mismatch: %lx != %lx\n", addr, kv.first);
+      return -1;
+    }
+    if (payload != kv.second) {
+      fprintf(stderr, "payload mismatch: %d != %d\n",
+              (int)payload, (int)kv.second);
+      return -2;
+    }
+  }
+
+  return 0;
+}
+
+int AddrSequence::self_test_walk()
+{
+  unsigned long addr = 0x100000;
+  unsigned long delta;
+  bool is_first_walk = test_map.empty();
+
+  rewind();
+  for (int i = 0; i < 1<<20; ++i)
+  {
+    delta = rand() & 0xff;
+    addr += delta;
+    int val = rand() & 1;
+    int err = inc_payload(addr, val);
+    if (err < 0) {
+      fprintf(stderr, "inc_payload error %d\n", err);
+      fprintf(stderr, "nr_walks=%d i=%d addr=%lx val=%d\n", nr_walks, i, addr, val);
+      return err;
+    }
+    if (is_first_walk || test_map.find(addr) != test_map.end())
+      test_map[addr] = val;
+  }
+  return 0;
+}
+
+int AddrSequence::self_test()
+{
+  std::map<unsigned long, uint8_t> am;
+  int max_walks;
+  int err;
+
+  clear();
+  set_pageshift(12);
+
+  max_walks = rand() & 0xff;
+  for (int i = 0; i < max_walks; ++i)
+  {
+    err = self_test_walk();
+    if (err < 0)
+      return err;
+  }
+  err = self_test_compare();
+  return err;
+}
+
 int main(int argc, char* argv[])
 {
     AddrSequence  as;
@@ -340,4 +421,5 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
 #endif

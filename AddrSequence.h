@@ -55,6 +55,7 @@ class AddrSequence
     int inc_payload(unsigned long addr, int n);
 
     // for sequential visiting
+    void prepare_get();
     int get_first(unsigned long& addr, uint8_t& payload);
     int get_next(unsigned long& addr, uint8_t& payload);
 
@@ -102,6 +103,12 @@ class AddrSequence
     int allocate_buf(int count);
 
     void free_all_buf();
+
+#ifdef ADDR_SEQ_SELF_TEST
+    int self_test();
+    int self_test_walk();
+    int self_test_compare();
+#endif
     
   private:        
     const static int BUF_SIZE = 0x10000; // 64KB;
@@ -130,6 +137,10 @@ class AddrSequence
     std::map<unsigned long, AddrCluster>::iterator iter_cluster;
     int iter_delta_index;
     int iter_delta_val;
+
+#ifdef ADDR_SEQ_SELF_TEST
+    std::map<unsigned long, uint8_t> test_map;
+#endif
 };
 
 #endif
