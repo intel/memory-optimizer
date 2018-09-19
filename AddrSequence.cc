@@ -29,6 +29,8 @@ void AddrSequence::clear()
   free_all_buf();
 
   buf_item_used = BUF_ITEM_COUNT;
+  delta_update_index = 0;
+  delta_update_sum = 0;
 }
 
 void AddrSequence::set_pageshift(int shift)
@@ -41,6 +43,11 @@ int AddrSequence::rewind()
 {
   ++nr_walks;
 
+  iter_update = addr_clusters.begin();
+  delta_update_sum = 0;
+  delta_update_index = 0;
+  current_cluster_end = 0;
+  
   return 0;
 }
 
@@ -61,24 +68,51 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
 int AddrSequence::update_addr(unsigned long addr, int n)
 {
     //find if the addr already in the cluster, return if not
-    int ret_val = -1;
-    DeltaPayload *delta_ptr;
-    auto begin = addr_clusters.begin();
-    auto end = addr_clusters.end();
+    int ret_val = 1;
+    unsigned long each_addr;
     
-    for (; begin != end; ++begin) {
-        delta_ptr = addr_to_delta_ptr(begin->second, addr);
-        if (delta_ptr) {
-          if (n)
-              ++delta_ptr->payload;
-          else
-              delta_ptr->payload = 0;
+    if (iter_update == addr_clusters.end())
+        return -1;
 
-          ret_val = 0;
-          break;
+    while(iter_update != addr_clusters.end()) {
+
+        AddrCluster& cluster = iter_update->second;
+
+        while(delta_update_index < cluster.size) {
+
+            delta_update_sum += cluster.deltas[delta_update_index].delta;
+            each_addr = cluster.start + delta_update_sum * pagesize;
+
+            if (each_addr == addr) {
+
+                //got it
+                if (n)
+                    ++cluster.deltas[delta_update_index].payload;
+                else
+                    cluster.deltas[delta_update_index].payload = 0;
+
+                //do NOT move!
+                delta_update_sum -= cluster.deltas[delta_update_index].delta;
+                ret_val = 0;
+                break;
+
+            } else if (each_addr > addr) {
+                //do NOT move!
+                delta_update_sum -= cluster.deltas[delta_update_index].delta;
+                ret_val = -1;
+                break;
+            }
+
+            ++delta_update_index;
         }
+
+        if (ret_val <= 0)
+            break;
+
+        ++iter_update;
+        cluster_change_for_update();
     }
-    
+
     return ret_val;
 }
 
@@ -175,6 +209,10 @@ int AddrSequence::create_cluster(unsigned long addr, int n)
         ret_val = -1;
         auto insert_ret = addr_clusters.insert(new_item);        
         if (insert_ret.second) {
+
+            //a new cluster created, so update this
+            //new cluster's end = strat of cause
+            current_cluster_end = addr;
             ret_val = save_into_cluster(insert_ret.first->second,
                                         addr, n);
 
@@ -229,6 +267,9 @@ int AddrSequence::save_into_cluster(AddrCluster& cluster,
     ++cluster.size;
     ++buf_item_used;
     ++addr_size;
+
+    //becuase cluster grow at end always
+    current_cluster_end = addr;
     
     return 0;
 }

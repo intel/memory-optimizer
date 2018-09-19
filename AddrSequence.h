@@ -91,18 +91,13 @@ class AddrSequence
     }
 
     unsigned long cluster_end(AddrCluster& cluster) {
-        int delta_val= 0;
-        
-        for (int i = 0; i < cluster.size; ++i) {
-            delta_val += cluster.deltas[i].delta;
-        }
-        
-        return cluster.start + delta_val * pagesize;
+        return current_cluster_end;
     }
 
     int allocate_buf(int count);
 
     void free_all_buf();
+
 
 #ifdef ADDR_SEQ_SELF_TEST
     int self_test();
@@ -110,8 +105,12 @@ class AddrSequence
     int self_test_compare();
 #endif
     
+    void cluster_change_for_update() {
+        delta_update_sum = 0;
+        delta_update_index = 0;
+    }
   private:        
-    const static int BUF_SIZE = 0x10000; // 64KB;
+    const static int BUF_SIZE = 8;//0x10000; // 64KB;
     const static int BUF_ITEM_SIZE = sizeof(struct DeltaPayload);
     const static int BUF_ITEM_COUNT = BUF_SIZE / BUF_ITEM_SIZE;
     typedef uint8_t buf_type[BUF_SIZE];
@@ -138,9 +137,16 @@ class AddrSequence
     int iter_delta_index;
     int iter_delta_val;
 
+
 #ifdef ADDR_SEQ_SELF_TEST
     std::map<unsigned long, uint8_t> test_map;
 #endif
+
+    std::map<unsigned long, AddrCluster>::iterator iter_update;
+    int delta_update_sum;
+    int delta_update_index;
+    unsigned long current_cluster_end;
+
 };
 
 #endif
