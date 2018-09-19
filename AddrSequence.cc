@@ -42,7 +42,7 @@ int AddrSequence::rewind()
 int AddrSequence::inc_payload(unsigned long addr, int n)
 {
     int ret_value;
-    
+
     if (nr_walks < 2) {
         ret_value = append_addr(addr, n);
     } else {
@@ -56,7 +56,7 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
 int AddrSequence::update_addr(unsigned long addr, int n)
 {
     //find if the addr already in the cluster, return if not
-    int ret_val = 0;
+    int ret_val = -1;
     DeltaPayload *delta_ptr;
     auto begin = addr_clusters.begin();
     auto end = addr_clusters.end();
@@ -66,11 +66,15 @@ int AddrSequence::update_addr(unsigned long addr, int n)
         if (delta_ptr) {
           if (n)
               ++delta_ptr->payload;
+          else
+              delta_ptr->payload = 0;
+
+          ret_val = 0;
           break;
         }
     }
     
-  return ret_val;
+    return ret_val;
 }
 
 int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
@@ -202,11 +206,15 @@ void* AddrSequence::get_free_buffer()
 int AddrSequence::save_into_cluster(AddrCluster& cluster,
                                     unsigned long addr, int n)
 {
-    uint8_t delta = addr_to_delta(cluster, addr);
-    
+    unsigned long delta = addr_to_delta(cluster, addr);
     int index = cluster.size;
     
-    cluster.deltas[index].delta = delta;
+    if (delta > 255) {
+        printf("overflow error!\n");
+        return -1;
+    }
+
+    cluster.deltas[index].delta = (uint8_t)delta;
     cluster.deltas[index].payload = n;
 
     ++cluster.size;
@@ -218,10 +226,13 @@ int AddrSequence::save_into_cluster(AddrCluster& cluster,
 
 int AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long addr)
 {
-    int page_count = addr_to_delta(cluster, addr);
+    unsigned long addr_delta = addr - cluster_end(cluster);
+    unsigned long pagecount = addr_delta >> pageshift;
+    int is_not_align = addr_delta & (pagesize - 1);
 
-    if (page_count > 255
-        || is_buffer_full())
+    if (pagecount > 255
+        || is_buffer_full()
+        || is_not_align)
         return false;
 
     return true;
@@ -233,8 +244,9 @@ DeltaPayload* AddrSequence::addr_to_delta_ptr(AddrCluster& cluster,
                                               unsigned long addr)
 {
     unsigned long delta_addr;
+    unsigned long end_addr = cluster_end(cluster);
     
-    if (addr < cluster.start || addr > cluster_end(cluster))
+    if (addr < cluster.start || addr > end_addr)
         return NULL;
 
     delta_addr = cluster.start;

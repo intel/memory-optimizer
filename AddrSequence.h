@@ -84,8 +84,9 @@ class AddrSequence
       return buf_item_used == BUF_ITEM_COUNT;
     }
 
-    int  addr_to_delta(AddrCluster& cluster, unsigned long addr) {
-      return (addr - cluster_end(cluster)) / pagesize;
+    unsigned long  addr_to_delta(AddrCluster& cluster, unsigned long addr) {
+        unsigned long addr_delta = addr - cluster_end(cluster);
+        return addr_delta >> pageshift;
     }
 
     unsigned long cluster_end(AddrCluster& cluster) {
@@ -110,7 +111,8 @@ class AddrSequence
     
     int nr_walks;
     int pageshift;
-    int pagesize;
+    unsigned long  pagesize;
+
     unsigned long addr_size;  // # of addrs stored
 
     std::map<unsigned long, AddrCluster> addr_clusters;
@@ -128,7 +130,6 @@ class AddrSequence
     std::map<unsigned long, AddrCluster>::iterator iter_cluster;
     int iter_delta_index;
     int iter_delta_val;
-
 };
 
 #endif
