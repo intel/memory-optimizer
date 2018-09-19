@@ -366,60 +366,64 @@ int AddrSequence::self_test()
   return err;
 }
 
+void test_static()
+{
+  AddrSequence  as;
+  int ret_val;
+  unsigned long addr;
+  uint8_t  payload;
+
+  as.set_pageshift(12);
+  ret_val = as.inc_payload(0x1000, 0);
+  ret_val = as.inc_payload(0x3000, 0);
+  ret_val = as.inc_payload(0x5000, 0);
+  ret_val = as.inc_payload(0x8000, 0);
+  ret_val = as.inc_payload(0x1000 + 4096 * 255, 1);
+  ret_val = as.inc_payload(0x1000 + 4096 * 256, 1);
+
+  as.clear();
+
+  as.rewind();
+
+  as.set_pageshift(12);
+  ret_val = as.inc_payload(0x11000, 0);
+  ret_val = as.inc_payload(0x13000, 0);
+  ret_val = as.inc_payload(0x15000, 0);
+  ret_val = as.inc_payload(0x18000, 0);
+  ret_val = as.inc_payload(0x21000, 0);
+  ret_val = as.inc_payload(0x23000, 0);
+  ret_val = as.inc_payload(0x25000, 0);
+  ret_val = as.inc_payload(0x28000, 0);
+  ret_val = as.inc_payload(0x30000, 0);
+  ret_val = as.inc_payload(0x32000, 0);
+
+  as.rewind();
+  ret_val = as.inc_payload(0x11000, 1);
+  ret_val = as.inc_payload(0x13000, 0);
+  ret_val = as.inc_payload(0x15000, 1);
+  ret_val = as.inc_payload(0x18000, 0);
+  ret_val = as.inc_payload(0x21000, 1);
+  ret_val = as.inc_payload(0x23000, 0);
+  ret_val = as.inc_payload(0x25000, 1);
+  ret_val = as.inc_payload(0x28000, 1);
+  ret_val = as.inc_payload(0x30000, 0);
+  ret_val = as.inc_payload(0x32000, 1);
+  ret_val = as.inc_payload(0x40000, 1); //should not update
+  ret_val = as.inc_payload(0x40000, 1); //should not update
+
+  ret_val = as.get_first(addr, payload);
+  while(!ret_val) {
+    printf("addr = %lx, payload = %u\n", addr, payload);
+    ret_val = as.get_next(addr, payload);
+  }
+
+  as.clear();
+}
+
 int main(int argc, char* argv[])
 {
-    AddrSequence  as;
-    int ret_val;
-    unsigned long addr;
-    uint8_t  payload;
-    
-    as.set_pageshift(12);
-    ret_val = as.inc_payload(0x1000, 0);
-    ret_val = as.inc_payload(0x3000, 0);
-    ret_val = as.inc_payload(0x5000, 0);
-    ret_val = as.inc_payload(0x8000, 0);
-    ret_val = as.inc_payload(0x1000 + 4096 * 255, 1);
-    ret_val = as.inc_payload(0x1000 + 4096 * 256, 1);
-
-    as.clear();
-
-    as.rewind();
-    
-    as.set_pageshift(12);
-    ret_val = as.inc_payload(0x11000, 0);
-    ret_val = as.inc_payload(0x13000, 0);
-    ret_val = as.inc_payload(0x15000, 0);
-    ret_val = as.inc_payload(0x18000, 0);
-    ret_val = as.inc_payload(0x21000, 0);
-    ret_val = as.inc_payload(0x23000, 0);
-    ret_val = as.inc_payload(0x25000, 0);
-    ret_val = as.inc_payload(0x28000, 0);
-    ret_val = as.inc_payload(0x30000, 0);
-    ret_val = as.inc_payload(0x32000, 0);
-    
-    as.rewind();
-    ret_val = as.inc_payload(0x11000, 1);
-    ret_val = as.inc_payload(0x13000, 0);
-    ret_val = as.inc_payload(0x15000, 1);
-    ret_val = as.inc_payload(0x18000, 0);
-    ret_val = as.inc_payload(0x21000, 1);
-    ret_val = as.inc_payload(0x23000, 0);
-    ret_val = as.inc_payload(0x25000, 1);
-    ret_val = as.inc_payload(0x28000, 1);
-    ret_val = as.inc_payload(0x30000, 0);
-    ret_val = as.inc_payload(0x32000, 1);
-    ret_val = as.inc_payload(0x40000, 1); //should not update
-    ret_val = as.inc_payload(0x40000, 1); //should not update
-
-    ret_val = as.get_first(addr, payload);
-    while(!ret_val) {
-        printf("addr = %lx, payload = %u\n", addr, payload);
-        ret_val = as.get_next(addr, payload);
-    }
-
-    as.clear();
-
-    return 0;
+  test_static();
+  return 0;
 }
 
 #endif
