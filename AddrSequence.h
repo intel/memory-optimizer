@@ -32,8 +32,8 @@ class AddrSequence
   public:
     AddrSequence();
     ~AddrSequence();
-    size_t size() { return addr_size; }
-    bool empty()  { return addr_size > 0; }
+    size_t size() const { return addr_size; }
+    bool empty() const  { return 0 == addr_size; }
 
     void set_pageshift(int shift);
     void clear();
