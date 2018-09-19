@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <unordered_map>
 #include "ProcMaps.h"
+#include "AddrSequence.h"
 
 static const unsigned long PTE_SIZE = 1UL << 12;
 static const unsigned long PMD_SIZE = 1UL << 21;
@@ -60,11 +61,13 @@ struct ProcIdleRefs
 {
   // VA => refs
   // accumulated by walk()
-  page_refs_map page_refs;
-
+  //page_refs_map page_refs;
+  AddrSequence page_refs2;
+    
   // refs => page count
   // accumulated by count_refs()
-  std::vector<unsigned long> refs_count;
+  //std::vector<unsigned long> refs_count;
+  std::vector<unsigned long> refs_count2;
 };
 
 class ProcIdlePages
@@ -79,8 +82,8 @@ class ProcIdlePages
     int walk_multi(int nr, float interval);
     void count_refs();
     int save_counts(std::string filename);
-
-    const ProcIdleRefs& get_pagetype_refs(ProcIdlePageType type)
+    
+    ProcIdleRefs& get_pagetype_refs(ProcIdlePageType type)
                    { return pagetype_refs[type | PAGE_ACCESSED_MASK]; }
 
     int get_nr_walks() { return nr_walks; }

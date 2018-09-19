@@ -31,6 +31,27 @@ unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX] = {
 	[PGDIR_HOLE]    = PGDIR_SIZE,
 };
 
+unsigned long pagetype_shift[IDLE_PAGE_TYPE_MAX] = {
+	// 4k page
+	[PTE_IDLE]      = 12,
+	[PTE_ACCESSED]  = 12,
+
+	// 2M page
+	[PMD_IDLE]      = 21,
+	[PMD_ACCESSED]  = 21,
+
+	// 1G page
+	[PUD_IDLE]      = 30,
+	[PUD_ACCESSED]  = 30,
+
+	[PTE_HOLE]      = 12,
+	[PMD_HOLE]      = 21,
+	[PUD_HOLE]      = 30,
+	[P4D_HOLE]      = 39,
+	[PGDIR_HOLE]    = 39,
+};
+
+
 const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
   [PTE_IDLE]     = "4K_idle",
   [PTE_ACCESSED] = "4K_accessed",
@@ -63,13 +84,17 @@ int ProcIdlePages::walk_multi(int nr, float interval)
   }
 
   for (auto& prc: pagetype_refs) {
-    prc.page_refs.clear();
-    prc.refs_count.clear();
-    prc.refs_count.resize(nr + 1);
+    prc.page_refs2.clear();
+    prc.refs_count2.clear();
+    prc.refs_count2.resize(nr + 1);   
   }
 
   for (int i = 0; i < nr; ++i)
   {
+      //must do rewind() before a walk() start.
+    for (auto& prc: pagetype_refs) 
+      prc.page_refs2.rewind();
+    
     err = walk();
     if (err)
       return err;
@@ -149,7 +174,7 @@ int ProcIdlePages::walk()
       return idle_fd;
 
     read_buf.resize(READ_BUF_SIZE);
-
+    
     for (auto &vma: address_map)
       walk_vma(vma);
 
@@ -160,17 +185,23 @@ int ProcIdlePages::walk()
 
 void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
 {
-    std::vector<unsigned long>& refs_count = prc.refs_count;
-
-    refs_count.clear();
-    refs_count.resize(nr_walks + 1, 0);
+    int ret_val;
+    unsigned long addr;
+    uint8_t ref_count;
+    std::vector<unsigned long>& refs_count2 = prc.refs_count2;
+    
+    refs_count2.clear();
+    refs_count2.resize(nr_walks +1 , 0);
 
     // In the rare case of changed VMAs, their start/end boundary may not align
     // with the underlying huge page size. If the same huge page is covered by
     // 2 VMAs, there will be duplicate accounting for the same page. The easy
-    // workaround is to enforce min() check here.
-    for(const auto& kv: prc.page_refs)
-      refs_count[std::min(kv.second, (uint8_t)nr_walks)] += 1;
+    // workaround is to enforce min() check here.    
+    ret_val = prc.page_refs2.get_first(addr, ref_count);
+    while(!ret_val) {
+      refs_count2[std::min(ref_count, (uint8_t)nr_walks)] += 1;
+      ret_val = prc.page_refs2.get_next(addr, ref_count);
+    }    
 }
 
 void ProcIdlePages::count_refs()
@@ -182,7 +213,6 @@ void ProcIdlePages::count_refs()
 int ProcIdlePages::save_counts(std::string filename)
 {
   int err = 0;
-
   FILE *file;
   file = fopen(filename.c_str(), "w");
   if (!file) {
@@ -203,7 +233,7 @@ int ProcIdlePages::save_counts(std::string filename)
   for (int i = 0; i <= nr_walks; i++) {
     fprintf(file, "%4d", i);
     for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_ACCESSED}) {
-      unsigned long pages = pagetype_refs[type].refs_count[i];
+      unsigned long pages = pagetype_refs[type].refs_count2[i];
       unsigned long kb = pages * (pagetype_size[type] >> 10);
       fprintf(file, " %'15lu", kb);
       sum_kb[type] += kb;
@@ -221,9 +251,10 @@ int ProcIdlePages::save_counts(std::string filename)
   fprintf(file, "\nALL  %'15lu\n", total_kb);
 
   fclose(file);
-
+  
   return err;
 }
+
 
 int ProcIdlePages::open_file()
 {
@@ -242,24 +273,25 @@ int ProcIdlePages::open_file()
 void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
                                   unsigned long va, unsigned long end)
 {
-  page_refs_map& page_refs = pagetype_refs[type | PAGE_ACCESSED_MASK].page_refs;
   unsigned long page_size = pagetype_size[type];
+  AddrSequence& page_refs2 = pagetype_refs[type | PAGE_ACCESSED_MASK].page_refs2;
 
+  page_refs2.set_pageshift(pagetype_shift[type]);
+  
   for (int i = 0; i < nr; ++i)
   {
-    unsigned long vpfn = va >> PAGE_SHIFT;
+      //now change to VA to use AddrSequence
+      unsigned long vpfn = va;// >> PAGE_SHIFT;
 
-    if (type & PAGE_ACCESSED_MASK)
-      inc_count(page_refs, vpfn);
-    else {
-      auto search = page_refs.find(vpfn);
+    if (type & PAGE_ACCESSED_MASK) 
+      page_refs2.inc_payload(vpfn, 1);
+    else 
+      page_refs2.inc_payload(vpfn, 0);
 
-      if (search == page_refs.end())
-        page_refs[vpfn] = 0;
-    }
-
-    if (page_refs[vpfn] > nr_walks)
-      printf("error counted duplicate vpfn: %lx\n", vpfn);
+    //AddrSequence is not easy to random access, consider move
+    //this checking into AddrSequence.
+    //if (page_refs[vpfn] > nr_walks)
+    //  printf("error counted duplicate vpfn: %lx\n", vpfn);
 
     va += page_size;
     if (va >= end)
