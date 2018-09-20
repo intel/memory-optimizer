@@ -81,18 +81,11 @@ class AddrSequence
 
     bool can_merge_into_cluster(AddrCluster& cluster, unsigned long addr);
 
-    DeltaPayload* raw_buffer_ptr() {
-      uint8_t* ptr = (uint8_t*)bufs_ptr_recorder.back();
-      return (DeltaPayload*)(ptr + buf_item_used * BUF_ITEM_SIZE);
-    }
-    
-    int is_buffer_full() {
-      return buf_item_used == BUF_ITEM_COUNT;
-    }
-
-    int allocate_buf(int count);
-
+    int allocate_buf();
     void free_all_buf();
+    int is_buffer_full() {
+      return buf_used_count == MAX_ITEM_COUNT;
+    }
     
     void cluster_change_for_update() {
         delta_update_sum = 0;
@@ -112,14 +105,13 @@ class AddrSequence
 
   private:        
     const static int BUF_SIZE = 0x10000; // 64KB;
-    const static int BUF_ITEM_SIZE = sizeof(struct DeltaPayload);
-    const static int BUF_ITEM_COUNT = BUF_SIZE / BUF_ITEM_SIZE;
-    typedef uint8_t buf_type[BUF_SIZE];
+    const static int ITEM_SIZE = sizeof(struct DeltaPayload);
+    const static int MAX_ITEM_COUNT = BUF_SIZE / ITEM_SIZE;
+
     
     int nr_walks;
     int pageshift;
     unsigned long  pagesize;
-
     unsigned long addr_size;  // # of addrs stored
 
     std::map<unsigned long, AddrCluster> addr_clusters;
@@ -129,15 +121,14 @@ class AddrSequence
     // Only freed on clear().
     //std::vector<std::array<uint8_t, BUF_SIZE>> bufs;
     
-    std::allocator<buf_type> bufs;
-    std::vector<buf_type*>   bufs_ptr_recorder;
-    
-    int buf_item_used;
+    typedef uint8_t delta_buf[BUF_SIZE];
+    std::allocator<delta_buf> buf_allocator;
+    std::vector<delta_buf*>   buf_pool;
+    int buf_used_count;
 
     std::map<unsigned long, AddrCluster>::iterator iter_cluster;
     int iter_delta_index;
     int iter_delta_val;
-
 
 #ifdef ADDR_SEQ_SELF_TEST
     std::map<unsigned long, uint8_t> test_map;

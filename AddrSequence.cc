@@ -13,7 +13,7 @@ AddrSequence::AddrSequence()
   pagesize = 0;
 
   //set this to froce alloc buffer when add cluster
-  buf_item_used = BUF_ITEM_COUNT;
+  buf_used_count = MAX_ITEM_COUNT;
 }
 
 AddrSequence::~AddrSequence()
@@ -28,7 +28,7 @@ void AddrSequence::clear()
   addr_clusters.clear();
   free_all_buf();
 
-  buf_item_used = BUF_ITEM_COUNT;
+  buf_used_count = MAX_ITEM_COUNT;
   delta_update_index = 0;
   delta_update_sum = 0;
 }
@@ -239,15 +239,14 @@ AddrCluster AddrSequence::new_cluster(unsigned long addr, void* buffer)
 
 void* AddrSequence::get_free_buffer()
 {
-    if (is_buffer_full()) {
-        //todo: try catch exception here for fail
-        if (allocate_buf(1))
+    uint8_t* ptr;
+
+    if (is_buffer_full())
+        if (allocate_buf() < 0)
             return NULL;
 
-        buf_item_used = 0;
-    }
-    
-    return raw_buffer_ptr();
+   ptr = (uint8_t*)buf_pool.back();
+   return (DeltaPayload*)(ptr + buf_used_count * ITEM_SIZE);
 }
 
 
@@ -266,7 +265,7 @@ int AddrSequence::save_into_cluster(AddrCluster& cluster,
     cluster.deltas[index].payload = n;
 
     ++cluster.size;
-    ++buf_item_used;
+    ++buf_used_count;
     ++addr_size;
 
     //becuase cluster grow at end always
@@ -289,24 +288,38 @@ bool AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long ad
     return true;
 }
 
-int AddrSequence::allocate_buf(int count)
+int AddrSequence::allocate_buf()
 {
-    buf_type* new_buf_ptr;
+    delta_buf* new_buf_ptr;
 
-    //todo: catch exception for fail case
-    new_buf_ptr = bufs.allocate(count);
+    try {
+      new_buf_ptr = buf_allocator.allocate(1);
+    } catch(std::bad_alloc& e) {
+      return -ENOMEM;
+    }
 
-    bufs_ptr_recorder.push_back(new_buf_ptr);
+    try {
+      //new free buffer saved to back of pool
+      //users will always use back() to get it later
+      buf_pool.push_back(new_buf_ptr);
+
+      //we already have a new buf in pool,
+      //so let's reset the buf_used_count here
+      buf_used_count = 0;
+    } catch (std::bad_alloc& e) {
+      buf_allocator.deallocate(new_buf_ptr, 1);
+      return -ENOMEM;
+    }
 
     return 0;
 }
 
 void AddrSequence::free_all_buf()
 {
-    for(auto& i : bufs_ptr_recorder)
-        bufs.deallocate(i, 1);
+    for(auto& i : buf_pool)
+        buf_allocator.deallocate(i, 1);
 
-    bufs_ptr_recorder.clear();
+    buf_pool.clear();
 }
 
 //self-testing
