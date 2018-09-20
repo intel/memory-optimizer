@@ -46,7 +46,7 @@ int AddrSequence::rewind()
   iter_update = addr_clusters.begin();
   delta_update_sum = 0;
   delta_update_index = 0;
-  current_cluster_end = 0;
+  last_cluster_end = 0;
   
   return 0;
 }
@@ -55,7 +55,7 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
 {
     int ret_value;
 
-    if (nr_walks < 2) {
+    if (in_append_period()) {
         ret_value = append_addr(addr, n);
     } else {
         ret_value = update_addr(addr, n);
@@ -176,31 +176,23 @@ int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
 int AddrSequence::append_addr(unsigned long addr, int n)
 {
     int ret_val;
-    
     auto last = addr_clusters.rbegin();
 
-    //we already have a cluster, let's check if we can
-    //put addr into this cluster
-    if (last != addr_clusters.rend()) {
-        
-        AddrCluster& cluster = last->second;
+    if (last == addr_clusters.rend()) {
+      return create_cluster(addr, n);
+    }
 
-        //try put into the cluster or create new cluster
-        if (addr > cluster_end(cluster)) {
-            if (can_merge_into_cluster(cluster, addr)) 
-                ret_val = save_into_cluster(cluster, addr, n);
-            else
-                ret_val = create_cluster(addr, n);
-        } else {
-            // the addr in nr_walks = 1 stage should grow from low to high,
-            // so all address <= last inserted address will ignore here
-            // with return 2
-            ret_val = 2;
-        }
-        
-    } else {
-        // no cluster, let's create it.
+    AddrCluster& cluster = last->second;
+    if (addr > last_cluster_end) {
+      if (can_merge_into_cluster(cluster, addr))
+        ret_val = save_into_cluster(cluster, addr, n);
+      else
         ret_val = create_cluster(addr, n);
+    } else {
+      // the addr in append stage should grow from low to high
+      // and never duplicated or rollback, so here we
+      // return directly
+      ret_val = 2;
     }
 
     return ret_val;
@@ -224,7 +216,7 @@ int AddrSequence::create_cluster(unsigned long addr, int n)
 
     //a new cluster created, so update this
     //new cluster's end = strat of cause
-    current_cluster_end = addr;
+    last_cluster_end = addr;
 
     //set the find iterator because we added new cluster
     cluster_added_for_update(insert_ret.first);
@@ -262,7 +254,7 @@ void* AddrSequence::get_free_buffer()
 int AddrSequence::save_into_cluster(AddrCluster& cluster,
                                     unsigned long addr, int n)
 {
-    unsigned long delta = addr_to_delta(cluster, addr);
+    unsigned long delta = (addr - last_cluster_end) >> pageshift;
     int index = cluster.size;
     
     if (delta > 255) {
@@ -278,47 +270,24 @@ int AddrSequence::save_into_cluster(AddrCluster& cluster,
     ++addr_size;
 
     //becuase cluster grow at end always
-    current_cluster_end = addr;
+    last_cluster_end = addr;
     
     return 0;
 }
 
-int AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long addr)
+bool AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long addr)
 {
-    unsigned long addr_delta = addr - cluster_end(cluster);
-    unsigned long pagecount = addr_delta >> pageshift;
+    unsigned long addr_delta = addr - last_cluster_end;
+    unsigned long delta_distance = addr_delta >> pageshift;
     int is_not_align = addr_delta & (pagesize - 1);
 
-    if (pagecount > 255
+    if (delta_distance > 255
         || is_buffer_full()
         || is_not_align)
         return false;
 
     return true;
 }
-
-
-
-DeltaPayload* AddrSequence::addr_to_delta_ptr(AddrCluster& cluster,
-                                              unsigned long addr)
-{
-    unsigned long delta_addr;
-    unsigned long end_addr = cluster_end(cluster);
-    
-    if (addr < cluster.start || addr > end_addr)
-        return NULL;
-
-    delta_addr = cluster.start;
-    for (int i = 0; i < cluster.size; ++i) {
-        delta_addr += cluster.deltas[i].delta * pagesize;
-
-        if (delta_addr == addr)
-            return &cluster.deltas[i];
-    }
-    
-    return NULL;
-}
-
 
 int AddrSequence::allocate_buf(int count)
 {

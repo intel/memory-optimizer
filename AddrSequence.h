@@ -79,10 +79,8 @@ class AddrSequence
 
     int save_into_cluster(AddrCluster& cluster, unsigned long addr, int n);
 
-    int can_merge_into_cluster(AddrCluster& cluster, unsigned long addr);
+    bool can_merge_into_cluster(AddrCluster& cluster, unsigned long addr);
 
-    DeltaPayload* addr_to_delta_ptr(AddrCluster& cluster, unsigned long addr);
-    
     DeltaPayload* raw_buffer_ptr() {
       uint8_t* ptr = (uint8_t*)bufs_ptr_recorder.back();
       return (DeltaPayload*)(ptr + buf_item_used * BUF_ITEM_SIZE);
@@ -90,15 +88,6 @@ class AddrSequence
     
     int is_buffer_full() {
       return buf_item_used == BUF_ITEM_COUNT;
-    }
-
-    unsigned long  addr_to_delta(AddrCluster& cluster, unsigned long addr) {
-        unsigned long addr_delta = addr - cluster_end(cluster);
-        return addr_delta >> pageshift;
-    }
-
-    unsigned long cluster_end(AddrCluster& cluster) {
-        return current_cluster_end;
     }
 
     int allocate_buf(int count);
@@ -116,6 +105,11 @@ class AddrSequence
         delta_update_sum = 0;
         delta_update_index = 0;
     }
+
+    int in_append_period() {
+      return nr_walks < 2;
+    }
+
   private:        
     const static int BUF_SIZE = 0x10000; // 64KB;
     const static int BUF_ITEM_SIZE = sizeof(struct DeltaPayload);
@@ -152,7 +146,7 @@ class AddrSequence
     std::map<unsigned long, AddrCluster>::iterator iter_update;
     int delta_update_sum;
     int delta_update_index;
-    unsigned long current_cluster_end;
+    unsigned long last_cluster_end;
 
 };
 
