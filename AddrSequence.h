@@ -60,7 +60,13 @@ class AddrSequence
     int get_first(unsigned long& addr, uint8_t& payload);
     int get_next(unsigned long& addr, uint8_t& payload);
 
-    // private:
+#ifdef ADDR_SEQ_SELF_TEST
+    int self_test();
+    int self_test_walk();
+    int self_test_compare();
+#endif
+
+  private:
     int append_addr(unsigned long addr, int n);
 
     int update_addr(unsigned long addr, int n);
@@ -98,13 +104,6 @@ class AddrSequence
     int allocate_buf(int count);
 
     void free_all_buf();
-
-
-#ifdef ADDR_SEQ_SELF_TEST
-    int self_test();
-    int self_test_walk();
-    int self_test_compare();
-#endif
     
     void cluster_change_for_update() {
         delta_update_sum = 0;
