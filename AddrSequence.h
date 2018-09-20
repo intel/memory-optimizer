@@ -117,7 +117,7 @@ class AddrSequence
         delta_update_index = 0;
     }
   private:        
-    const static int BUF_SIZE = 8;//0x10000; // 64KB;
+    const static int BUF_SIZE = 0x10000; // 64KB;
     const static int BUF_ITEM_SIZE = sizeof(struct DeltaPayload);
     const static int BUF_ITEM_COUNT = BUF_SIZE / BUF_ITEM_SIZE;
     typedef uint8_t buf_type[BUF_SIZE];
