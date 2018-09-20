@@ -69,17 +69,14 @@ int AddrSequence::update_addr(unsigned long addr, int n)
 {
     //find if the addr already in the cluster, return if not
     int ret_val = 1;
+    int is_done = 0;
     unsigned long each_addr;
     
-    if (iter_update == addr_clusters.end())
-        return -1;
-
     while(iter_update != addr_clusters.end()) {
-
         AddrCluster& cluster = iter_update->second;
 
+        is_done = 0;
         while(delta_update_index < cluster.size) {
-
             delta_update_sum += cluster.deltas[delta_update_index].delta;
             each_addr = cluster.start + delta_update_sum * pagesize;
 
@@ -94,19 +91,24 @@ int AddrSequence::update_addr(unsigned long addr, int n)
                 //do NOT move!
                 delta_update_sum -= cluster.deltas[delta_update_index].delta;
                 ret_val = 0;
+                is_done = 1;
                 break;
 
             } else if (each_addr > addr) {
                 //do NOT move!
                 delta_update_sum -= cluster.deltas[delta_update_index].delta;
-                ret_val = -1;
+
+                //in update period, can NOT find addr is graceful fail, so just return
+                //postive value
+                ret_val = 1;
+                is_done = 1;
                 break;
             }
 
             ++delta_update_index;
         }
 
-        if (ret_val <= 0)
+        if (is_done)
             break;
 
         ++iter_update;
@@ -181,8 +183,10 @@ int AddrSequence::append_addr(unsigned long addr, int n)
             else
                 ret_val = create_cluster(addr, n);
         } else {
-            //is this right? only first time scan now
-            ret_val = update_addr(addr, n);
+            // the addr in nr_walks = 1 stage should grow from low to high,
+            // so all address <= last inserted address will ignore here
+            // with return 2
+            ret_val = 2;
         }
         
     } else {
@@ -358,8 +362,8 @@ int AddrSequence::self_test_compare()
       return -1;
     }
     if (payload != kv.second) {
-      fprintf(stderr, "payload mismatch: %d != %d\n",
-              (int)payload, (int)kv.second);
+      fprintf(stderr, "payload mismatch: Addr = %lx, %d != %d\n",
+              kv.first, (int)payload, (int)kv.second);
       return -2;
     }
   }
@@ -379,16 +383,35 @@ int AddrSequence::self_test_walk()
     delta = rand() & 0xff;
     addr += delta;
     int val = rand() & 1;
-    
+
     int err = inc_payload(addr, val);
     if (err < 0) {
       fprintf(stderr, "inc_payload error %d\n", err);
       fprintf(stderr, "nr_walks=%d i=%d addr=%lx val=%d\n", nr_walks, i, addr, val);
       return err;
     }
-    if (is_first_walk || test_map.find(addr) != test_map.end())
-      test_map[addr] = val;
+
+    /*
+      the addr may duplicated beacsue rand() may return 0
+      because we ignore this, so we only put non-duplicated addr
+      into test_map 
+    */
+    if (is_first_walk) {
+      if (!err)
+        test_map[addr] = val;
+    } else if(test_map.find(addr) != test_map.end()) {
+        /*
+          for the nr_walk >=2 case, update stage, we do
+          change payload(base on val) if addr already exists,
+          so change here to same as inc_payload() behavior.
+         */        
+        if (val)
+          ++test_map[addr];
+        else
+          test_map[addr] = val;
+    }
   }
+  
   return 0;
 }
 
