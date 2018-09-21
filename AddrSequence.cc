@@ -135,35 +135,23 @@ int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
 
 int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
 {
-    int ret_val = -1;
+  if (iter_cluster == addr_clusters.end())
+    return -1;
 
-    if (iter_cluster != addr_clusters.end()) {
-        AddrCluster &cluster = iter_cluster->second;
-        DeltaPayload *delta_ptr = cluster.deltas;
+  AddrCluster &cluster = iter_cluster->second;
+  DeltaPayload *delta_ptr = cluster.deltas;
 
-        if (iter_delta_index >= cluster.size) {
-            iter_delta_index = 0;
-            iter_delta_val = 0;
-            ++iter_cluster;
+  iter_delta_val += delta_ptr[iter_delta_index].delta;
+  addr = cluster.start + (iter_delta_val << pageshift);
+  payload = delta_ptr[iter_delta_index].payload;
 
-            // check again because we moved iter_cluster
-            if (iter_cluster == addr_clusters.end())
-                return -1;
+  if (++iter_delta_index >= cluster.size) {
+    ++iter_cluster;
+    iter_delta_index = 0;
+    iter_delta_val = 0;
+  }
 
-            cluster = iter_cluster->second;
-            delta_ptr = cluster.deltas;
-        }
-
-        iter_delta_val += delta_ptr[iter_delta_index].delta;
-        addr = cluster.start + iter_delta_val * pagesize;
-        payload = delta_ptr[iter_delta_index].payload;
-
-        ++iter_delta_index;
-
-        ret_val = 0;
-    }
-
-    return ret_val;
+  return 0;
 }
 
 int AddrSequence::append_addr(unsigned long addr, int n)
