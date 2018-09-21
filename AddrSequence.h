@@ -30,6 +30,12 @@ struct AddrCluster
 class AddrSequence
 {
   public:
+    enum error {
+        CREATE_CLUSTER_FAILED = -100,
+
+        IGNORE_DUPLICATED_ADDR = 2,
+    };
+  public:
     AddrSequence();
     ~AddrSequence();
     size_t size() const { return addr_size; }
@@ -75,7 +81,7 @@ class AddrSequence
 
     AddrCluster new_cluster(unsigned long addr, void* buffer);
 
-    void* get_free_buffer();
+    int get_free_buffer(void** free_ptr);
 
     int save_into_cluster(AddrCluster& cluster, unsigned long addr, int n);
 
@@ -120,10 +126,8 @@ class AddrSequence
     // avoiding internal/external fragmentations.
     // Only freed on clear().
     //std::vector<std::array<uint8_t, BUF_SIZE>> bufs;
-    
-    typedef uint8_t delta_buf[BUF_SIZE];
-    std::allocator<delta_buf> buf_allocator;
-    std::vector<delta_buf*>   buf_pool;
+    std::allocator<DeltaPayload> buf_allocator;
+    std::vector<DeltaPayload*>   buf_pool;
     int buf_used_count;
 
     std::map<unsigned long, AddrCluster>::iterator iter_cluster;
