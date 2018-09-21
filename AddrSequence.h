@@ -55,7 +55,7 @@ class AddrSequence
     int inc_payload(unsigned long addr, int n);
 
     // for sequential visiting
-    void prepare_get();
+    bool prepare_get();
     int get_first(unsigned long& addr, uint8_t& payload);
     int get_next(unsigned long& addr, uint8_t& payload);
 

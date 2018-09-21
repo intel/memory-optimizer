@@ -118,16 +118,18 @@ int AddrSequence::update_addr(unsigned long addr, int n)
     return ret_val;
 }
 
-void AddrSequence::prepare_get()
+bool AddrSequence::prepare_get()
 {
     iter_cluster = addr_clusters.begin();
     iter_delta_index = 0;
     iter_delta_val = 0;
+    return iter_cluster != addr_clusters.end();
 }
 
 int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
 {
-  prepare_get();
+  if (!prepare_get())
+    return -1;
   return get_next(addr, payload);
 }
 
@@ -349,7 +351,10 @@ int AddrSequence::self_test_compare()
 
   cout << "self_test_compare" << endl;
 
-  prepare_get();
+  if (!prepare_get()) {
+    cout << "empty AddrSequence" << endl;
+    return -1;
+  }
 
   for (auto& kv: test_map)
   {
