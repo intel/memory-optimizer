@@ -191,34 +191,26 @@ int AddrSequence::append_addr(unsigned long addr, int n)
 int AddrSequence::create_cluster(unsigned long addr, int n)
 {
     void* new_buf_ptr;
-    int ret_val;
 
-    ret_val = -1;
     new_buf_ptr = get_free_buffer();
-    if (new_buf_ptr)
-    {
-        std::pair<unsigned long, AddrCluster>
-            new_item(addr, new_cluster(addr, new_buf_ptr));
+    if (!new_buf_ptr)
+      return -1;
 
-        ret_val = -1;
-        auto insert_ret = addr_clusters.insert(new_item);        
-        if (insert_ret.second) {
+    std::pair<unsigned long, AddrCluster>
+      new_item(addr, new_cluster(addr, new_buf_ptr));
 
-            //a new cluster created, so update this
-            //new cluster's end = strat of cause
-            current_cluster_end = addr;
+    auto insert_ret = addr_clusters.insert(new_item);
+    if (!insert_ret.second)
+      return -1;
 
-            //set the find iterator because we added new cluster
-            cluster_added_for_update(insert_ret.first);
+    //a new cluster created, so update this
+    //new cluster's end = strat of cause
+    current_cluster_end = addr;
 
-            ret_val = save_into_cluster(insert_ret.first->second,
-                                        addr, n);
+    //set the find iterator because we added new cluster
+    cluster_added_for_update(insert_ret.first);
 
-            return ret_val;
-        }
-    }
-    
-    return ret_val;
+    return save_into_cluster(insert_ret.first->second, addr, n);
 }
 
 
