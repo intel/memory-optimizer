@@ -31,9 +31,9 @@ class AddrSequence
 {
   public:
     enum error {
-        CREATE_CLUSTER_FAILED = -100,
-
-        IGNORE_DUPLICATED_ADDR = 2,
+        CREATE_CLUSTER_FAILED  = 100,
+        ADDR_NOT_FOUND,
+        IGNORE_DUPLICATED_ADDR,
     };
   public:
     AddrSequence();
@@ -93,16 +93,16 @@ class AddrSequence
       return buf_used_count == MAX_ITEM_COUNT;
     }
     
-    void cluster_change_for_update() {
-        delta_update_sum = 0;
-        delta_update_index = 0;
+
+    void reset_find_delta_iterator() {
+        find_delta_sum = 0;
+        find_delta_index = 0;
     }
 
-    void cluster_added_for_update(std::map<unsigned long, AddrCluster>::iterator& new_start) {
+    void reset_find_iterator(std::map<unsigned long, AddrCluster>::iterator& new_start) {
         //move iter_update to last one, because we grow at end
-        iter_update = new_start;
-        delta_update_sum = 0;
-        delta_update_index = 0;
+        find_iter = new_start;
+        reset_find_delta_iterator();
     }
 
     int in_append_period() {
@@ -130,19 +130,20 @@ class AddrSequence
     std::vector<DeltaPayload*>   buf_pool;
     int buf_used_count;
 
-    std::map<unsigned long, AddrCluster>::iterator iter_cluster;
-    int iter_delta_index;
-    int iter_delta_val;
+    std::map<unsigned long, AddrCluster>::iterator walk_iter;
+    unsigned long  walk_delta_sum;
+    int walk_delta_index;
+    
+
+    std::map<unsigned long, AddrCluster>::iterator find_iter;
+    unsigned long  find_delta_sum;
+    int find_delta_index;
+
+    unsigned long last_cluster_end;
 
 #ifdef ADDR_SEQ_SELF_TEST
     std::map<unsigned long, uint8_t> test_map;
 #endif
-
-    std::map<unsigned long, AddrCluster>::iterator iter_update;
-    int delta_update_sum;
-    int delta_update_index;
-    unsigned long last_cluster_end;
-
 };
 
 #endif
