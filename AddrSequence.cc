@@ -78,7 +78,7 @@ int AddrSequence::update_addr(unsigned long addr, int n)
         is_done = 0;
         while(delta_update_index < cluster.size) {
             delta_update_sum += cluster.deltas[delta_update_index].delta;
-            each_addr = cluster.start + delta_update_sum * pagesize;
+            each_addr = cluster.start + (delta_update_sum << pageshift);
 
             if (each_addr == addr) {
 
