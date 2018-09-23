@@ -90,7 +90,7 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
   if (type & PAGE_ACCESSED_MASK) {
     min_refs = nr_walks;
     max_refs = nr_walks;
-    for (; min_refs > nr_walks / 2; --min_refs) {
+    for (; min_refs > 1; --min_refs) {
       quota -= refs_count[min_refs];
       if (quota <= 0)
         break;
