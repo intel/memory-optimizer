@@ -367,7 +367,7 @@ int Migration::dump_vma_nodes(proc_maps_entry& vma)
   nr_pages = (vma.end - vma.start) >> PAGE_SHIFT;
 
   unsigned long total_kb = (vma.end - vma.start) >> 10;
-  printf("VMA size: %'15lu \n", total_kb);
+  printf("VMA size: %'15lu \nN0 percent:", total_kb);
 
   const int nr_slots = 10;
   unsigned long slot_pages = nr_pages / nr_slots;
