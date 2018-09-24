@@ -24,7 +24,10 @@ std::unordered_map<std::string, MigrateWhat> Migration::migrate_name_map = {
 };
 
 Migration::Migration(ProcIdlePages& pip)
-  : proc_idle_pages(pip), dram_percent(0)
+  : proc_idle_pages(pip),
+  dram_percent(0),
+  hot_min_refs(-1),
+  cold_max_refs(-1)
 {
   migrate_target_node.resize(PMD_ACCESSED + 1);
   migrate_target_node[PTE_IDLE]      = PMEM_NUMA_NODE;
@@ -64,11 +67,35 @@ int Migration::set_dram_percent(int dp)
   return 0;
 }
 
+int Migration::set_hot_min_refs(int refs)
+{
+  hot_min_refs = refs;
+  return 0;
+}
+
+int Migration::set_cold_max_refs(int refs)
+{
+  cold_max_refs = refs;
+  return 0;
+}
+
 size_t Migration::get_threshold_refs(ProcIdlePageType type,
                                      int& min_refs, int& max_refs)
 {
-  const AddrSequence& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs2;
   int nr_walks = proc_idle_pages.get_nr_walks();
+
+  if (type & PAGE_ACCESSED_MASK && hot_min_refs > 0) {
+    min_refs = hot_min_refs;
+    max_refs = nr_walks;
+    return 0;
+  }
+  if (!(type & PAGE_ACCESSED_MASK) && cold_max_refs >= 0) {
+    min_refs = 0;
+    max_refs = cold_max_refs;
+    return 0;
+  }
+
+  const AddrSequence& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs2;
   vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count2;
 
   double ratio;

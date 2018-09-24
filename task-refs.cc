@@ -22,6 +22,8 @@ struct task_refs_options {
   int debug_level;
   pid_t pid;
   int nr_walks;
+  int hot_min_refs;
+  int cold_max_refs;
   float interval;
   int dram_percent;
   MigrateWhat migrate_what;
@@ -40,6 +42,8 @@ static const struct option opts[] = {
   {"loop",      required_argument,  NULL, 'l'},
   {"output",    required_argument,  NULL, 'o'},
   {"dram",      required_argument,  NULL, 'd'},
+  {"hot-refs",  required_argument,  NULL, 'H'},
+  {"cold-refs", required_argument,  NULL, 'c'},
   {"migrate",   required_argument,  NULL, 'm'},
   {"verbose",   required_argument,  NULL, 'v'},
   {"help",      no_argument,        NULL, 'h'},
@@ -56,6 +60,8 @@ static void usage(char *prog)
           "    -l|--loop       The number of times to scan\n"
           "    -o|--output     The output file, defaults to refs-count-PID\n"
           "    -d|--dram       The DRAM percent, wrt. DRAM+PMEM total size\n"
+          "    -H|--hot-refs   min_refs threshold for hot pages\n"
+          "    -c|--cold-refs  max_refs threshold for cold pages\n"
           "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
           "    -v|--verbose    Show debug info\n",
           prog);
@@ -67,11 +73,13 @@ static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
 	int opt = 0;
-	const char *optstr = "hvp:i:l:o:d:m:";
+	const char *optstr = "hvp:i:l:o:d:H:c:m:";
 
   option.nr_walks = 10;
   option.interval = 0.1;
   option.migrate_what = MIGRATE_BOTH;
+  option.hot_min_refs = -1;
+  option.cold_max_refs = -1;
 
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
@@ -91,6 +99,12 @@ static void parse_cmdline(int argc, char *argv[])
       break;
     case 'd':
       option.dram_percent = atoi(optarg);
+      break;
+    case 'H':
+      option.hot_min_refs = atoi(optarg);
+      break;
+    case 'c':
+      option.cold_max_refs = atoi(optarg);
       break;
     case 'm':
       option.migrate_what = Migration::parse_migrate_name(optarg);
@@ -137,6 +151,8 @@ int migrate(ProcIdlePages& proc_idle_pages)
   auto migration = std::make_unique<Migration>(proc_idle_pages);
 
   migration->set_dram_percent(option.dram_percent);
+  migration->set_hot_min_refs(option.hot_min_refs);
+  migration->set_cold_max_refs(option.cold_max_refs);
 
   if (option.migrate_what & MIGRATE_COLD) {
     err = migration->migrate(PTE_IDLE);

@@ -37,6 +37,8 @@ class Migration
     int dump_vma_nodes(proc_maps_entry& vma);
 
     int set_dram_percent(int dp);
+    int set_hot_min_refs(int refs);
+    int set_cold_max_refs(int refs);
 
  private:
     // functions
@@ -73,7 +75,10 @@ class Migration
     ProcVmstat proc_vmstat;
     ProcIdlePages& proc_idle_pages;
 
+    // set either dram_percent or hot_min_refs/cold_max_refs, but not both
     int dram_percent;
+    int hot_min_refs;
+    int cold_max_refs;
 
     // The Virtual Address of hot/cold pages.
     // [0...n] = [VA0...VAn]
