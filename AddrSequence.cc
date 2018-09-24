@@ -118,6 +118,25 @@ int AddrSequence::update_addr(unsigned long addr, int n)
     return ret_val;
 }
 
+int AddrSequence::smooth_payloads()
+{
+  for (auto &kv: addr_clusters)
+  {
+    int runavg;
+    AddrCluster& ac = kv.second;
+    for (int i = 0; i < ac.size; ++i)
+    {
+      if (!i || ac.deltas[i].delta > 3)
+        runavg = ac.deltas[i].payload;
+      else {
+        runavg = (7 + runavg * 7 + ac.deltas[i].payload) / 8;
+        ac.deltas[i].payload = runavg;
+      }
+    }
+  }
+  return 0;
+}
+
 bool AddrSequence::prepare_get()
 {
     iter_cluster = addr_clusters.begin();

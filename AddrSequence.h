@@ -53,6 +53,7 @@ class AddrSequence
     // will do ++payload
     // will ignore addresses not already there
     int inc_payload(unsigned long addr, int n);
+    int smooth_payloads();
 
     // for sequential visiting
     bool prepare_get();

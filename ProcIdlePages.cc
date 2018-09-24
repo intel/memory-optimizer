@@ -193,6 +193,8 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
     refs_count2.clear();
     refs_count2.resize(nr_walks +1 , 0);
 
+    // prc.page_refs2.smooth_payloads();
+
     // In the rare case of changed VMAs, their start/end boundary may not align
     // with the underlying huge page size. If the same huge page is covered by
     // 2 VMAs, there will be duplicate accounting for the same page. The easy
