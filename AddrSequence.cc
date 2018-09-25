@@ -139,8 +139,7 @@ bool AddrSequence::prepare_get()
     walk_iter = addr_clusters.begin();
     walk_delta_index = 0;
     walk_delta_sum = 0;
-
-    return true;
+    return walk_iter != addr_clusters.end();
 }
 
 int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
