@@ -319,7 +319,7 @@ int AddrSequence::allocate_buf()
       //so let's reset the buf_used_count here
       buf_used_count = 0;
     } catch (std::bad_alloc& e) {
-      buf_allocator.deallocate(new_buf_ptr, 1);
+      buf_allocator.deallocate(new_buf_ptr, MAX_ITEM_COUNT);
       return -ENOMEM;
     }
 
