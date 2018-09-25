@@ -65,7 +65,7 @@ run_test()
 		run
 	)
 
-	exec > $log-$memory_oper-$rand_type-$thp.$suffix 2>&1
+	exec > $log_dir/$memory_oper-$rand_type-$thp.$suffix 2>&1
 
 	echo numactl $mempolicy "${sysbench_cmd[@]}"
 	numactl $mempolicy "${sysbench_cmd[@]}" &
@@ -99,8 +99,10 @@ run_tests()
 	# run_test c "-m0"
 }
 
-log=sysbench-$(date +'%Y%m%d_%H%M%S')
-echo vimdiff $log-*
+log_dir=$(basename $0)-$(date +'%Y%m%d_%H%M%S')
+mkdir -p $tests_dir/$log_dir
+cp -a $script_path $tests_dir/$log_dir/
+echo vimdiff $tests_dir/$log_dir/*.?
 
 thp=never
 thp=always
