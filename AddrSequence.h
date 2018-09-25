@@ -34,6 +34,7 @@ class AddrSequence
         CREATE_CLUSTER_FAILED  = 100,
         ADDR_NOT_FOUND,
         IGNORE_DUPLICATED_ADDR,
+        END_OF_SEQUENCE,
     };
   public:
     AddrSequence();
@@ -73,6 +74,12 @@ class AddrSequence
 #endif
 
   private:
+    struct walk_iterator{
+      std::map<unsigned long, AddrCluster>::iterator cluster_iter;
+      unsigned long  delta_sum;
+      int delta_index;
+    };
+
     int append_addr(unsigned long addr, int n);
 
     int update_addr(unsigned long addr, int n);
@@ -93,21 +100,20 @@ class AddrSequence
       return buf_used_count == MAX_ITEM_COUNT;
     }
     
-
-    void reset_find_delta_iterator() {
-        find_delta_sum = 0;
-        find_delta_index = 0;
-    }
-
     void reset_find_iterator(std::map<unsigned long, AddrCluster>::iterator& new_start) {
-        //move iter_update to last one, because we grow at end
-        find_iter = new_start;
-        reset_find_delta_iterator();
+        find_iter.cluster_iter = new_start;
+        find_iter.delta_sum = 0;
+        find_iter.delta_index = 0;
     }
 
     int in_append_period() {
       return nr_walks < 2;
     }
+
+    int  do_walk(walk_iterator& iter, unsigned long& addr, uint8_t& payload);
+    void do_walk_move_next(walk_iterator& iter);
+    void do_walk_update_payload(walk_iterator& iter,
+                                unsigned addr, uint8_t payload);
 
   private:        
     const static int BUF_SIZE = 0x10000; // 64KB;
@@ -130,14 +136,16 @@ class AddrSequence
     std::vector<DeltaPayload*>   buf_pool;
     int buf_used_count;
 
-    std::map<unsigned long, AddrCluster>::iterator walk_iter;
-    unsigned long  walk_delta_sum;
-    int walk_delta_index;
+    //std::map<unsigned long, AddrCluster>::iterator walk_iter;
+    //unsigned long  walk_delta_sum;
+    //int walk_delta_index;
     
+    walk_iterator walk_iter;
+    walk_iterator find_iter;
 
-    std::map<unsigned long, AddrCluster>::iterator find_iter;
-    unsigned long  find_delta_sum;
-    int find_delta_index;
+    //std::map<unsigned long, AddrCluster>::iterator find_iter;
+    // unsigned long  find_delta_sum;
+    //int find_delta_index;
 
     unsigned long last_cluster_end;
 

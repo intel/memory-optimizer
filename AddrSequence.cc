@@ -67,50 +67,26 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
 int AddrSequence::update_addr(unsigned long addr, int n)
 {
     //find if the addr already in the cluster, return if not
+    int ret_val = 0;
     unsigned long next_addr;
-    unsigned long delta_sum;
-    int ret_val = ADDR_NOT_FOUND;
-    int is_done = 0;
+    uint8_t unused_payload;
 
-    while(find_iter != addr_clusters.end()) {
-        AddrCluster& cluster = find_iter->second;
+    while(ret_val >=0
+          && ret_val != END_OF_SEQUENCE) {
+        ret_val = do_walk(find_iter, next_addr, unused_payload);
 
-        is_done = 0;
-        while(find_delta_index < cluster.size) {
-
-            delta_sum = find_delta_sum
-                        + cluster.deltas[find_delta_index].delta;
-            next_addr = cluster.start + delta_sum * pagesize;
-
-            if (next_addr == addr) {
-
-                if (n)
-                    ++cluster.deltas[find_delta_index].payload;
-                else
-                    cluster.deltas[find_delta_index].payload = 0;
-
-                ret_val = 0;
-                is_done = 1;
-                break;
-            } else if (next_addr > addr) {
-
-                //in update period, can NOT find addr is graceful fail, so just return
-                //postive value
-                ret_val = ADDR_NOT_FOUND;
-                is_done = 1;
-                break;
-            }
-
-            find_delta_sum = delta_sum;
-            ++find_delta_index;
+        if (next_addr == addr) {
+            do_walk_update_payload(find_iter, addr, n);
+            return 0;
+        } else if (next_addr > addr) {
+            return ADDR_NOT_FOUND;
         }
 
-        if (is_done)
-            break;
-
-        reset_find_delta_iterator();
-        ++find_iter;
+        do_walk_move_next(find_iter);
     }
+
+    if (ret_val == END_OF_SEQUENCE)
+      ret_val = ADDR_NOT_FOUND;
 
     return ret_val;
 }
@@ -136,10 +112,10 @@ int AddrSequence::smooth_payloads()
 
 bool AddrSequence::prepare_get()
 {
-    walk_iter = addr_clusters.begin();
-    walk_delta_index = 0;
-    walk_delta_sum = 0;
-    return walk_iter != addr_clusters.end();
+    walk_iter.cluster_iter = addr_clusters.begin();
+    walk_iter.delta_index = 0;
+    walk_iter.delta_sum = 0;
+    return walk_iter.cluster_iter != addr_clusters.end();
 }
 
 int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
@@ -151,34 +127,61 @@ int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
 
 int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
 {
-    if (walk_iter != addr_clusters.end()) {
-        int ret_val = 0;
-        AddrCluster &cluster = walk_iter->second;
-        DeltaPayload *delta_ptr = cluster.deltas;
+    int ret_val;
 
-        if (walk_delta_index >= cluster.size) {
-            walk_delta_index = 0;
-            walk_delta_sum = 0;
-            ++walk_iter;
+    ret_val = do_walk(walk_iter, addr, payload);
+    if (ret_val >= 0 && END_OF_SEQUENCE != ret_val)
+        do_walk_move_next(walk_iter);
 
-            // check again because we moved get_cluster
-            if (walk_iter == addr_clusters.end())
-                return -1;
+    return ret_val;
+}
 
-            cluster = walk_iter->second;
-            delta_ptr = cluster.deltas;
-        }
+int AddrSequence::do_walk(walk_iterator& iter,
+                          unsigned long& addr, uint8_t& payload)
+{
+    if (iter.cluster_iter == addr_clusters.end())
+        return END_OF_SEQUENCE;
 
-        walk_delta_sum += delta_ptr[walk_delta_index].delta;
-        addr = cluster.start + walk_delta_sum * pagesize;
-        payload = delta_ptr[walk_delta_index].payload;
+    unsigned long delta_sum;
+    AddrCluster &cluster = iter.cluster_iter->second;
+    DeltaPayload *delta_ptr = cluster.deltas;
 
-        ++walk_delta_index;
+    delta_sum = iter.delta_sum + delta_ptr[iter.delta_index].delta;
+    addr = cluster.start + (delta_sum << pageshift);
+    payload = delta_ptr[iter.delta_index].payload;
 
-        ret_val = 0;
+    return 0;
+}
+
+void AddrSequence::do_walk_move_next(walk_iterator& iter)
+{
+    //nothing to move, just return
+    if (iter.cluster_iter == addr_clusters.end())
+        return;
+
+    AddrCluster &cluster = iter.cluster_iter->second;
+    DeltaPayload *delta_ptr = cluster.deltas;
+
+    iter.delta_sum += delta_ptr[iter.delta_index].delta;
+    
+    ++iter.delta_index;
+    if (iter.delta_index >= cluster.size) {
+        iter.delta_index = 0;
+        iter.delta_sum = 0;
+        ++iter.cluster_iter;
     }
+}
 
-  return 0;
+void AddrSequence::do_walk_update_payload(walk_iterator& iter,
+                                          unsigned addr, uint8_t payload)
+{
+    AddrCluster &cluster = iter.cluster_iter->second;
+    DeltaPayload *delta_ptr = cluster.deltas;
+
+    if (payload)
+        ++delta_ptr[iter.delta_index].payload;
+    else
+        delta_ptr[iter.delta_index].payload = 0;
 }
 
 int AddrSequence::append_addr(unsigned long addr, int n)
@@ -224,7 +227,7 @@ int AddrSequence::create_cluster(unsigned long addr, int n)
 
     auto insert_ret = addr_clusters.insert(new_item);
     if (!insert_ret.second)
-        return CREATE_CLUSTER_FAILED;
+        return -CREATE_CLUSTER_FAILED;
 
     //a new cluster created, so update this
     //new cluster's end = strat of cause
