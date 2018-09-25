@@ -58,11 +58,10 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
 {
     int ret_value;
 
-    if (in_append_period()) {
+    if (in_append_period())
         ret_value = append_addr(addr, n);
-    } else {
+     else
         ret_value = update_addr(addr, n);
-    }
 
     return ret_value;
 }
@@ -70,7 +69,6 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
 
 int AddrSequence::update_addr(unsigned long addr, int n)
 {
-    //find if the addr already in the cluster, return if not
     int ret_val = 0;
     unsigned long next_addr;
     uint8_t unused_payload;
@@ -89,6 +87,8 @@ int AddrSequence::update_addr(unsigned long addr, int n)
         do_walk_move_next(find_iter);
     }
 
+    //in update stage, the addr not exist is a graceful error
+    //so we change to return positive ADDR_NOT_FOUND
     if (ret_val == END_OF_SEQUENCE)
       ret_val = ADDR_NOT_FOUND;
 
@@ -193,25 +193,22 @@ int AddrSequence::append_addr(unsigned long addr, int n)
     int ret_val;
     auto last = addr_clusters.rbegin();
 
-    if (last == addr_clusters.rend()) {
-      return create_cluster(addr, n);
-    }
+    if (last == addr_clusters.rend())
+        return create_cluster(addr, n);
 
-    if (addr > last_cluster_end) {
-        AddrCluster& cluster = last->second;
+    // the addr in append stage should grow from low to high
+    // and never duplicated or rollback, so here we
+    // return directly
+    if (addr <= last_cluster_end)
+        return IGNORE_DUPLICATED_ADDR;
 
-        ret_val = 0;
-        if (can_merge_into_cluster(cluster, addr))
-          save_into_cluster(cluster, addr, n);
-        else
-          ret_val = create_cluster(addr, n);
+    AddrCluster& cluster = last->second;
 
-    } else {
-      // the addr in append stage should grow from low to high
-      // and never duplicated or rollback, so here we
-      // return directly
-      ret_val = IGNORE_DUPLICATED_ADDR;
-    }
+    ret_val = 0;
+    if (can_merge_into_cluster(cluster, addr))
+        save_into_cluster(cluster, addr, n);
+    else
+        ret_val = create_cluster(addr, n);
 
     return ret_val;
 }
@@ -308,15 +305,11 @@ bool AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long ad
 
 int AddrSequence::allocate_buf()
 {
-    DeltaPayload* new_buf_ptr;
+    DeltaPayload* new_buf_ptr = NULL;
 
     try {
       new_buf_ptr = buf_allocator.allocate(MAX_ITEM_COUNT);
-    } catch(std::bad_alloc& e) {
-      return -ENOMEM;
-    }
 
-    try {
       //new free buffer saved to back of pool
       //users will always use back() to get it later
       buf_pool.push_back(new_buf_ptr);
@@ -324,8 +317,11 @@ int AddrSequence::allocate_buf()
       //we already have a new buf in pool,
       //so let's reset the buf_used_count here
       buf_used_count = 0;
-    } catch (std::bad_alloc& e) {
-      buf_allocator.deallocate(new_buf_ptr, MAX_ITEM_COUNT);
+
+    } catch(std::bad_alloc& e) {
+        if (new_buf_ptr)
+            buf_allocator.deallocate(new_buf_ptr, MAX_ITEM_COUNT);
+
       return -ENOMEM;
     }
 
