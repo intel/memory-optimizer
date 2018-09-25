@@ -31,6 +31,10 @@ void AddrSequence::clear()
   auto new_find_iter = addr_clusters.begin();
   reset_find_iterator(new_find_iter);
 
+#ifdef ADDR_SEQ_SELF_TEST
+  test_map.clear();
+#endif
+
 }
 
 void AddrSequence::set_pageshift(int shift)
@@ -340,7 +344,7 @@ void AddrSequence::free_all_buf()
 //self-testing
 #ifdef ADDR_SEQ_SELF_TEST
 
-int AddrSequence::self_test_compare()
+int AddrSequence::do_self_test_compare(unsigned long pagesize)
 {
   unsigned long addr;
   uint8_t payload;
@@ -359,12 +363,14 @@ int AddrSequence::self_test_compare()
       return err;
 
     if (addr != kv.first) {
-      fprintf(stderr, "addr mismatch: %lx != %lx\n", addr, kv.first);
+      fprintf(stderr, "addr mismatch: %lx != %lx\n page increment=%lx",
+              addr, kv.first, pagesize);
       return -1;
     }
     if (payload != kv.second) {
-      fprintf(stderr, "payload mismatch: Addr = %lx, %d != %d\n",
-              kv.first, (int)payload, (int)kv.second);
+      fprintf(stderr, "payload mismatch: Addr = %lx, %d != %d page increment=%lx\n",
+              kv.first, (int)payload, (int)kv.second,
+              pagesize);
       return -2;
     }
   }
@@ -372,7 +378,7 @@ int AddrSequence::self_test_compare()
   return 0;
 }
 
-int AddrSequence::self_test_walk()
+int AddrSequence::do_self_test_walk(unsigned long pagesize)
 {
   unsigned long addr = 0x100000;
   unsigned long delta;
@@ -382,12 +388,12 @@ int AddrSequence::self_test_walk()
   for (int i = 0; i < 1<<20; ++i)
   {
     delta = rand() & 0xff;
-    addr += delta;
+    addr += delta * pagesize;
     int val = rand() & 1;
 
     int err = inc_payload(addr, val);
     if (err < 0) {
-      fprintf(stderr, "inc_payload error %d\n", err);
+      fprintf(stderr, "inc_payload error %d\n pagesize increment=%lx", err, pagesize);
       fprintf(stderr, "nr_walks=%d i=%d addr=%lx val=%d\n", nr_walks, i, addr, val);
       return err;
     }
@@ -418,23 +424,38 @@ int AddrSequence::self_test_walk()
 
 int AddrSequence::self_test()
 {
+  int ret_val, ret_val_4k;
+
+  //4KB pagesize with 1byte address increment
+  clear();
+  set_pageshift(12);
+  ret_val = do_self_test(1);
+
+  //4KB pagesize with 4KB address increment
+  clear();
+  set_pageshift(12);
+  ret_val_4k = do_self_test(4096);
+
+  return ret_val || ret_val_4k;
+}
+
+int AddrSequence::do_self_test(unsigned long pagesize)
+{
   std::map<unsigned long, uint8_t> am;
   int max_walks;
   int err;
 
-  clear();
-  set_pageshift(12);
-
   max_walks = rand() & 0xff;
   for (int i = 0; i < max_walks; ++i)
   {
-    err = self_test_walk();
+    err = do_self_test_walk(pagesize);
     if (err < 0)
       return err;
   }
-  err = self_test_compare();
+  err = do_self_test_compare(pagesize);
   return err;
 }
+
 
 void test_static()
 {
