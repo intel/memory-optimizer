@@ -115,6 +115,9 @@ class AddrSequence
     void do_walk_move_next(walk_iterator& iter);
     void do_walk_update_payload(walk_iterator& iter,
                                 unsigned addr, uint8_t payload);
+    bool do_walk_continue(int ret_val) {
+        return ret_val >=0 && ret_val != END_OF_SEQUENCE;
+    }
 
   private:        
     const static int BUF_SIZE = 0x10000; // 64KB;

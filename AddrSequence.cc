@@ -73,8 +73,7 @@ int AddrSequence::update_addr(unsigned long addr, int n)
     unsigned long next_addr;
     uint8_t unused_payload;
 
-    while(ret_val >=0
-          && ret_val != END_OF_SEQUENCE) {
+    while(do_walk_continue(ret_val)) {
         ret_val = do_walk(find_iter, next_addr, unused_payload);
 
         if (next_addr == addr) {
@@ -134,7 +133,7 @@ int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
     int ret_val;
 
     ret_val = do_walk(walk_iter, addr, payload);
-    if (ret_val >= 0 && END_OF_SEQUENCE != ret_val)
+    if (do_walk_continue(ret_val))
         do_walk_move_next(walk_iter);
 
     return ret_val;
