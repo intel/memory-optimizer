@@ -190,7 +190,6 @@ void AddrSequence::do_walk_update_payload(walk_iterator& iter,
 
 int AddrSequence::append_addr(unsigned long addr, int n)
 {
-    int ret_val;
     auto last = addr_clusters.rbegin();
 
     if (last == addr_clusters.rend())
@@ -202,11 +201,11 @@ int AddrSequence::append_addr(unsigned long addr, int n)
     if (addr <= last_cluster_end)
         return IGNORE_DUPLICATED_ADDR;
 
+    int ret_val;
     AddrCluster& cluster = last->second;
 
-    ret_val = 0;
     if (can_merge_into_cluster(cluster, addr))
-        save_into_cluster(cluster, addr, n);
+        ret_val = save_into_cluster(cluster, addr, n);
     else
         ret_val = create_cluster(addr, n);
 
