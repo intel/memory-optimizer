@@ -292,7 +292,7 @@ bool AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long ad
   unsigned long delta_distance = addr_delta >> pageshift;
   int is_not_align = addr_delta & (pagesize - 1);
 
-  if (delta_distance > 255
+  if (delta_distance > MAX_DELTA_DIST
       || is_buffer_full()
       || is_not_align)
     return false;

@@ -117,6 +117,7 @@ class AddrSequence
     const static int BUF_SIZE = 0x10000; // 64KB;
     const static int ITEM_SIZE = sizeof(struct DeltaPayload);
     const static int MAX_ITEM_COUNT = BUF_SIZE / ITEM_SIZE;
+    const static unsigned long MAX_DELTA_DIST = ( 1 << ( sizeof(uint8_t) * 8 ) ) - 1;
     
     int nr_walks;
     int pageshift;
