@@ -11,6 +11,7 @@ AddrSequence::AddrSequence()
   nr_walks = 0;
   pageshift = 0;
   pagesize = 0;
+  top_bytes = 0;
 
   //set this to froce alloc buffer when add cluster
   buf_used_count = MAX_ITEM_COUNT;
@@ -57,6 +58,8 @@ int AddrSequence::rewind()
 int AddrSequence::inc_payload(unsigned long addr, int n)
 {
   int ret_value;
+
+  top_bytes = 0;
 
   if (in_append_period())
     ret_value = append_addr(addr, n);
@@ -180,9 +183,11 @@ void AddrSequence::do_walk_update_payload(walk_iterator& iter,
   AddrCluster &cluster = iter.cluster_iter->second;
   DeltaPayload *delta_ptr = cluster.deltas;
 
-  if (payload)
+  if (payload) {
     ++delta_ptr[iter.delta_index].payload;
-  else
+    if (delta_ptr[iter.delta_index].payload >= nr_walks)
+      top_bytes += pagesize;
+  } else
     delta_ptr[iter.delta_index].payload = 0;
 }
 

@@ -42,6 +42,7 @@ class AddrSequence
     ~AddrSequence();
     size_t size() const { return addr_size; }
     bool empty() const  { return 0 == addr_size; }
+    unsigned long get_top_bytes() const { return top_bytes; }
 
     void set_pageshift(int shift);
     void clear();
@@ -123,6 +124,7 @@ class AddrSequence
     int pageshift;
     unsigned long pagesize;
     unsigned long addr_size;  // # of addrs stored
+    unsigned long top_bytes;  // nr_top_pages * pagesize
 
     std::map<unsigned long, AddrCluster> addr_clusters;
 
