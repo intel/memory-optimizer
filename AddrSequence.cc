@@ -56,42 +56,41 @@ int AddrSequence::rewind()
 
 int AddrSequence::inc_payload(unsigned long addr, int n)
 {
-    int ret_value;
+  int ret_value;
 
-    if (in_append_period())
-        ret_value = append_addr(addr, n);
-     else
-        ret_value = update_addr(addr, n);
+  if (in_append_period())
+    ret_value = append_addr(addr, n);
+  else
+    ret_value = update_addr(addr, n);
 
-    return ret_value;
+  return ret_value;
 }
-
 
 int AddrSequence::update_addr(unsigned long addr, int n)
 {
-    int ret_val = 0;
-    unsigned long next_addr;
-    uint8_t unused_payload;
+  int ret_val = 0;
+  unsigned long next_addr;
+  uint8_t unused_payload;
 
-    while(do_walk_continue(ret_val)) {
-        ret_val = do_walk(find_iter, next_addr, unused_payload);
+  while(do_walk_continue(ret_val)) {
+    ret_val = do_walk(find_iter, next_addr, unused_payload);
 
-        if (next_addr == addr) {
-            do_walk_update_payload(find_iter, addr, n);
-            return 0;
-        } else if (next_addr > addr) {
-            return ADDR_NOT_FOUND;
-        }
-
-        do_walk_move_next(find_iter);
+    if (next_addr == addr) {
+      do_walk_update_payload(find_iter, addr, n);
+      return 0;
+    } else if (next_addr > addr) {
+      return ADDR_NOT_FOUND;
     }
 
-    //in update stage, the addr not exist is a graceful error
-    //so we change to return positive ADDR_NOT_FOUND
-    if (ret_val == END_OF_SEQUENCE)
-      ret_val = ADDR_NOT_FOUND;
+    do_walk_move_next(find_iter);
+  }
 
-    return ret_val;
+  //in update stage, the addr not exist is a graceful error
+  //so we change to return positive ADDR_NOT_FOUND
+  if (ret_val == END_OF_SEQUENCE)
+    ret_val = ADDR_NOT_FOUND;
+
+  return ret_val;
 }
 
 int AddrSequence::smooth_payloads()
@@ -115,10 +114,10 @@ int AddrSequence::smooth_payloads()
 
 bool AddrSequence::prepare_get()
 {
-    walk_iter.cluster_iter = addr_clusters.begin();
-    walk_iter.delta_index = 0;
-    walk_iter.delta_sum = 0;
-    return walk_iter.cluster_iter != addr_clusters.end();
+  walk_iter.cluster_iter = addr_clusters.begin();
+  walk_iter.delta_index = 0;
+  walk_iter.delta_sum = 0;
+  return walk_iter.cluster_iter != addr_clusters.end();
 }
 
 int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
@@ -130,124 +129,124 @@ int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
 
 int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
 {
-    int ret_val;
+  int ret_val;
 
-    ret_val = do_walk(walk_iter, addr, payload);
-    if (do_walk_continue(ret_val))
-        do_walk_move_next(walk_iter);
+  ret_val = do_walk(walk_iter, addr, payload);
+  if (do_walk_continue(ret_val))
+    do_walk_move_next(walk_iter);
 
-    return ret_val;
+  return ret_val;
 }
 
 int AddrSequence::do_walk(walk_iterator& iter,
                           unsigned long& addr, uint8_t& payload)
 {
-    if (iter.cluster_iter == addr_clusters.end())
-        return END_OF_SEQUENCE;
+  if (iter.cluster_iter == addr_clusters.end())
+    return END_OF_SEQUENCE;
 
-    unsigned long delta_sum;
-    AddrCluster &cluster = iter.cluster_iter->second;
-    DeltaPayload *delta_ptr = cluster.deltas;
+  unsigned long delta_sum;
+  AddrCluster &cluster = iter.cluster_iter->second;
+  DeltaPayload *delta_ptr = cluster.deltas;
 
-    delta_sum = iter.delta_sum + delta_ptr[iter.delta_index].delta;
-    addr = cluster.start + (delta_sum << pageshift);
-    payload = delta_ptr[iter.delta_index].payload;
+  delta_sum = iter.delta_sum + delta_ptr[iter.delta_index].delta;
+  addr = cluster.start + (delta_sum << pageshift);
+  payload = delta_ptr[iter.delta_index].payload;
 
-    return 0;
+  return 0;
 }
 
 void AddrSequence::do_walk_move_next(walk_iterator& iter)
 {
-    //nothing to move, just return
-    if (iter.cluster_iter == addr_clusters.end())
-        return;
+  //nothing to move, just return
+  if (iter.cluster_iter == addr_clusters.end())
+    return;
 
-    AddrCluster &cluster = iter.cluster_iter->second;
-    DeltaPayload *delta_ptr = cluster.deltas;
+  AddrCluster &cluster = iter.cluster_iter->second;
+  DeltaPayload *delta_ptr = cluster.deltas;
 
-    iter.delta_sum += delta_ptr[iter.delta_index].delta;
+  iter.delta_sum += delta_ptr[iter.delta_index].delta;
     
-    ++iter.delta_index;
-    if (iter.delta_index >= cluster.size) {
-        iter.delta_index = 0;
-        iter.delta_sum = 0;
-        ++iter.cluster_iter;
-    }
+  ++iter.delta_index;
+  if (iter.delta_index >= cluster.size) {
+    iter.delta_index = 0;
+    iter.delta_sum = 0;
+    ++iter.cluster_iter;
+  }
 }
 
 void AddrSequence::do_walk_update_payload(walk_iterator& iter,
                                           unsigned addr, uint8_t payload)
 {
-    AddrCluster &cluster = iter.cluster_iter->second;
-    DeltaPayload *delta_ptr = cluster.deltas;
+  AddrCluster &cluster = iter.cluster_iter->second;
+  DeltaPayload *delta_ptr = cluster.deltas;
 
-    if (payload)
-        ++delta_ptr[iter.delta_index].payload;
-    else
-        delta_ptr[iter.delta_index].payload = 0;
+  if (payload)
+    ++delta_ptr[iter.delta_index].payload;
+  else
+    delta_ptr[iter.delta_index].payload = 0;
 }
 
 int AddrSequence::append_addr(unsigned long addr, int n)
 {
-    auto last = addr_clusters.rbegin();
+  auto last = addr_clusters.rbegin();
 
-    if (last == addr_clusters.rend())
-        return create_cluster(addr, n);
+  if (last == addr_clusters.rend())
+    return create_cluster(addr, n);
 
-    // the addr in append stage should grow from low to high
-    // and never duplicated or rollback, so here we
-    // return directly
-    if (addr <= last_cluster_end)
-        return IGNORE_DUPLICATED_ADDR;
+  // the addr in append stage should grow from low to high
+  // and never duplicated or rollback, so here we
+  // return directly
+  if (addr <= last_cluster_end)
+    return IGNORE_DUPLICATED_ADDR;
 
-    int ret_val;
-    AddrCluster& cluster = last->second;
+  int ret_val;
+  AddrCluster& cluster = last->second;
 
-    if (can_merge_into_cluster(cluster, addr))
-        ret_val = save_into_cluster(cluster, addr, n);
-    else
-        ret_val = create_cluster(addr, n);
+  if (can_merge_into_cluster(cluster, addr))
+    ret_val = save_into_cluster(cluster, addr, n);
+  else
+    ret_val = create_cluster(addr, n);
 
-    return ret_val;
+  return ret_val;
 }
 
 
 int AddrSequence::create_cluster(unsigned long addr, int n)
 {
-    void* new_buf_ptr;
-    int ret_val;
+  void* new_buf_ptr;
+  int ret_val;
     
-    ret_val = get_free_buffer(&new_buf_ptr);
-    if (ret_val < 0)
-        return ret_val;
+  ret_val = get_free_buffer(&new_buf_ptr);
+  if (ret_val < 0)
+    return ret_val;
 
-    std::pair<unsigned long, AddrCluster>
-      new_item(addr, new_cluster(addr, new_buf_ptr));
+  std::pair<unsigned long, AddrCluster>
+    new_item(addr, new_cluster(addr, new_buf_ptr));
 
-    auto insert_ret = addr_clusters.insert(new_item);
-    if (!insert_ret.second)
-        return -CREATE_CLUSTER_FAILED;
+  auto insert_ret = addr_clusters.insert(new_item);
+  if (!insert_ret.second)
+    return -CREATE_CLUSTER_FAILED;
 
-    //a new cluster created, so update this
-    //new cluster's end = strat of cause
-    last_cluster_end = addr;
+  //a new cluster created, so update this
+  //new cluster's end = strat of cause
+  last_cluster_end = addr;
 
-    //set the find iterator because we added new cluster
-    reset_find_iterator(insert_ret.first);
+  //set the find iterator because we added new cluster
+  reset_find_iterator(insert_ret.first);
 
-    return save_into_cluster(insert_ret.first->second, addr, n);
+  return save_into_cluster(insert_ret.first->second, addr, n);
 }
 
 
 AddrCluster AddrSequence::new_cluster(unsigned long addr, void* buffer)
 {
-    AddrCluster new_item;
+  AddrCluster new_item;
 
-    new_item.start = addr;
-    new_item.size = 0;
-    new_item.deltas = (DeltaPayload*)buffer;
+  new_item.start = addr;
+  new_item.size = 0;
+  new_item.deltas = (DeltaPayload*)buffer;
 
-    return new_item;
+  return new_item;
 }
 
 
@@ -271,68 +270,68 @@ int AddrSequence::get_free_buffer(void** free_ptr)
 int AddrSequence::save_into_cluster(AddrCluster& cluster,
                                     unsigned long addr, int n)
 {
-    unsigned long delta = (addr - last_cluster_end) >> pageshift;
-    int index = cluster.size;
+  unsigned long delta = (addr - last_cluster_end) >> pageshift;
+  int index = cluster.size;
 
-    cluster.deltas[index].delta = (uint8_t)delta;
-    cluster.deltas[index].payload = n;
+  cluster.deltas[index].delta = (uint8_t)delta;
+  cluster.deltas[index].payload = n;
 
-    ++cluster.size;
-    ++buf_used_count;
-    ++addr_size;
+  ++cluster.size;
+  ++buf_used_count;
+  ++addr_size;
 
-    //becuase cluster grow at end always
-    last_cluster_end = addr;
+  //becuase cluster grow at end always
+  last_cluster_end = addr;
 
-    return 0;
+  return 0;
 }
 
 bool AddrSequence::can_merge_into_cluster(AddrCluster& cluster, unsigned long addr)
 {
-    unsigned long addr_delta = addr - last_cluster_end;
-    unsigned long delta_distance = addr_delta >> pageshift;
-    int is_not_align = addr_delta & (pagesize - 1);
+  unsigned long addr_delta = addr - last_cluster_end;
+  unsigned long delta_distance = addr_delta >> pageshift;
+  int is_not_align = addr_delta & (pagesize - 1);
 
-    if (delta_distance > 255
-        || is_buffer_full()
-        || is_not_align)
-        return false;
+  if (delta_distance > 255
+      || is_buffer_full()
+      || is_not_align)
+    return false;
 
-    return true;
+  return true;
 }
 
 int AddrSequence::allocate_buf()
 {
-    DeltaPayload* new_buf_ptr = NULL;
+  DeltaPayload* new_buf_ptr = NULL;
 
-    try {
-      new_buf_ptr = buf_allocator.allocate(MAX_ITEM_COUNT);
+  try {
+    new_buf_ptr = buf_allocator.allocate(MAX_ITEM_COUNT);
 
-      //new free buffer saved to back of pool
-      //users will always use back() to get it later
-      buf_pool.push_back(new_buf_ptr);
+    //new free buffer saved to back of pool
+    //users will always use back() to get it later
+    buf_pool.push_back(new_buf_ptr);
 
-      //we already have a new buf in pool,
-      //so let's reset the buf_used_count here
-      buf_used_count = 0;
+    //we already have a new buf in pool,
+    //so let's reset the buf_used_count here
+    buf_used_count = 0;
 
-    } catch(std::bad_alloc& e) {
-        if (new_buf_ptr)
-            buf_allocator.deallocate(new_buf_ptr, MAX_ITEM_COUNT);
+  } catch(std::bad_alloc& e) {
+    if (new_buf_ptr)
+      buf_allocator.deallocate(new_buf_ptr, MAX_ITEM_COUNT);
 
-      return -ENOMEM;
-    }
+    return -ENOMEM;
+  }
 
-    return 0;
+  return 0;
 }
 
 void AddrSequence::free_all_buf()
 {
-    for(auto& i : buf_pool)
-        buf_allocator.deallocate(i, MAX_ITEM_COUNT);
+  for(auto& i : buf_pool)
+    buf_allocator.deallocate(i, MAX_ITEM_COUNT);
 
-    buf_pool.clear();
-    buf_used_count = MAX_ITEM_COUNT;
+  buf_pool.clear();
+  buf_used_count = MAX_ITEM_COUNT;
 }
 
 //self-testing
