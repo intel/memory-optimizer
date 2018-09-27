@@ -69,18 +69,44 @@ const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
   [PGDIR_HOLE]   = "512G_hole",
 };
 
+bool ProcIdlePages::should_stop()
+{
+    if (!option.dram_percent)
+      return false;
+
+    // page_refs2.get_top_bytes() is 0 when nr_walks == 1
+    if (nr_walks <= 2)
+      return false;
+
+    unsigned long top_bytes = 0;
+    unsigned long all_bytes = 0;
+
+    for (auto& prc: pagetype_refs) {
+      top_bytes += prc.page_refs2.get_top_bytes();
+      all_bytes += prc.page_refs2.size() << prc.page_refs2.get_pageshift();
+    }
+
+    printdd("top_bytes=%'lu all_bytes=%'lu\n", top_bytes, all_bytes);
+    return 2 * 100 * top_bytes < option.dram_percent * all_bytes;
+}
+
 int ProcIdlePages::walk_multi(int nr, float interval)
 {
   int err;
+  const int max_walks = 30;
+  bool auto_stop = false;
 
   auto maps = proc_maps.load(pid);
   if (maps.empty())
     return -ENOENT;
 
-  nr_walks = nr; // for use by count_refs()
-  if (nr_walks > 0xff) {
+  nr_walks = 0; // for use by count_refs()
+  if (nr > 0xff) {
     printf("limiting nr_walks to uint8_t size\n");
-    nr_walks = 0xff;
+    nr = 0xff;
+  } else if (nr == 0) {
+    auto_stop = true;
+    nr = max_walks;
   }
 
   for (auto& prc: pagetype_refs) {
@@ -95,9 +121,13 @@ int ProcIdlePages::walk_multi(int nr, float interval)
     for (auto& prc: pagetype_refs) 
       prc.page_refs2.rewind();
     
+    ++nr_walks;
     err = walk();
     if (err)
       return err;
+
+    if (auto_stop && should_stop())
+      break;
 
     usleep(interval * 1000000);
   }

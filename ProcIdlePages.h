@@ -90,6 +90,7 @@ class ProcIdlePages
     int get_nr_walks() { return nr_walks; }
 
   private:
+    bool should_stop();
     int walk();
     int walk_vma(proc_maps_entry& vma);
     void count_refs_one(ProcIdleRefs& prc);

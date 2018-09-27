@@ -51,6 +51,7 @@ int AddrSequence::rewind()
 
   ++nr_walks;
   last_cluster_end = 0;
+  top_bytes = 0;
   
   return 0;
 }
@@ -58,8 +59,6 @@ int AddrSequence::rewind()
 int AddrSequence::inc_payload(unsigned long addr, int n)
 {
   int ret_value;
-
-  top_bytes = 0;
 
   if (in_append_period())
     ret_value = append_addr(addr, n);

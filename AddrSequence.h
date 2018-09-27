@@ -43,6 +43,7 @@ class AddrSequence
     size_t size() const { return addr_size; }
     bool empty() const  { return 0 == addr_size; }
     unsigned long get_top_bytes() const { return top_bytes; }
+    int get_pageshift() const { return pageshift; }
 
     void set_pageshift(int shift);
     void clear();
