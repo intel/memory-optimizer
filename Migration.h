@@ -57,9 +57,6 @@ class Migration
 
   private:
     // variables
-    static const int DRAM_NUMA_NODE = 0;
-    static const int PMEM_NUMA_NODE = 1;
-
     static std::unordered_map<std::string, MigrateWhat> migrate_name_map;
 
     const Option& option;

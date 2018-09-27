@@ -14,9 +14,6 @@
 #include "Migration.h"
 #include "lib/debug.h"
 
-#define DRAM_NUMA_NODE  0
-#define PMEM_NUMA_NODE  1
-
 using namespace std;
 
 Option option;

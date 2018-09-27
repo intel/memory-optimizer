@@ -27,11 +27,11 @@ Migration::Migration(const Option& o, ProcIdlePages& pip)
   : option(o), proc_idle_pages(pip)
 {
   migrate_target_node.resize(PMD_ACCESSED + 1);
-  migrate_target_node[PTE_IDLE]      = PMEM_NUMA_NODE;
-  migrate_target_node[PTE_ACCESSED]  = DRAM_NUMA_NODE;
+  migrate_target_node[PTE_IDLE]      = Option::PMEM_NUMA_NODE;
+  migrate_target_node[PTE_ACCESSED]  = Option::DRAM_NUMA_NODE;
 
-  migrate_target_node[PMD_IDLE]      = PMEM_NUMA_NODE;
-  migrate_target_node[PMD_ACCESSED]  = DRAM_NUMA_NODE;
+  migrate_target_node[PMD_IDLE]      = Option::PMEM_NUMA_NODE;
+  migrate_target_node[PMD_ACCESSED]  = Option::DRAM_NUMA_NODE;
 }
 
 MigrateWhat Migration::parse_migrate_name(std::string name)
@@ -75,7 +75,7 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
   double ratio;
 
   if (option.dram_percent) {
-    if (migrate_target_node[type] == DRAM_NUMA_NODE)
+    if (migrate_target_node[type] == Option::DRAM_NUMA_NODE)
       ratio = option.dram_percent / 100.0;
     else
       ratio = (100.0 - option.dram_percent) / 100.0;

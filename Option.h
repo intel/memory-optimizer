@@ -18,6 +18,9 @@ struct Option
 public:
   int debug_level;
 
+  static const int DRAM_NUMA_NODE = 0;
+  static const int PMEM_NUMA_NODE = 1;
+
   pid_t pid;
 
   float interval;
