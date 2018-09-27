@@ -388,9 +388,9 @@ int AddrSequence::do_self_test_walk(unsigned long pagesize)
   rewind();
   for (int i = 0; i < 1<<20; ++i)
   {
-    delta = rand() & 0xff;
+    delta = 1; //rand() & 0xff;
     addr += delta * pagesize;
-    int val = rand() & 1;
+    int val = 1; //rand() & 1;
 
     int err = inc_payload(addr, val);
     if (err < 0) {
@@ -448,7 +448,7 @@ int AddrSequence::do_self_test(unsigned long pagesize)
   int max_walks;
   int err;
 
-  max_walks = rand() & 0xff;
+  max_walks = 30; //rand() & 0xff;
   for (int i = 0; i < max_walks; ++i)
   {
     err = do_self_test_walk(pagesize);
