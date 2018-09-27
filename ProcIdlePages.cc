@@ -109,8 +109,10 @@ int ProcIdlePages::walk_multi(int nr, float interval)
     nr = max_walks;
   }
 
-  for (auto& prc: pagetype_refs) {
+  for (int type = 0; type <= MAX_ACCESSED; ++type) {
+    auto& prc = pagetype_refs[type];
     prc.page_refs2.clear();
+    prc.page_refs2.set_pageshift(pagetype_shift[type]);
     prc.refs_count2.clear();
     prc.refs_count2.resize(nr + 1);
   }
@@ -307,8 +309,6 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
 {
   unsigned long page_size = pagetype_size[type];
   AddrSequence& page_refs2 = pagetype_refs[type | PAGE_ACCESSED_MASK].page_refs2;
-
-  page_refs2.set_pageshift(pagetype_shift[type]);
 
   for (int i = 0; i < nr; ++i)
   {
