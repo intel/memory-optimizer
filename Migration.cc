@@ -14,6 +14,8 @@
 #include "lib/stats.h"
 #include "AddrSequence.h"
 
+#define MPOL_MF_SW_YOUNG (1<<7)
+
 using namespace std;
 
 std::unordered_map<std::string, MigrateWhat> Migration::migrate_name_map = {
@@ -216,7 +218,7 @@ long Migration::__move_pages(pid_t pid, unsigned long nr_pages,
                      min(batch_size, nr_pages - i),
                      addrs + i,
                      nodes ? nodes + i : NULL,
-                     &migrate_status[i], MPOL_MF_MOVE);
+                     &migrate_status[i], MPOL_MF_MOVE | MPOL_MF_SW_YOUNG);
     if (ret) {
       perror("move_pages");
       break;
