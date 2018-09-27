@@ -353,6 +353,10 @@ int AddrSequence::do_self_test_compare(unsigned long pagesize)
     return -1;
   }
 
+  while (!get_next(addr, payload))
+    ;
+  return 0;
+
   for (auto& kv: test_map)
   {
     int err = get_next(addr, payload);
@@ -394,6 +398,8 @@ int AddrSequence::do_self_test_walk(unsigned long pagesize)
       fprintf(stderr, "nr_walks=%d i=%d addr=%lx val=%d\n", nr_walks, i, addr, val);
       return err;
     }
+
+    continue;
 
     /*
       the addr may duplicated beacsue rand() may return 0
