@@ -29,8 +29,14 @@ setup_sys()
 run_migrations()
 {
 	local what=$1
-
 	local i
+
+	for i in $(seq 30)
+	do
+		sleep 1
+		grep -q "Threads started" $log_file && break
+	done
+
 	for i in 2 1 1
 	do
 		sleep $i
@@ -65,7 +71,8 @@ run_test()
 		run
 	)
 
-	exec > $log_dir/$memory_oper-$rand_type-$thp.$suffix 2>&1
+	log_file=$log_dir/$memory_oper-$rand_type-$thp.$suffix
+	exec > $log_file 2>&1
 
 	echo numactl $mempolicy "${sysbench_cmd[@]}"
 	numactl $mempolicy "${sysbench_cmd[@]}" &
