@@ -6,6 +6,7 @@
 #include <string>
 #include <sys/types.h>
 #include <unordered_map>
+#include "Option.h"
 #include "ProcMaps.h"
 #include "AddrSequence.h"
 
@@ -73,7 +74,7 @@ struct ProcIdleRefs
 class ProcIdlePages
 {
   public:
-    ProcIdlePages(): pid(0) {};
+    ProcIdlePages(const Option& o): pid(0), option(o) {};
     ~ProcIdlePages() {};
 
     void set_pid(pid_t i) { pid = i; }
@@ -109,6 +110,8 @@ class ProcIdlePages
     static const int READ_BUF_SIZE = PAGE_SIZE * 8;
 
     pid_t pid;
+    const Option& option;
+
     ProcMaps proc_maps;
     int nr_walks;
 

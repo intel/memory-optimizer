@@ -23,11 +23,8 @@ std::unordered_map<std::string, MigrateWhat> Migration::migrate_name_map = {
 	    {"both", MIGRATE_BOTH},
 };
 
-Migration::Migration(ProcIdlePages& pip)
-  : proc_idle_pages(pip),
-  dram_percent(0),
-  hot_min_refs(-1),
-  cold_max_refs(-1)
+Migration::Migration(const Option& o, ProcIdlePages& pip)
+  : option(o), proc_idle_pages(pip)
 {
   migrate_target_node.resize(PMD_ACCESSED + 1);
   migrate_target_node[PTE_IDLE]      = PMEM_NUMA_NODE;
@@ -56,42 +53,19 @@ MigrateWhat Migration::parse_migrate_name(std::string name)
   return MIGRATE_NONE;
 }
 
-int Migration::set_dram_percent(int dp)
-{
-  if (dp < 0 || dp > 100) {
-    cerr << "dram percent out of range [0, 100]" << endl;
-    return -ERANGE;
-  }
-
-  dram_percent = dp;
-  return 0;
-}
-
-int Migration::set_hot_min_refs(int refs)
-{
-  hot_min_refs = refs;
-  return 0;
-}
-
-int Migration::set_cold_max_refs(int refs)
-{
-  cold_max_refs = refs;
-  return 0;
-}
-
 size_t Migration::get_threshold_refs(ProcIdlePageType type,
                                      int& min_refs, int& max_refs)
 {
   int nr_walks = proc_idle_pages.get_nr_walks();
 
-  if (type & PAGE_ACCESSED_MASK && hot_min_refs > 0) {
-    min_refs = hot_min_refs;
+  if (type & PAGE_ACCESSED_MASK && option.hot_min_refs > 0) {
+    min_refs = option.hot_min_refs;
     max_refs = nr_walks;
     return 0;
   }
-  if (!(type & PAGE_ACCESSED_MASK) && cold_max_refs >= 0) {
+  if (!(type & PAGE_ACCESSED_MASK) && option.cold_max_refs >= 0) {
     min_refs = 0;
-    max_refs = cold_max_refs;
+    max_refs = option.cold_max_refs;
     return 0;
   }
 
@@ -100,11 +74,11 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
 
   double ratio;
 
-  if (dram_percent) {
+  if (option.dram_percent) {
     if (migrate_target_node[type] == DRAM_NUMA_NODE)
-      ratio = dram_percent / 100.0;
+      ratio = option.dram_percent / 100.0;
     else
-      ratio = (100.0 - dram_percent) / 100.0;
+      ratio = (100.0 - option.dram_percent) / 100.0;
   } else
     ratio = (double) proc_vmstat.anon_capacity(migrate_target_node[type]) / proc_vmstat.anon_capacity();
 

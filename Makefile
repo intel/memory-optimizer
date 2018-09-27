@@ -4,7 +4,7 @@ DEBUG_FLAGS = -g -fsanitize=address
 CFLAGS = $(DEBUG_FLAGS) -Wall
 CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++14
 LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
-CLASS_SOURCE_FILES = ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc AddrSequence.cc
+CLASS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc AddrSequence.cc
 CLASS_HEADER_FILES = $(CLASS_SOURCE_FILES:.cc=.h)
 
 all: page-refs task-refs task-maps show-vmstat addr-seq

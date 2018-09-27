@@ -8,6 +8,7 @@
 #include <memory>
 #include <iostream>
 
+#include "Option.h"
 #include "ProcMaps.h"
 #include "ProcIdlePages.h"
 #include "Migration.h"
@@ -18,18 +19,7 @@
 
 using namespace std;
 
-struct task_refs_options {
-  int debug_level;
-  pid_t pid;
-  int nr_walks;
-  int hot_min_refs;
-  int cold_max_refs;
-  float interval;
-  int dram_percent;
-  MigrateWhat migrate_what;
-
-  std::string output_file;
-} option;
+Option option;
 
 int debug_level()
 {
@@ -74,12 +64,6 @@ static void parse_cmdline(int argc, char *argv[])
   int options_index = 0;
 	int opt = 0;
 	const char *optstr = "hvp:i:l:o:d:H:c:m:";
-
-  option.nr_walks = 10;
-  option.interval = 0.1;
-  option.migrate_what = MIGRATE_BOTH;
-  option.hot_min_refs = -1;
-  option.cold_max_refs = -1;
 
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
@@ -148,11 +132,7 @@ int account_refs(ProcIdlePages& proc_idle_pages)
 int migrate(ProcIdlePages& proc_idle_pages)
 {
   int err = 0;
-  auto migration = std::make_unique<Migration>(proc_idle_pages);
-
-  migration->set_dram_percent(option.dram_percent);
-  migration->set_hot_min_refs(option.hot_min_refs);
-  migration->set_cold_max_refs(option.cold_max_refs);
+  auto migration = std::make_unique<Migration>(option, proc_idle_pages);
 
   if (option.migrate_what & MIGRATE_COLD) {
     err = migration->migrate(PTE_IDLE);
@@ -174,7 +154,7 @@ int migrate(ProcIdlePages& proc_idle_pages)
 int main(int argc, char *argv[])
 {
   int err = 0;
-  ProcIdlePages proc_idle_pages;
+  ProcIdlePages proc_idle_pages(option);
 
   setlocale(LC_NUMERIC, "");
 

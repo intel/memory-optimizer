@@ -11,21 +11,15 @@
 #include <string>
 #include <vector>
 
+#include "Option.h"
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
-
-typedef enum {
-  MIGRATE_NONE,
-  MIGRATE_HOT,
-  MIGRATE_COLD,
-  MIGRATE_BOTH = MIGRATE_HOT | MIGRATE_COLD,
-} MigrateWhat;
 
 class Migration
 {
   public:
     // functions
-    Migration(ProcIdlePages& pip);
+    Migration(const Option& o, ProcIdlePages& pip);
     ~Migration() {};
 
     static MigrateWhat parse_migrate_name(std::string name);
@@ -35,10 +29,6 @@ class Migration
 
     int dump_task_nodes();
     int dump_vma_nodes(proc_maps_entry& vma);
-
-    int set_dram_percent(int dp);
-    int set_hot_min_refs(int refs);
-    int set_cold_max_refs(int refs);
 
  private:
     // functions
@@ -72,13 +62,10 @@ class Migration
 
     static std::unordered_map<std::string, MigrateWhat> migrate_name_map;
 
+    const Option& option;
+
     ProcVmstat proc_vmstat;
     ProcIdlePages& proc_idle_pages;
-
-    // set either dram_percent or hot_min_refs/cold_max_refs, but not both
-    int dram_percent;
-    int hot_min_refs;
-    int cold_max_refs;
 
     // The Virtual Address of hot/cold pages.
     // [0...n] = [VA0...VAn]
