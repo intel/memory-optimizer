@@ -52,7 +52,7 @@ int AddrSequence::rewind()
   ++nr_walks;
   last_cluster_end = 0;
   top_bytes = 0;
-  
+
   return 0;
 }
 
@@ -167,7 +167,7 @@ void AddrSequence::do_walk_move_next(walk_iterator& iter)
   DeltaPayload *delta_ptr = cluster.deltas;
 
   iter.delta_sum += delta_ptr[iter.delta_index].delta;
-    
+
   ++iter.delta_index;
   if (iter.delta_index >= cluster.size) {
     iter.delta_index = 0;
@@ -219,7 +219,7 @@ int AddrSequence::create_cluster(unsigned long addr, int n)
 {
   void* new_buf_ptr;
   int ret_val;
-    
+
   ret_val = get_free_buffer(&new_buf_ptr);
   if (ret_val < 0)
     return ret_val;
@@ -398,7 +398,7 @@ int AddrSequence::do_self_test_walk(unsigned long pagesize)
     /*
       the addr may duplicated beacsue rand() may return 0
       because we ignore this, so we only put non-duplicated addr
-      into test_map 
+      into test_map
     */
     if (is_first_walk) {
       if (!err)
@@ -408,14 +408,14 @@ int AddrSequence::do_self_test_walk(unsigned long pagesize)
           for the nr_walk >=2 case, update stage, we do
           change payload(base on val) if addr already exists,
           so change here to same as inc_payload() behavior.
-         */        
+         */
         if (val)
           ++test_map[addr];
         else
           test_map[addr] = val;
     }
   }
-  
+
   return 0;
 }
 

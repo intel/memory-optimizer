@@ -112,15 +112,15 @@ int ProcIdlePages::walk_multi(int nr, float interval)
   for (auto& prc: pagetype_refs) {
     prc.page_refs2.clear();
     prc.refs_count2.clear();
-    prc.refs_count2.resize(nr + 1);   
+    prc.refs_count2.resize(nr + 1);
   }
 
   for (int i = 0; i < nr; ++i)
   {
       //must do rewind() before a walk() start.
-    for (auto& prc: pagetype_refs) 
+    for (auto& prc: pagetype_refs)
       prc.page_refs2.rewind();
-    
+
     ++nr_walks;
     err = walk();
     if (err)
@@ -204,7 +204,7 @@ int ProcIdlePages::walk()
       return idle_fd;
 
     read_buf.resize(READ_BUF_SIZE);
-    
+
     for (auto &vma: address_map)
       walk_vma(vma);
 
@@ -219,7 +219,7 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
     unsigned long addr;
     uint8_t ref_count;
     std::vector<unsigned long>& refs_count2 = prc.refs_count2;
-    
+
     refs_count2.clear();
     refs_count2.resize(nr_walks +1 , 0);
 
@@ -228,12 +228,12 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
     // In the rare case of changed VMAs, their start/end boundary may not align
     // with the underlying huge page size. If the same huge page is covered by
     // 2 VMAs, there will be duplicate accounting for the same page. The easy
-    // workaround is to enforce min() check here.    
+    // workaround is to enforce min() check here.
     ret_val = prc.page_refs2.get_first(addr, ref_count);
     while(!ret_val) {
       refs_count2[std::min(ref_count, (uint8_t)nr_walks)] += 1;
       ret_val = prc.page_refs2.get_next(addr, ref_count);
-    }    
+    }
 }
 
 void ProcIdlePages::count_refs()
@@ -283,7 +283,7 @@ int ProcIdlePages::save_counts(std::string filename)
   fprintf(file, "\nALL  %'15lu\n", total_kb);
 
   fclose(file);
-  
+
   return err;
 }
 
@@ -309,15 +309,15 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
   AddrSequence& page_refs2 = pagetype_refs[type | PAGE_ACCESSED_MASK].page_refs2;
 
   page_refs2.set_pageshift(pagetype_shift[type]);
-  
+
   for (int i = 0; i < nr; ++i)
   {
       //now change to VA to use AddrSequence
       unsigned long vpfn = va;// >> PAGE_SHIFT;
 
-    if (type & PAGE_ACCESSED_MASK) 
+    if (type & PAGE_ACCESSED_MASK)
       page_refs2.inc_payload(vpfn, 1);
-    else 
+    else
       page_refs2.inc_payload(vpfn, 0);
 
     //AddrSequence is not easy to random access, consider move

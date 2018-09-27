@@ -86,7 +86,7 @@ class AddrSequence
 
     int append_addr(unsigned long addr, int n);
     int update_addr(unsigned long addr, int n);
-    
+
     int create_cluster(unsigned long addr, int n);
     AddrCluster new_cluster(unsigned long addr, void* buffer);
     int save_into_cluster(AddrCluster& cluster, unsigned long addr, int n);
@@ -98,7 +98,7 @@ class AddrSequence
     int is_buffer_full() {
       return buf_used_count == MAX_ITEM_COUNT;
     }
-    
+
     void reset_find_iterator(std::map<unsigned long, AddrCluster>::iterator& new_start) {
       find_iter.cluster_iter = new_start;
       find_iter.delta_sum = 0;
@@ -115,12 +115,12 @@ class AddrSequence
       return ret_val >=0 && ret_val != END_OF_SEQUENCE;
     }
 
-  private:        
+  private:
     const static int BUF_SIZE = 0x10000; // 64KB;
     const static int ITEM_SIZE = sizeof(struct DeltaPayload);
     const static int MAX_ITEM_COUNT = BUF_SIZE / ITEM_SIZE;
     const static unsigned long MAX_DELTA_DIST = ( 1 << ( sizeof(uint8_t) * 8 ) ) - 1;
-    
+
     int nr_walks;
     int pageshift;
     unsigned long pagesize;
@@ -135,7 +135,7 @@ class AddrSequence
     std::allocator<DeltaPayload> buf_allocator;
     std::vector<DeltaPayload*>   buf_pool;
     int buf_used_count;
-    
+
     walk_iterator walk_iter;
     walk_iterator find_iter;
 

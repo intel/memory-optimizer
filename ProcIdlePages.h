@@ -64,7 +64,7 @@ struct ProcIdleRefs
   // accumulated by walk()
   //page_refs_map page_refs;
   AddrSequence page_refs2;
-    
+
   // refs => page count
   // accumulated by count_refs()
   //std::vector<unsigned long> refs_count;
@@ -83,7 +83,7 @@ class ProcIdlePages
     int walk_multi(int nr, float interval);
     void count_refs();
     int save_counts(std::string filename);
-    
+
     ProcIdleRefs& get_pagetype_refs(ProcIdlePageType type)
                    { return pagetype_refs[type | PAGE_ACCESSED_MASK]; }
 
