@@ -346,7 +346,8 @@ int AddrSequence::do_self_test_compare(unsigned long pagesize)
   unsigned long addr;
   uint8_t payload;
 
-  cout << "self_test_compare" << endl;
+  cout << "addr_clusters.size = " << addr_clusters.size() << endl;
+  cout << "buf_pool.size = " << buf_pool.size() << endl;
 
   if (!prepare_get()) {
     cout << "empty AddrSequence" << endl;
