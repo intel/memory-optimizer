@@ -60,6 +60,11 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
 {
   int nr_walks = proc_idle_pages.get_nr_walks();
 
+  if (type & PAGE_ACCESSED_MASK && option.nr_walks == 0) {
+    min_refs = nr_walks;
+    max_refs = nr_walks;
+    return 0;
+  }
   if (type & PAGE_ACCESSED_MASK && option.hot_min_refs > 0) {
     min_refs = option.hot_min_refs;
     max_refs = nr_walks;
