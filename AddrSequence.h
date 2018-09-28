@@ -82,7 +82,10 @@ class AddrSequence
       unsigned long  cluster_iter;
       unsigned long  cluster_iter_end;
       unsigned long  delta_sum;
-      int delta_index;
+      int            delta_index;
+
+      AddrCluster*   cur_cluster_ptr;
+      DeltaPayload*  cur_delta_ptr;
     };
 
     int append_addr(unsigned long addr, int n);
@@ -105,6 +108,9 @@ class AddrSequence
       find_iter.cluster_iter_end = addr_clusters.size();
       find_iter.delta_sum = 0;
       find_iter.delta_index = 0;
+
+      if (!addr_clusters.empty())
+          do_walk_update_current_ptr(find_iter);
     }
 
     int in_append_period() { return nr_walks < 2; }
@@ -115,6 +121,11 @@ class AddrSequence
                                 unsigned addr, uint8_t payload);
     bool do_walk_continue(int ret_val) {
       return ret_val >=0 && ret_val != END_OF_SEQUENCE;
+    }
+
+    void do_walk_update_current_ptr(walk_iterator& iter) {
+        iter.cur_cluster_ptr = &addr_clusters[iter.cluster_iter];
+        iter.cur_delta_ptr = iter.cur_cluster_ptr->deltas;
     }
 
   private:

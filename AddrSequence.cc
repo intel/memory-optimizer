@@ -117,11 +117,18 @@ int AddrSequence::smooth_payloads()
 
 bool AddrSequence::prepare_get()
 {
-  walk_iter.cluster_iter = 0;
-  walk_iter.cluster_iter_end = addr_clusters.size();
-  walk_iter.delta_index = 0;
-  walk_iter.delta_sum = 0;
-  return !addr_clusters.empty();
+  bool is_empty = addr_clusters.empty();
+
+  if (!is_empty) {
+      walk_iter.cluster_iter = 0;
+      walk_iter.cluster_iter_end = addr_clusters.size();
+      walk_iter.delta_index = 0;
+      walk_iter.delta_sum = 0;
+
+      do_walk_update_current_ptr(walk_iter);
+  }
+
+  return !is_empty;
 }
 
 int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
@@ -149,12 +156,10 @@ int AddrSequence::do_walk(walk_iterator& iter,
     return END_OF_SEQUENCE;
 
   unsigned long delta_sum;
-  AddrCluster &cluster = addr_clusters[iter.cluster_iter]; //iter.cluster_iter->second;
-  DeltaPayload *delta_ptr = cluster.deltas;
 
-  delta_sum = iter.delta_sum + delta_ptr[iter.delta_index].delta;
-  addr = cluster.start + (delta_sum << pageshift);
-  payload = delta_ptr[iter.delta_index].payload;
+  delta_sum = iter.delta_sum + iter.cur_delta_ptr[iter.delta_index].delta;
+  addr = iter.cur_cluster_ptr->start + (delta_sum << pageshift);
+  payload = iter.cur_delta_ptr[iter.delta_index].payload;
 
   return 0;
 }
@@ -171,6 +176,10 @@ void AddrSequence::do_walk_move_next(walk_iterator& iter)
     iter.delta_index = 0;
     iter.delta_sum = 0;
     ++iter.cluster_iter;
+
+    if(iter.cluster_iter < iter.cluster_iter_end) {
+        do_walk_update_current_ptr(iter);
+    }
   }
 }
 
