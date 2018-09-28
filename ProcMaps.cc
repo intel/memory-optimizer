@@ -15,7 +15,7 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
   char line[4096];
   int path_index;
   FILE *f;
-  int ret;
+  int ret = 0;
 
   snprintf(filename, sizeof(filename), "/proc/%d/maps", pid);
 
