@@ -7,7 +7,7 @@ LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
 CLASS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc AddrSequence.cc
 CLASS_HEADER_FILES = $(CLASS_SOURCE_FILES:.cc=.h)
 
-all: page-refs task-refs task-maps show-vmstat addr-seq
+all: page-refs task-maps show-vmstat addr-seq task-refs
 
 page-refs: page-refs.c $(LIB_SOURCE_FILES)
 	$(CC) $< $(LIB_SOURCE_FILES) -o $@ $(CFLAGS)
