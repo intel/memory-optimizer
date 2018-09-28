@@ -331,7 +331,7 @@ void AddrSequence::free_all_buf()
 //self-testing
 #ifdef ADDR_SEQ_SELF_TEST
 
-int AddrSequence::do_self_test_compare(unsigned long pagesize)
+int AddrSequence::do_self_test_compare(unsigned long pagesize, bool is_perf)
 {
   unsigned long addr;
   uint8_t payload;
@@ -344,11 +344,12 @@ int AddrSequence::do_self_test_compare(unsigned long pagesize)
     return -1;
   }
 
-  while (!get_next(addr, payload))
-    ;
-  return 0;
-
-  for (auto& kv: test_map)
+  if (is_perf) {
+    while (!get_next(addr, payload))
+        ;
+    return 0;
+  }
+    for (auto& kv: test_map)
   {
     int err = get_next(addr, payload);
     if (err < 0)
@@ -370,7 +371,7 @@ int AddrSequence::do_self_test_compare(unsigned long pagesize)
   return 0;
 }
 
-int AddrSequence::do_self_test_walk(unsigned long pagesize)
+int AddrSequence::do_self_test_walk(unsigned long pagesize, bool is_perf)
 {
   unsigned long addr = 0x100000;
   unsigned long delta;
@@ -379,9 +380,9 @@ int AddrSequence::do_self_test_walk(unsigned long pagesize)
   rewind();
   for (int i = 0; i < 1<<20; ++i)
   {
-    delta = 1; //rand() & 0xff;
+    delta = is_perf ? 1 : rand() & 0xff;
     addr += delta * pagesize;
-    int val = 1; //rand() & 1;
+    int val = is_perf ? 1 : (rand() & 1);
 
     int err = inc_payload(addr, val);
     if (err < 0) {
@@ -390,7 +391,8 @@ int AddrSequence::do_self_test_walk(unsigned long pagesize)
       return err;
     }
 
-    continue;
+    if (is_perf)
+        continue;
 
     /*
       the addr may duplicated beacsue rand() may return 0
@@ -422,25 +424,26 @@ int AddrSequence::self_test()
 
   clear();
   set_pageshift(12);
-  ret = do_self_test(4096);
+  ret = do_self_test(4096, 30, true);
 
   return ret;
 }
 
-int AddrSequence::do_self_test(unsigned long pagesize)
+int AddrSequence::do_self_test(unsigned long pagesize,
+                               int max_loop,
+                               bool is_perf)
 {
   std::map<unsigned long, uint8_t> am;
-  int max_walks;
   int err;
 
-  max_walks = 30; //rand() & 0xff;
-  for (int i = 0; i < max_walks; ++i)
+  //max_walks = 30; //rand() & 0xff;
+  for (int i = 0; i < max_loop; ++i)
   {
-    err = do_self_test_walk(pagesize);
+    err = do_self_test_walk(pagesize, is_perf);
     if (err < 0)
       return err;
   }
-  err = do_self_test_compare(pagesize);
+  err = do_self_test_compare(pagesize, is_perf);
   return err;
 }
 
@@ -497,6 +500,10 @@ void test_static()
   }
 
   as.clear();
+
+
+
+  
 }
 
 int main(int argc, char* argv[])

@@ -72,9 +72,9 @@ class AddrSequence
 
 #ifdef ADDR_SEQ_SELF_TEST
     int self_test();
-    int do_self_test(unsigned long pagesize);
-    int do_self_test_walk(unsigned long pagesize);
-    int do_self_test_compare(unsigned long pagesize);
+    int do_self_test(unsigned long pagesize, int max_loop, bool is_pref);
+    int do_self_test_walk(unsigned long pagesize, bool is_perf);
+    int do_self_test_compare(unsigned long pagesize, bool is_perf);
 #endif
 
   private:
