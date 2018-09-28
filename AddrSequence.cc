@@ -183,15 +183,12 @@ void AddrSequence::do_walk_move_next(walk_iterator& iter)
 void AddrSequence::do_walk_update_payload(walk_iterator& iter,
                                           unsigned addr, uint8_t payload)
 {
-  AddrCluster &cluster = addr_clusters[iter.cluster_iter];//iter.cluster_iter->second;
-  DeltaPayload *delta_ptr = cluster.deltas;
-
   if (payload) {
-    ++delta_ptr[iter.delta_index].payload;
-    if (delta_ptr[iter.delta_index].payload >= nr_walks)
+    ++iter.cur_delta_ptr[iter.delta_index].payload;
+    if (iter.cur_delta_ptr[iter.delta_index].payload >= nr_walks)
       top_bytes += pagesize;
   } else
-    delta_ptr[iter.delta_index].payload = 0;
+    iter.cur_delta_ptr[iter.delta_index].payload = 0;
 }
 
 int AddrSequence::append_addr(unsigned long addr, int n)
