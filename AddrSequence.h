@@ -80,6 +80,7 @@ class AddrSequence
   private:
     struct walk_iterator{
       unsigned long  cluster_iter;
+      unsigned long  cluster_iter_end;
       unsigned long  delta_sum;
       int delta_index;
     };
@@ -101,6 +102,7 @@ class AddrSequence
 
     void reset_find_iterator(unsigned long new_start) {
       find_iter.cluster_iter = new_start;
+      find_iter.cluster_iter_end = addr_clusters.size();
       find_iter.delta_sum = 0;
       find_iter.delta_index = 0;
     }

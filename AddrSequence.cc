@@ -115,6 +115,7 @@ int AddrSequence::smooth_payloads()
 bool AddrSequence::prepare_get()
 {
   walk_iter.cluster_iter = 0;
+  walk_iter.cluster_iter_end = addr_clusters.size();
   walk_iter.delta_index = 0;
   walk_iter.delta_sum = 0;
   return !addr_clusters.empty();
@@ -141,7 +142,7 @@ int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
 int AddrSequence::do_walk(walk_iterator& iter,
                           unsigned long& addr, uint8_t& payload)
 {
-  if (iter.cluster_iter == addr_clusters.size())
+  if (iter.cluster_iter == iter.cluster_iter_end)
     return END_OF_SEQUENCE;
 
   unsigned long delta_sum;
@@ -158,7 +159,7 @@ int AddrSequence::do_walk(walk_iterator& iter,
 void AddrSequence::do_walk_move_next(walk_iterator& iter)
 {
   //nothing to move, just return
-  if (iter.cluster_iter == addr_clusters.size())
+  if (iter.cluster_iter == iter.cluster_iter_end)
     return;
 
   AddrCluster &cluster = addr_clusters[iter.cluster_iter];//iter.cluster_iter->second;
