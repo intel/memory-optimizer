@@ -72,17 +72,20 @@ int AddrSequence::update_addr(unsigned long addr, int n)
   unsigned long next_addr;
   uint8_t unused_payload;
 
-  while(do_walk_continue(ret_val)) {
-    ret_val = do_walk(find_iter, next_addr, unused_payload);
+  for(;;) {
+      ret_val = do_walk(find_iter, next_addr, unused_payload);
 
-    if (next_addr == addr) {
-      do_walk_update_payload(find_iter, addr, n);
-      return 0;
-    } else if (next_addr > addr) {
-      return ADDR_NOT_FOUND;
-    }
+      if (!do_walk_continue(ret_val))
+          break;
 
-    do_walk_move_next(find_iter);
+      if (next_addr == addr) {
+          do_walk_update_payload(find_iter, addr, n);
+          return 0;
+      } else if (next_addr > addr) {
+          return ADDR_NOT_FOUND;
+      }
+
+      do_walk_move_next(find_iter);
   }
 
   //in update stage, the addr not exist is a graceful error
@@ -158,10 +161,6 @@ int AddrSequence::do_walk(walk_iterator& iter,
 
 void AddrSequence::do_walk_move_next(walk_iterator& iter)
 {
-  //nothing to move, just return
-  if (iter.cluster_iter == iter.cluster_iter_end)
-    return;
-
   AddrCluster &cluster = addr_clusters[iter.cluster_iter];//iter.cluster_iter->second;
   DeltaPayload *delta_ptr = cluster.deltas;
 
