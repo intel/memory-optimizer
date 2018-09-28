@@ -349,7 +349,8 @@ int AddrSequence::do_self_test_compare(unsigned long pagesize, bool is_perf)
         ;
     return 0;
   }
-    for (auto& kv: test_map)
+
+  for (auto& kv: test_map)
   {
     int err = get_next(addr, payload);
     if (err < 0)
@@ -501,9 +502,13 @@ void test_static()
 
   as.clear();
 
-
-
+  as.clear();
+  as.set_pageshift(12);
+  as.do_self_test(1, rand() & 127, false);
   
+  as.clear();
+  as.set_pageshift(12);
+  as.do_self_test(4096, rand() & 127, false);
 }
 
 int main(int argc, char* argv[])
