@@ -1,6 +1,7 @@
 CC = gcc
 CXX = g++
 DEBUG_FLAGS = -g -fsanitize=address
+DEBUG_FLAGS = -g -O3
 CFLAGS = $(DEBUG_FLAGS) -Wall
 CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++14
 LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
