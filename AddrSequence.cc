@@ -166,13 +166,10 @@ int AddrSequence::do_walk(walk_iterator& iter,
 
 void AddrSequence::do_walk_move_next(walk_iterator& iter)
 {
-  AddrCluster &cluster = addr_clusters[iter.cluster_iter];//iter.cluster_iter->second;
-  DeltaPayload *delta_ptr = cluster.deltas;
-
-  iter.delta_sum += delta_ptr[iter.delta_index].delta;
+  iter.delta_sum += iter.cur_delta_ptr[iter.delta_index].delta;
 
   ++iter.delta_index;
-  if (iter.delta_index >= cluster.size) {
+  if (iter.delta_index >= iter.cur_cluster_ptr->size) {
     iter.delta_index = 0;
     iter.delta_sum = 0;
     ++iter.cluster_iter;
