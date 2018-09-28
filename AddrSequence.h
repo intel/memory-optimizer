@@ -79,7 +79,7 @@ class AddrSequence
 
   private:
     struct walk_iterator{
-      std::map<unsigned long, AddrCluster>::iterator cluster_iter;
+      unsigned long  cluster_iter;
       unsigned long  delta_sum;
       int delta_index;
     };
@@ -99,7 +99,7 @@ class AddrSequence
       return buf_used_count == MAX_ITEM_COUNT;
     }
 
-    void reset_find_iterator(std::map<unsigned long, AddrCluster>::iterator& new_start) {
+    void reset_find_iterator(unsigned long new_start) {
       find_iter.cluster_iter = new_start;
       find_iter.delta_sum = 0;
       find_iter.delta_index = 0;
@@ -127,7 +127,7 @@ class AddrSequence
     unsigned long addr_size;  // # of addrs stored
     unsigned long top_bytes;  // nr_top_pages * pagesize
 
-    std::map<unsigned long, AddrCluster> addr_clusters;
+    std::vector<AddrCluster>     addr_clusters;
 
     // inc_payload() will allocate new fixed size buf on demand,
     // avoiding internal/external fragmentations.

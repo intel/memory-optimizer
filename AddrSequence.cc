@@ -29,8 +29,7 @@ void AddrSequence::clear()
   addr_clusters.clear();
   free_all_buf();
 
-  auto new_find_iter = addr_clusters.begin();
-  reset_find_iterator(new_find_iter);
+  reset_find_iterator(0);
 
 #ifdef ADDR_SEQ_SELF_TEST
   test_map.clear();
@@ -46,8 +45,7 @@ void AddrSequence::set_pageshift(int shift)
 
 int AddrSequence::rewind()
 {
-  auto new_find_iter = addr_clusters.begin();
-  reset_find_iterator(new_find_iter);
+  reset_find_iterator(0);
 
   ++nr_walks;
   last_cluster_end = 0;
@@ -97,10 +95,10 @@ int AddrSequence::update_addr(unsigned long addr, int n)
 
 int AddrSequence::smooth_payloads()
 {
-  for (auto &kv: addr_clusters)
+  for (auto &ac: addr_clusters)
   {
     int runavg;
-    AddrCluster& ac = kv.second;
+    //    AddrCluster& ac = kv;
     for (int i = 0; i < ac.size; ++i)
     {
       if (!i || ac.deltas[i].delta > 3)
@@ -116,10 +114,10 @@ int AddrSequence::smooth_payloads()
 
 bool AddrSequence::prepare_get()
 {
-  walk_iter.cluster_iter = addr_clusters.begin();
+  walk_iter.cluster_iter = 0;
   walk_iter.delta_index = 0;
   walk_iter.delta_sum = 0;
-  return walk_iter.cluster_iter != addr_clusters.end();
+  return !addr_clusters.empty();
 }
 
 int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
@@ -143,11 +141,11 @@ int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
 int AddrSequence::do_walk(walk_iterator& iter,
                           unsigned long& addr, uint8_t& payload)
 {
-  if (iter.cluster_iter == addr_clusters.end())
+  if (iter.cluster_iter == addr_clusters.size())
     return END_OF_SEQUENCE;
 
   unsigned long delta_sum;
-  AddrCluster &cluster = iter.cluster_iter->second;
+  AddrCluster &cluster = addr_clusters[iter.cluster_iter]; //iter.cluster_iter->second;
   DeltaPayload *delta_ptr = cluster.deltas;
 
   delta_sum = iter.delta_sum + delta_ptr[iter.delta_index].delta;
@@ -160,10 +158,10 @@ int AddrSequence::do_walk(walk_iterator& iter,
 void AddrSequence::do_walk_move_next(walk_iterator& iter)
 {
   //nothing to move, just return
-  if (iter.cluster_iter == addr_clusters.end())
+  if (iter.cluster_iter == addr_clusters.size())
     return;
 
-  AddrCluster &cluster = iter.cluster_iter->second;
+  AddrCluster &cluster = addr_clusters[iter.cluster_iter];//iter.cluster_iter->second;
   DeltaPayload *delta_ptr = cluster.deltas;
 
   iter.delta_sum += delta_ptr[iter.delta_index].delta;
@@ -179,7 +177,7 @@ void AddrSequence::do_walk_move_next(walk_iterator& iter)
 void AddrSequence::do_walk_update_payload(walk_iterator& iter,
                                           unsigned addr, uint8_t payload)
 {
-  AddrCluster &cluster = iter.cluster_iter->second;
+  AddrCluster &cluster = addr_clusters[iter.cluster_iter];//iter.cluster_iter->second;
   DeltaPayload *delta_ptr = cluster.deltas;
 
   if (payload) {
@@ -192,9 +190,7 @@ void AddrSequence::do_walk_update_payload(walk_iterator& iter,
 
 int AddrSequence::append_addr(unsigned long addr, int n)
 {
-  auto last = addr_clusters.rbegin();
-
-  if (last == addr_clusters.rend())
+  if (addr_clusters.empty())
     return create_cluster(addr, n);
 
   // the addr in append stage should grow from low to high
@@ -203,15 +199,11 @@ int AddrSequence::append_addr(unsigned long addr, int n)
   if (addr <= last_cluster_end)
     return IGNORE_DUPLICATED_ADDR;
 
-  int ret_val;
-  AddrCluster& cluster = last->second;
-
+  AddrCluster& cluster = addr_clusters.back();
   if (can_merge_into_cluster(cluster, addr))
-    ret_val = save_into_cluster(cluster, addr, n);
+    return save_into_cluster(cluster, addr, n);
   else
-    ret_val = create_cluster(addr, n);
-
-  return ret_val;
+    return create_cluster(addr, n);
 }
 
 
@@ -224,21 +216,19 @@ int AddrSequence::create_cluster(unsigned long addr, int n)
   if (ret_val < 0)
     return ret_val;
 
-  std::pair<unsigned long, AddrCluster>
-    new_item(addr, new_cluster(addr, new_buf_ptr));
-
-  auto insert_ret = addr_clusters.insert(new_item);
-  if (!insert_ret.second)
-    return -CREATE_CLUSTER_FAILED;
-
+  try {
+    addr_clusters.push_back(new_cluster(addr, new_buf_ptr));
+  } catch(std::bad_alloc& e) {
+    return -ENOMEM;
+  }
   //a new cluster created, so update this
   //new cluster's end = strat of cause
   last_cluster_end = addr;
 
   //set the find iterator because we added new cluster
-  reset_find_iterator(insert_ret.first);
+  reset_find_iterator(addr_clusters.size() - 1);
 
-  return save_into_cluster(insert_ret.first->second, addr, n);
+  return save_into_cluster(addr_clusters.back(), addr, n);
 }
 
 
