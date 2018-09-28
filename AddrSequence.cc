@@ -428,19 +428,13 @@ int AddrSequence::do_self_test_walk(unsigned long pagesize)
 
 int AddrSequence::self_test()
 {
-  int ret_val, ret_val_4k;
+  int ret;
 
-  //4KB pagesize with 1byte address increment
   clear();
   set_pageshift(12);
-  ret_val = do_self_test(1);
+  ret = do_self_test(4096);
 
-  //4KB pagesize with 4KB address increment
-  clear();
-  set_pageshift(12);
-  ret_val_4k = do_self_test(4096);
-
-  return ret_val || ret_val_4k;
+  return ret;
 }
 
 int AddrSequence::do_self_test(unsigned long pagesize)
