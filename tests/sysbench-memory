@@ -37,12 +37,20 @@ run_migrations()
 		grep -q "Threads started" $log_file && break
 	done
 
+        task_refs_cmd=(
+                $project_dir/task-refs
+                -i $interval
+                -d $dram_percent
+                -m $what
+                -p $sysbench_pid
+        )
+
 	for i in 2 1 1
 	do
 		sleep $i
 		echo
-		echo $project_dir/task-refs -l $loop -i $interval -m $what -p $sysbench_pid
-		time $project_dir/task-refs -l $loop -i $interval -m $what -p $sysbench_pid
+		echo "${task_refs_cmd[@]}"
+		/usr/bin/time -v "${task_refs_cmd[@]}"
 		cat refs-count-$sysbench_pid
 	done
 }
@@ -114,6 +122,7 @@ echo vimdiff $tests_dir/$log_dir/*.?
 thp=never
 thp=always
 mem_gb=2
+dram_percent=25
 
 # sysbench params
 time=10
