@@ -134,19 +134,16 @@ void PidList::parse_value_number_with_unit(char* value_ptr,
     scan_ret = sscanf(value_ptr, "%*[\t]%*[ ]%d %s",
                       &num_value,
                       unit);
-    
+
     if (scan_ret < 1) {
         out_value = 0;
         return;
     }
 
     out_value = num_value;
-    
-    // todo: check in kernel fs to know if have other
-    // units
     if (!strcmp(unit, "kB")) 
         out_value <<= 10;
-    
+
     return;
 }
 
@@ -179,6 +176,14 @@ int main(int argc, char* argv[])
                    item.pid,
                    item.name.c_str(),
                    item.rss_anon);
+        }
+        printf("\nNow find kthreadd by name:\n");
+        for(auto &item : pl.get_pidlist()) {
+            if (pl.is_name(item, "kthreadd"))
+                printf("PID: %lu name: %s RssAnon: %lu\n",
+                       item.pid,
+                       item.name.c_str(),
+                       item.rss_anon);
         }
     } else {
         fprintf(stderr, "get pid list failed!\n");

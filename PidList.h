@@ -21,12 +21,16 @@ class PidList
     PidList(){;}
     ~PidList(){;}
 
-    int collect();
+    int  collect();
+    PidSet& get_pidlist() { return pid_set; }
+
     void clear() { pid_set.clear(); }
     bool empty() { return pid_set.empty(); }
     
-    PidSet& get_pidlist() {
-      return pid_set;
+    bool is_name(PidItem& pid_item, const char* name_ptr) {
+        if (!name_ptr)
+          return false;
+        return !pid_item.name.compare(name_ptr);
     }
 
   private:
