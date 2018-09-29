@@ -9,24 +9,23 @@ int PidList::collect()
     DIR *dir;
     struct dirent *dirent;
     int ret_val = 0;
-    
+
     dir = opendir("/proc/");
     if (!dir)
         return -ENOENT;
-    
+
     for(;;) {
-        
-        dirent = readdir(dir);        
+        dirent = readdir(dir);
         if (!dirent)
             break;
 
         if (is_digit(dirent->d_name)) {
             ret_val = parse_one_pid(dirent);
-        }           
+        }
     }
 
     closedir(dir);
-    
+
     return ret_val;
 }
 
@@ -36,8 +35,8 @@ int PidList::parse_one_pid(struct dirent* proc_ent)
     int ret_val;
     FILE *file;
     char filename[PATH_MAX];
-        
-    snprintf(filename, sizeof(filename), "/proc/%s/status", proc_ent->d_name);   
+
+    snprintf(filename, sizeof(filename), "/proc/%s/status", proc_ent->d_name);
     file = fopen(filename, "r");
     if (!file) {
         perror(filename);
@@ -47,7 +46,7 @@ int PidList::parse_one_pid(struct dirent* proc_ent)
     ret_val = do_parse_one_pid(file, proc_ent);
 
     fclose(file);
-    
+
     return ret_val;
 }
 
@@ -56,7 +55,7 @@ int PidList::do_parse_one_pid(FILE *file, struct dirent* proc_ent)
     int ret_val;
     char line[4096];
     struct PidItem new_pid_item = {};
-    
+
     while(fgets(line, sizeof(line), file)) {
         ret_val = parse_one_line(new_pid_item, proc_ent, line);
     }
@@ -72,26 +71,26 @@ int PidList::parse_one_line(struct PidItem &new_pid_item,
     int ret_val;
     char* name_ptr;
     char* value_ptr;
-    
+
     ret_val = get_field_name(line_ptr, &name_ptr, &value_ptr);
     if (ret_val < 0)
         return ret_val;
 
     // begin here
-    
+
     new_pid_item.pid = strtoul(proc_ent->d_name, NULL, 0);
 
     if (!strcmp("Name", name_ptr)) {
         parse_value_string_1(value_ptr, new_pid_item.name);
     }
-    
+
     if (!strcmp("RssAnon", name_ptr)) {
         parse_value_number_with_unit(value_ptr, new_pid_item.rss_anon);
     }
 
     // add more here if necessary
     // end here
-       
+
     return ret_val;
 }
 
@@ -103,7 +102,7 @@ int PidList::get_field_name(char *field_ptr,
     sscanf(field_ptr, "%*[^:]%n", &split_index);
     if (split_index > 0) {
         field_ptr[split_index] = 0;
-    
+
         *name_ptr = field_ptr;
         *value_ptr = field_ptr + split_index + 1;
 
@@ -141,7 +140,7 @@ void PidList::parse_value_number_with_unit(char* value_ptr,
     }
 
     out_value = num_value;
-    if (!strcmp(unit, "kB")) 
+    if (!strcmp(unit, "kB"))
         out_value <<= 10;
 
     return;
@@ -154,7 +153,7 @@ void PidList::parse_value_string_1(char* value_ptr,
 
     sscanf(value_ptr, "\t%n",
            &name_index);
-    
+
     if (name_index > 0) {
         out_value = value_ptr + name_index;
         out_value.pop_back(); // trim '\n'
@@ -162,7 +161,7 @@ void PidList::parse_value_string_1(char* value_ptr,
     else
         out_value = "";
 
-    return;       
+    return;
 }
 #ifdef PID_LIST_SELF_TEST
 
