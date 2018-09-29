@@ -30,7 +30,7 @@ void AddrSequence::clear()
   addr_clusters.clear();
   free_all_buf();
 
-  reset_find_iterator(0);
+  reset_iterator(find_iter, 0);
 
 #ifdef ADDR_SEQ_SELF_TEST
   test_map.clear();
@@ -46,7 +46,7 @@ void AddrSequence::set_pageshift(int shift)
 
 int AddrSequence::rewind()
 {
-  reset_find_iterator(0);
+  reset_iterator(find_iter, 0);
 
   ++nr_walks;
   last_cluster_end = 0;
@@ -120,14 +120,8 @@ bool AddrSequence::prepare_get()
 {
   bool is_empty = addr_clusters.empty();
 
-  if (!is_empty) {
-      walk_iter.cluster_iter = 0;
-      walk_iter.cluster_iter_end = addr_clusters.size();
-      walk_iter.delta_index = 0;
-      walk_iter.delta_sum = 0;
-
-      do_walk_update_current_ptr(walk_iter);
-  }
+  if (!is_empty)
+    reset_iterator(walk_iter, 0);
 
   return !is_empty;
 }
@@ -230,7 +224,7 @@ int AddrSequence::create_cluster(unsigned long addr, int n)
   last_cluster_end = addr;
 
   //set the find iterator because we added new cluster
-  reset_find_iterator(addr_clusters.size() - 1);
+  reset_iterator(find_iter, addr_clusters.size() - 1);
 
   return save_into_cluster(addr_clusters.back(), addr, n);
 }

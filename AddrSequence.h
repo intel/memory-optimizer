@@ -103,14 +103,14 @@ class AddrSequence
       return buf_used_count == MAX_ITEM_COUNT;
     }
 
-    void reset_find_iterator(unsigned long new_start) {
-      find_iter.cluster_iter = new_start;
-      find_iter.cluster_iter_end = addr_clusters.size();
-      find_iter.delta_sum = 0;
-      find_iter.delta_index = 0;
+    void reset_iterator(walk_iterator& iter, unsigned long new_start) {
+      iter.cluster_iter = new_start;
+      iter.cluster_iter_end = addr_clusters.size();
+      iter.delta_sum = 0;
+      iter.delta_index = 0;
 
       if (!addr_clusters.empty())
-          do_walk_update_current_ptr(find_iter);
+          do_walk_update_current_ptr(iter);
     }
 
     int in_append_period() { return nr_walks < 2; }
