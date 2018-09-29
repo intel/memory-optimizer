@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <locale>
 
 struct PidItem {
     unsigned long pid;
@@ -24,6 +25,18 @@ class PidList
     
     PidSet& get_pidlist() {
       return pid_set;
+    }
+
+  private:
+
+    int parse_one_pid(struct dirent* pid_ent);
+    
+    bool is_digit(const char* str_ptr) {
+        
+        //assumption here: in /proc the first character of
+        // file name is number only happen on PIDs
+        //
+        return isdigit(str_ptr[0], std::locale());
     }
     
   private:
