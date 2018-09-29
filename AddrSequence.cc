@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "AddrSequence.h"
+#include "string.h"
 
 using namespace std;
 
@@ -516,13 +517,15 @@ void test_static()
 
 int main(int argc, char* argv[])
 {
-#if 1
+  if (argc >= 2) {
+    if (!strcmp(argv[1], "check")) {
+      test_static();
+      return 0;
+    }
+  }
+
   AddrSequence as;
   return as.self_test();
-#else
-  test_static();
-  return 0;
-#endif
 }
 
 #endif
