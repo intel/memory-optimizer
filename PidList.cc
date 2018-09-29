@@ -171,15 +171,26 @@ int main(int argc, char* argv[])
     PidList pl;
 
     if (!pl.collect()) {
+        printf("\nList all pids:\n");
         for(auto &item : pl.get_pidlist()) {
             printf("PID: %lu name: %s RssAnon: %lu\n",
                    item.pid,
                    item.name.c_str(),
                    item.rss_anon);
         }
-        printf("\nNow find kthreadd by name:\n");
+
+        printf("\nList kthreadd by name:\n");
         for(auto &item : pl.get_pidlist()) {
             if (pl.is_name(item, "kthreadd"))
+                printf("PID: %lu name: %s RssAnon: %lu\n",
+                       item.pid,
+                       item.name.c_str(),
+                       item.rss_anon);
+        }
+
+        printf("\nList pids only have RssAnon:\n");
+        for(auto &item : pl.get_pidlist()) {
+            if (pl.is_have_rss_anon(item))
                 printf("PID: %lu name: %s RssAnon: %lu\n",
                        item.pid,
                        item.name.c_str(),

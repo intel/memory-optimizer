@@ -33,36 +33,43 @@ class PidList
         return !pid_item.name.compare(name_ptr);
     }
 
+    bool is_have_rss_anon(PidItem& pid_item) {
+        return is_rss_anon_gt(pid_item, 0);
+    }
+
+    bool is_rss_anon_gt(PidItem& pid_item,
+                        unsigned long rss_anon_value) {
+        return pid_item.rss_anon > rss_anon_value;
+    }
+
   private:
 
     int parse_one_pid(struct dirent *proc_ent);
     int do_parse_one_pid(FILE *file, struct dirent* proc_ent);    
     int parse_one_line(struct PidItem &new_item,
                        struct dirent *proc_ent, char *line_ptr);
-    
+
     int get_field_name(char *field_ptr,
                        char **name_ptr, char** value_ptr);
-    
+
     bool is_digit(const char *str_ptr) {        
         // assumption here: in /proc the first character of
         // file name is number only happen on PIDs
-        //
         return isdigit(str_ptr[0], std::locale());
     }
 
     int save_into_pid_set(PidItem &new_pid_item);
-    
-    //parse family here
+
+    // parse family here
     void parse_value_number_with_unit(char* value_ptr,
                                       unsigned long &out_value);
     void parse_value_string_1(char* value_ptr,
                               std::string &out_value);
-        
+
     
     
   private:
     PidSet pid_set;
-    
 };
 
 
