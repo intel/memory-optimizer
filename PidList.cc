@@ -15,12 +15,25 @@ int PidList::collect()
         return -ENOENT;
 
     for(;;) {
+        errno = 0;
+        ret_val = 0;
         dirent = readdir(dir);
-        if (!dirent)
-            break;
+        if (!dirent) {
+            if (0 != errno)
+                ret_val = errno;
 
-        if (is_digit(dirent->d_name)) {
-            ret_val = parse_one_pid(dirent);
+            break;
+        }
+
+        if (DT_DIR != dirent->d_type
+            || !is_digit(dirent->d_name))
+            continue;
+
+        ret_val = parse_one_pid(dirent);
+        if (ret_val < 0) {
+            fprintf(stderr, "parse_one_pid failed. name: %s err: %d\n",
+                    dirent->d_name, ret_val);
+            break;
         }
     }
 
@@ -39,8 +52,8 @@ int PidList::parse_one_pid(struct dirent* proc_ent)
     snprintf(filename, sizeof(filename), "/proc/%s/status", proc_ent->d_name);
     file = fopen(filename, "r");
     if (!file) {
-        perror(filename);
-        return -1;
+        fprintf(stderr, "open %s failed\n", filename);
+        return errno;
     }
 
     ret_val = do_parse_one_pid(file, proc_ent);
@@ -57,16 +70,19 @@ int PidList::do_parse_one_pid(FILE *file, struct dirent* proc_ent)
     struct PidItem new_pid_item = {};
 
     while(fgets(line, sizeof(line), file)) {
-        ret_val = parse_one_line(new_pid_item, proc_ent, line);
+        ret_val = do_parse_one_line(new_pid_item, proc_ent, line);
+        if (ret_val < 0)
+            break;
     }
 
-    ret_val = save_into_pid_set(new_pid_item);
+    if (ret_val >= 0)
+        ret_val = save_into_pid_set(new_pid_item);
 
     return ret_val;
 }
 
-int PidList::parse_one_line(struct PidItem &new_pid_item,
-                            struct dirent* proc_ent, char* line_ptr)
+int PidList::do_parse_one_line(struct PidItem &new_pid_item,
+                               struct dirent* proc_ent, char* line_ptr)
 {
     int ret_val;
     char* name_ptr;
@@ -109,7 +125,7 @@ int PidList::get_field_name(char *field_ptr,
         return 0;
     }
 
-    return -1;
+    return -PARSE_FIELD_NAME_VALUE_FAILED;
 }
 
 int PidList::save_into_pid_set(PidItem& new_pid_item)
@@ -133,7 +149,6 @@ void PidList::parse_value_number_with_unit(char* value_ptr,
     scan_ret = sscanf(value_ptr, "%*[\t]%*[ ]%d %s",
                       &num_value,
                       unit);
-
     if (scan_ret < 1) {
         out_value = 0;
         return;
@@ -154,12 +169,13 @@ void PidList::parse_value_string_1(char* value_ptr,
     sscanf(value_ptr, "\t%n",
            &name_index);
 
-    if (name_index > 0) {
-        out_value = value_ptr + name_index;
-        out_value.pop_back(); // trim '\n'
-    }
-    else
+    if (name_index <= 0) {
         out_value = "";
+        return;
+    }
+
+    out_value = value_ptr + name_index;
+    out_value.pop_back(); // trim '\n'
 
     return;
 }
@@ -168,35 +184,37 @@ void PidList::parse_value_string_1(char* value_ptr,
 int main(int argc, char* argv[])
 {
     PidList pl;
+    int ret_val;
 
-    if (!pl.collect()) {
-        printf("\nList all pids:\n");
-        for(auto &item : pl.get_pidlist()) {
+    ret_val = pl.collect();
+    if (ret_val) {
+        fprintf(stderr, "get pid list failed! err = %d\n", ret_val);
+    }
+
+    printf("\nList all pids:\n");
+    for(auto &item : pl.get_pidlist()) {
+        printf("PID: %lu name: %s RssAnon: %lu\n",
+               item.pid,
+               item.name.c_str(),
+               item.rss_anon);
+    }
+
+    printf("\nList kthreadd by name:\n");
+    for(auto &item : pl.get_pidlist()) {
+        if (pl.is_name(item, "kthreadd"))
             printf("PID: %lu name: %s RssAnon: %lu\n",
                    item.pid,
                    item.name.c_str(),
                    item.rss_anon);
-        }
+    }
 
-        printf("\nList kthreadd by name:\n");
-        for(auto &item : pl.get_pidlist()) {
-            if (pl.is_name(item, "kthreadd"))
-                printf("PID: %lu name: %s RssAnon: %lu\n",
-                       item.pid,
-                       item.name.c_str(),
-                       item.rss_anon);
-        }
-
-        printf("\nList pids only have RssAnon:\n");
-        for(auto &item : pl.get_pidlist()) {
-            if (pl.is_have_rss_anon(item))
-                printf("PID: %lu name: %s RssAnon: %lu\n",
-                       item.pid,
-                       item.name.c_str(),
-                       item.rss_anon);
-        }
-    } else {
-        fprintf(stderr, "get pid list failed!\n");
+    printf("\nList pids only have RssAnon:\n");
+    for(auto &item : pl.get_pidlist()) {
+        if (pl.is_have_rss_anon(item))
+            printf("PID: %lu name: %s RssAnon: %lu\n",
+                   item.pid,
+                   item.name.c_str(),
+                   item.rss_anon);
     }
 
     return 0;

@@ -17,6 +17,11 @@ typedef std::vector<PidItem> PidSet;
 class PidList
 {
   public:
+   enum error {
+       PARSE_FIELD_NAME_VALUE_FAILED = 300,
+   };
+
+  public:
     PidList(){;}
     ~PidList(){;}
 
@@ -45,8 +50,8 @@ class PidList
 
     int parse_one_pid(struct dirent *proc_ent);
     int do_parse_one_pid(FILE *file, struct dirent* proc_ent);
-    int parse_one_line(struct PidItem &new_item,
-                       struct dirent *proc_ent, char *line_ptr);
+    int do_parse_one_line(struct PidItem &new_item,
+                          struct dirent *proc_ent, char *line_ptr);
 
     int get_field_name(char *field_ptr,
                        char **name_ptr, char** value_ptr);
