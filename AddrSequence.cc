@@ -337,7 +337,7 @@ void AddrSequence::free_all_buf()
 int AddrSequence::do_self_test_compare(unsigned long pagesize, bool is_perf)
 {
   unsigned long addr;
-  uint8_t payload;
+  uint8_t payload = 0;
 
   cout << "addr_clusters.size = " << addr_clusters.size() << endl;
   cout << "buf_pool.size = " << buf_pool.size() << endl;
