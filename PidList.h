@@ -65,6 +65,8 @@ class PidList
     int save_into_pid_set(PidItem &new_pid_item);
 
     // Parse family here
+    void parse_value_number_1(char* value_ptr,
+                              unsigned long &out_value);
     void parse_value_number_with_unit(char* value_ptr,
                                       unsigned long &out_value);
     void parse_value_string_1(char* value_ptr,

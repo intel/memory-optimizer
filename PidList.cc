@@ -92,20 +92,28 @@ int PidList::do_parse_one_line(struct PidItem &new_pid_item,
     if (ret_val < 0)
         return ret_val;
 
-    // begin here
+    do {
+        // a map from string to parser function ptr is better
+        // if we need to parse more fields, but now just 3 here
+        // so let's keep this simple now.
+        if (!strcmp("Pid", name_ptr)) {
+            parse_value_number_1(value_ptr, new_pid_item.pid);
+            break;
+        }
 
-    new_pid_item.pid = strtoul(proc_ent->d_name, NULL, 0);
+        if (!strcmp("Name", name_ptr)) {
+            parse_value_string_1(value_ptr, new_pid_item.name);
+            break;
+        }
 
-    if (!strcmp("Name", name_ptr)) {
-        parse_value_string_1(value_ptr, new_pid_item.name);
-    }
+        if (!strcmp("RssAnon", name_ptr)) {
+            parse_value_number_with_unit(value_ptr, new_pid_item.rss_anon);
+            break;
+        }
 
-    if (!strcmp("RssAnon", name_ptr)) {
-        parse_value_number_with_unit(value_ptr, new_pid_item.rss_anon);
-    }
+        // add more here if necessary
 
-    // add more here if necessary
-    // end here
+    }while(0);
 
     return ret_val;
 }
@@ -179,6 +187,17 @@ void PidList::parse_value_string_1(char* value_ptr,
 
     return;
 }
+
+void PidList::parse_value_number_1(char* value_ptr,
+                                   unsigned long &out_value)
+{
+    std::string value_str;
+
+    parse_value_string_1(value_ptr, value_str);
+    out_value = strtoul(value_str.c_str(), NULL, 0);
+}
+
+
 #ifdef PID_LIST_SELF_TEST
 
 int main(int argc, char* argv[])
