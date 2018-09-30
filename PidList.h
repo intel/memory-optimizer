@@ -53,8 +53,8 @@ class PidList
     int do_parse_one_line(struct PidItem &new_item,
                           struct dirent *proc_ent, char *line_ptr);
 
-    int get_field_name(char *field_ptr,
-                       char **name_ptr, char** value_ptr);
+    int get_field_name_value(char *field_ptr,
+                             char **name_ptr, char** value_ptr);
 
     bool is_digit(const char *str_ptr) {
         // assumption here: in /proc the first character of
