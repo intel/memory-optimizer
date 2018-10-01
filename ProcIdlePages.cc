@@ -312,18 +312,15 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
 
   for (int i = 0; i < nr; ++i)
   {
-      //now change to VA to use AddrSequence
-      unsigned long vpfn = va;// >> PAGE_SHIFT;
-
     if (type & PAGE_ACCESSED_MASK)
-      page_refs2.inc_payload(vpfn, 1);
+      page_refs2.inc_payload(va, 1);
     else
-      page_refs2.inc_payload(vpfn, 0);
+      page_refs2.inc_payload(va, 0);
 
     //AddrSequence is not easy to random access, consider move
     //this checking into AddrSequence.
-    //if (page_refs[vpfn] > nr_walks)
-    //  printf("error counted duplicate vpfn: %lx\n", vpfn);
+    //if (page_refs[va] > nr_walks)
+    //  printf("error counted duplicate va: %lx\n", va);
 
     va += page_size;
     if (va >= end)

@@ -137,7 +137,7 @@ int Migration::select_top_pages(ProcIdlePageType type)
 
   /*
   for (auto it = page_refs.begin(); it != page_refs.end(); ++it) {
-    printdd("vpfn: %lx count: %d\n", it->first, (int)it->second);
+    printdd("va: %lx count: %d\n", it->first, (int)it->second);
     if (it->second >= min_refs &&
         it->second <= max_refs)
       pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
@@ -146,7 +146,7 @@ int Migration::select_top_pages(ProcIdlePageType type)
 
   iter_ret = page_refs.get_first(addr, ref_count);
   while(!iter_ret) {
-    printdd("vpfn: %lx count: %d\n", addr, (int)ref_count);
+    printdd("va: %lx count: %d\n", addr, (int)ref_count);
     if (ref_count >= min_refs &&
         ref_count <= max_refs)
       pages_addr[type].push_back((void *)addr);
