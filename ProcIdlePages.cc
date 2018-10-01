@@ -356,6 +356,8 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
       return;
     }
 
+    va &= ~(pagetype_size[type] - 1);
+
     if (type <= MAX_ACCESSED)
       inc_page_refs(type, nr, va, vma.end);
 
