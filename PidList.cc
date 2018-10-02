@@ -134,7 +134,7 @@ int PidList::get_field_name_value(char *field_ptr,
     return 0;
   }
 
-  return -PARSE_FIELD_NAME_VALUE_FAILED;
+  return -EINVAL;
 }
 
 int PidList::save_into_pid_set(PidItem& new_pid_item)

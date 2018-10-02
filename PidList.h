@@ -17,11 +17,6 @@ typedef std::vector<PidItem> PidSet;
 class PidList
 {
   public:
-   enum error {
-       PARSE_FIELD_NAME_VALUE_FAILED = 300,
-   };
-
-  public:
     PidList(){;}
     ~PidList(){;}
 
