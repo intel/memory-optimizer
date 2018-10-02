@@ -8,7 +8,7 @@ int PidList::collect()
 {
   DIR *dir;
   struct dirent *dirent;
-  int ret_val = 0;
+  int rc = 0;
 
   dir = opendir("/proc/");
   if (!dir)
@@ -16,11 +16,11 @@ int PidList::collect()
 
   for(;;) {
     errno = 0;
-    ret_val = 0;
+    rc = 0;
     dirent = readdir(dir);
     if (!dirent) {
       if (0 != errno)
-        ret_val = errno;
+        rc = errno;
 
       break;
     }
@@ -29,23 +29,23 @@ int PidList::collect()
         || !is_digit(dirent->d_name))
       continue;
 
-    ret_val = parse_one_pid(dirent);
-    if (ret_val < 0) {
+    rc = parse_one_pid(dirent);
+    if (rc < 0) {
       fprintf(stderr, "parse_one_pid failed. name: %s err: %d\n",
-              dirent->d_name, ret_val);
+              dirent->d_name, rc);
       break;
     }
   }
 
   closedir(dir);
 
-  return ret_val;
+  return rc;
 }
 
 
 int PidList::parse_one_pid(struct dirent* proc_ent)
 {
-  int ret_val;
+  int rc;
   FILE *file;
   char filename[PATH_MAX];
 
@@ -56,42 +56,41 @@ int PidList::parse_one_pid(struct dirent* proc_ent)
     return errno;
   }
 
-  ret_val = do_parse_one_pid(file, proc_ent);
+  rc = do_parse_one_pid(file, proc_ent);
 
   fclose(file);
 
-  return ret_val;
+  return rc;
 }
 
 int PidList::do_parse_one_pid(FILE *file, struct dirent* proc_ent)
 {
-  int ret_val;
+  int rc;
   char line[4096];
   struct PidItem new_pid_item = {};
 
   while(fgets(line, sizeof(line), file)) {
-    ret_val = do_parse_one_line(new_pid_item, proc_ent, line);
-    if (ret_val < 0)
+    rc = do_parse_one_line(new_pid_item, proc_ent, line);
+    if (rc < 0)
       break;
   }
 
-  if (ret_val >= 0)
-    ret_val = save_into_pid_set(new_pid_item);
+  if (rc >= 0)
+    rc = save_into_pid_set(new_pid_item);
 
-  return ret_val;
+  return rc;
 }
 
 int PidList::do_parse_one_line(struct PidItem &new_pid_item,
                                struct dirent* proc_ent, char* line_ptr)
 {
-  int ret_val;
+  int rc;
   char* name_ptr;
   char* value_ptr;
 
-  ret_val = get_field_name_value(line_ptr,
-                                 &name_ptr, &value_ptr);
-  if (ret_val < 0)
-    return ret_val;
+  rc = get_field_name_value(line_ptr, &name_ptr, &value_ptr);
+  if (rc < 0)
+    return rc;
 
   do {
       // a map from string to parser function ptr is better
@@ -114,9 +113,9 @@ int PidList::do_parse_one_line(struct PidItem &new_pid_item,
 
       // add more here if necessary
 
-  }while(0);
+  } while(0);
 
-  return ret_val;
+  return rc;
 }
 
 int PidList::get_field_name_value(char *field_ptr,
@@ -203,12 +202,12 @@ void PidList::parse_value_number_1(char* value_ptr,
 int main(int argc, char* argv[])
 {
   PidList pl;
-  int ret_val;
+  int err;
 
-  ret_val = pl.collect();
-  if (ret_val) {
-    fprintf(stderr, "get pid list failed! err = %d\n", ret_val);
-    return ret_val;
+  err = pl.collect();
+  if (err) {
+    fprintf(stderr, "get pid list failed! err = %d\n", err);
+    return err;
   }
 
   printf("\nList all pids:\n");

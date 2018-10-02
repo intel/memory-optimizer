@@ -69,14 +69,14 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
 
 int AddrSequence::update_addr(unsigned long addr, int n)
 {
-  int ret_val = 0;
+  int rc = 0;
   unsigned long next_addr;
   uint8_t unused_payload;
 
   for(;;) {
-      ret_val = do_walk(find_iter, next_addr, unused_payload);
+      rc = do_walk(find_iter, next_addr, unused_payload);
 
-      if (!do_walk_continue(ret_val))
+      if (!do_walk_continue(rc))
           break;
 
       if (next_addr == addr) {
@@ -91,10 +91,10 @@ int AddrSequence::update_addr(unsigned long addr, int n)
 
   //in update stage, the addr not exist is a graceful error
   //so we change to return positive ADDR_NOT_FOUND
-  if (ret_val == END_OF_SEQUENCE)
-    ret_val = ADDR_NOT_FOUND;
+  if (rc == END_OF_SEQUENCE)
+    rc = ADDR_NOT_FOUND;
 
-  return ret_val;
+  return rc;
 }
 
 int AddrSequence::smooth_payloads()
@@ -135,13 +135,13 @@ int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
 
 int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
 {
-  int ret_val;
+  int rc;
 
-  ret_val = do_walk(walk_iter, addr, payload);
-  if (do_walk_continue(ret_val))
+  rc = do_walk(walk_iter, addr, payload);
+  if (do_walk_continue(rc))
     do_walk_move_next(walk_iter);
 
-  return ret_val;
+  return rc;
 }
 
 int AddrSequence::do_walk(walk_iterator& iter,
@@ -208,11 +208,11 @@ int AddrSequence::append_addr(unsigned long addr, int n)
 int AddrSequence::create_cluster(unsigned long addr, int n)
 {
   void* new_buf_ptr;
-  int ret_val;
+  int rc;
 
-  ret_val = get_free_buffer(&new_buf_ptr);
-  if (ret_val < 0)
-    return ret_val;
+  rc = get_free_buffer(&new_buf_ptr);
+  if (rc < 0)
+    return rc;
 
   try {
     addr_clusters.push_back(new_cluster(addr, new_buf_ptr));
@@ -244,18 +244,18 @@ AddrCluster AddrSequence::new_cluster(unsigned long addr, void* buffer)
 
 int AddrSequence::get_free_buffer(void** free_ptr)
 {
-  int ret_val = 0;
+  int rc = 0;
 
   if (is_buffer_full())
-    ret_val = allocate_buf();
+    rc = allocate_buf();
 
-  if (ret_val >= 0) {
+  if (rc >= 0) {
     DeltaPayload* ptr;
     ptr = buf_pool.back();
     *free_ptr = &ptr[buf_used_count];
   }
 
-  return ret_val;
+  return rc;
 }
 
 
@@ -450,52 +450,52 @@ int AddrSequence::do_self_test(unsigned long pagesize,
 void test_static()
 {
   AddrSequence  as;
-  int ret_val;
+  int rc;
   unsigned long addr;
   uint8_t  payload;
 
   as.set_pageshift(12);
-  ret_val = as.inc_payload(0x1000, 0);
-  ret_val = as.inc_payload(0x3000, 0);
-  ret_val = as.inc_payload(0x5000, 0);
-  ret_val = as.inc_payload(0x8000, 0);
-  ret_val = as.inc_payload(0x1000 + 4096 * 255, 1);
-  ret_val = as.inc_payload(0x1000 + 4096 * 256, 1);
+  rc = as.inc_payload(0x1000, 0);
+  rc = as.inc_payload(0x3000, 0);
+  rc = as.inc_payload(0x5000, 0);
+  rc = as.inc_payload(0x8000, 0);
+  rc = as.inc_payload(0x1000 + 4096 * 255, 1);
+  rc = as.inc_payload(0x1000 + 4096 * 256, 1);
 
   as.clear();
 
   as.rewind();
 
   as.set_pageshift(12);
-  ret_val = as.inc_payload(0x11000, 0);
-  ret_val = as.inc_payload(0x13000, 0);
-  ret_val = as.inc_payload(0x15000, 0);
-  ret_val = as.inc_payload(0x18000, 0);
-  ret_val = as.inc_payload(0x21000, 0);
-  ret_val = as.inc_payload(0x23000, 0);
-  ret_val = as.inc_payload(0x25000, 0);
-  ret_val = as.inc_payload(0x28000, 0);
-  ret_val = as.inc_payload(0x30000, 0);
-  ret_val = as.inc_payload(0x32000, 0);
+  rc = as.inc_payload(0x11000, 0);
+  rc = as.inc_payload(0x13000, 0);
+  rc = as.inc_payload(0x15000, 0);
+  rc = as.inc_payload(0x18000, 0);
+  rc = as.inc_payload(0x21000, 0);
+  rc = as.inc_payload(0x23000, 0);
+  rc = as.inc_payload(0x25000, 0);
+  rc = as.inc_payload(0x28000, 0);
+  rc = as.inc_payload(0x30000, 0);
+  rc = as.inc_payload(0x32000, 0);
 
   as.rewind();
-  ret_val = as.inc_payload(0x11000, 1);
-  ret_val = as.inc_payload(0x13000, 0);
-  ret_val = as.inc_payload(0x15000, 1);
-  ret_val = as.inc_payload(0x18000, 0);
-  ret_val = as.inc_payload(0x21000, 1);
-  ret_val = as.inc_payload(0x23000, 0);
-  ret_val = as.inc_payload(0x25000, 1);
-  ret_val = as.inc_payload(0x28000, 1);
-  ret_val = as.inc_payload(0x30000, 0);
-  ret_val = as.inc_payload(0x32000, 1);
-  ret_val = as.inc_payload(0x40000, 1); //should not update
-  ret_val = as.inc_payload(0x40000, 1); //should not update
+  rc = as.inc_payload(0x11000, 1);
+  rc = as.inc_payload(0x13000, 0);
+  rc = as.inc_payload(0x15000, 1);
+  rc = as.inc_payload(0x18000, 0);
+  rc = as.inc_payload(0x21000, 1);
+  rc = as.inc_payload(0x23000, 0);
+  rc = as.inc_payload(0x25000, 1);
+  rc = as.inc_payload(0x28000, 1);
+  rc = as.inc_payload(0x30000, 0);
+  rc = as.inc_payload(0x32000, 1);
+  rc = as.inc_payload(0x40000, 1); //should not update
+  rc = as.inc_payload(0x40000, 1); //should not update
 
-  ret_val = as.get_first(addr, payload);
-  while(!ret_val) {
+  rc = as.get_first(addr, payload);
+  while(!rc) {
     printf("addr = %lx, payload = %u\n", addr, payload);
-    ret_val = as.get_next(addr, payload);
+    rc = as.get_next(addr, payload);
   }
 
   as.clear();

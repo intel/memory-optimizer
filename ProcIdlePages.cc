@@ -217,7 +217,7 @@ int ProcIdlePages::walk()
 
 void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
 {
-    int ret_val;
+    int rc;
     unsigned long addr;
     uint8_t ref_count;
     std::vector<unsigned long>& refs_count2 = prc.refs_count2;
@@ -231,10 +231,10 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
     // with the underlying huge page size. If the same huge page is covered by
     // 2 VMAs, there will be duplicate accounting for the same page. The easy
     // workaround is to enforce min() check here.
-    ret_val = prc.page_refs2.get_first(addr, ref_count);
-    while(!ret_val) {
+    rc = prc.page_refs2.get_first(addr, ref_count);
+    while(!rc) {
       refs_count2[std::min(ref_count, (uint8_t)nr_walks)] += 1;
-      ret_val = prc.page_refs2.get_next(addr, ref_count);
+      rc = prc.page_refs2.get_next(addr, ref_count);
     }
 }
 
