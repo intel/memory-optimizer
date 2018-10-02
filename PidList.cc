@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
 
   printf("\nList kthreadd by name:\n");
   for(auto &item : pl.get_pidlist()) {
-    if (pl.is_name(item, "kthreadd"))
+    if (item.name == "kthreadd")
       printf("PID: %8lu  RssAnon: %'15lu  name: %s\n",
              item.pid,
              item.rss_anon,

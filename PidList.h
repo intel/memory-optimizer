@@ -31,12 +31,6 @@ class PidList
     void clear() { pid_set.clear(); }
     bool empty() { return pid_set.empty(); }
 
-    bool is_name(PidItem& pid_item, const char* name_ptr) {
-        if (!name_ptr)
-          return false;
-        return !pid_item.name.compare(name_ptr);
-    }
-
   private:
 
     int parse_pid(pid_t pid);
