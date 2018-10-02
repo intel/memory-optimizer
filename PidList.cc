@@ -210,30 +210,32 @@ int main(int argc, char* argv[])
     return err;
   }
 
+  setlocale(LC_NUMERIC, "");
+
   printf("\nList all pids:\n");
   for(auto &item : pl.get_pidlist()) {
-    printf("PID: %lu name: %s RssAnon: %lu\n",
+    printf("PID: %8lu  RssAnon: %'15lu  name: %s\n",
            item.pid,
-           item.name.c_str(),
-           item.rss_anon);
+           item.rss_anon,
+           item.name.c_str());
     }
 
   printf("\nList kthreadd by name:\n");
   for(auto &item : pl.get_pidlist()) {
     if (pl.is_name(item, "kthreadd"))
-      printf("PID: %lu name: %s RssAnon: %lu\n",
+      printf("PID: %8lu  RssAnon: %'15lu  name: %s\n",
              item.pid,
-             item.name.c_str(),
-             item.rss_anon);
+             item.rss_anon,
+             item.name.c_str());
   }
 
   printf("\nList pids only have RssAnon:\n");
   for(auto &item : pl.get_pidlist()) {
     if (pl.is_have_rss_anon(item))
-      printf("PID: %lu name: %s RssAnon: %lu\n",
+      printf("PID: %8lu  RssAnon: %'15lu  name: %s\n",
              item.pid,
-             item.name.c_str(),
-             item.rss_anon);
+             item.rss_anon,
+             item.name.c_str());
   }
 
   return 0;
