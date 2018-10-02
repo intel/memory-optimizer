@@ -231,15 +231,6 @@ int main(int argc, char* argv[])
              item.name.c_str());
   }
 
-  printf("\nList pids only have RssAnon:\n");
-  for(auto &item : pl.get_pidlist()) {
-    if (pl.is_have_rss_anon(item))
-      printf("PID: %8lu  RssAnon: %'15lu  name: %s\n",
-             item.pid,
-             item.rss_anon,
-             item.name.c_str());
-  }
-
   return 0;
 }
 

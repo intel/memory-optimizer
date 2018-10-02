@@ -37,15 +37,6 @@ class PidList
         return !pid_item.name.compare(name_ptr);
     }
 
-    bool is_have_rss_anon(PidItem& pid_item) {
-        return is_rss_anon_gt(pid_item, 0);
-    }
-
-    bool is_rss_anon_gt(PidItem& pid_item,
-                        unsigned long rss_anon_value) {
-        return pid_item.rss_anon > rss_anon_value;
-    }
-
   private:
 
     int parse_pid(pid_t pid);
