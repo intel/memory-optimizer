@@ -4,6 +4,14 @@
 #include <cstdlib>
 #include <string.h>
 
+PidSet& PidList::get_pidlist()
+{
+  if (pid_set.empty())
+    collect();
+
+  return pid_set;
+}
+
 int PidList::collect()
 {
   DIR *dir;

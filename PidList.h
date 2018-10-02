@@ -21,7 +21,7 @@ class PidList
     ~PidList(){;}
 
     int  collect();
-    PidSet& get_pidlist() { return pid_set; }
+    PidSet& get_pidlist();
 
     void clear() { pid_set.clear(); }
     bool empty() { return pid_set.empty(); }
