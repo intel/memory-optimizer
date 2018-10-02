@@ -8,6 +8,7 @@ int PidList::collect()
 {
   DIR *dir;
   struct dirent *dirent;
+  pid_t pid;
   int rc = 0;
 
   dir = opendir("/proc/");
@@ -29,9 +30,10 @@ int PidList::collect()
         || !is_digit(dirent->d_name))
       continue;
 
-    rc = parse_one_pid(dirent);
+    pid = atoi(dirent->d_name);
+    rc = parse_pid(pid);
     if (rc < 0) {
-      fprintf(stderr, "parse_one_pid failed. name: %s err: %d\n",
+      fprintf(stderr, "parse_pid failed. name: %s err: %d\n",
               dirent->d_name, rc);
       break;
     }
@@ -43,34 +45,34 @@ int PidList::collect()
 }
 
 
-int PidList::parse_one_pid(struct dirent* proc_ent)
+int PidList::parse_pid(pid_t pid)
 {
   int rc;
   FILE *file;
   char filename[PATH_MAX];
 
-  snprintf(filename, sizeof(filename), "/proc/%s/status", proc_ent->d_name);
+  snprintf(filename, sizeof(filename), "/proc/%d/status", pid);
   file = fopen(filename, "r");
   if (!file) {
     fprintf(stderr, "open %s failed\n", filename);
     return errno;
   }
 
-  rc = do_parse_one_pid(file, proc_ent);
+  rc = parse_pid_status(file);
 
   fclose(file);
 
   return rc;
 }
 
-int PidList::do_parse_one_pid(FILE *file, struct dirent* proc_ent)
+int PidList::parse_pid_status(FILE *file)
 {
   int rc;
   char line[4096];
   struct PidItem new_pid_item = {};
 
   while(fgets(line, sizeof(line), file)) {
-    rc = do_parse_one_line(new_pid_item, proc_ent, line);
+    rc = parse_pid_status_line(new_pid_item, line);
     if (rc < 0)
       break;
   }
@@ -81,8 +83,8 @@ int PidList::do_parse_one_pid(FILE *file, struct dirent* proc_ent)
   return rc;
 }
 
-int PidList::do_parse_one_line(struct PidItem &new_pid_item,
-                               struct dirent* proc_ent, char* line_ptr)
+int PidList::parse_pid_status_line(struct PidItem &new_pid_item,
+                                   char* line_ptr)
 {
   int rc;
   char* name_ptr;
