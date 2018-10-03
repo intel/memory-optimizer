@@ -25,8 +25,8 @@ std::unordered_map<std::string, MigrateWhat> Migration::migrate_name_map = {
 	    {"both", MIGRATE_BOTH},
 };
 
-Migration::Migration(const Option& o, ProcIdlePages& pip)
-  : option(o), proc_idle_pages(pip)
+Migration::Migration(const Option& o)
+  : ProcIdlePages(o)
 {
   migrate_target_node.resize(PMD_ACCESSED + 1);
   migrate_target_node[PTE_IDLE]      = Option::PMEM_NUMA_NODE;
@@ -58,7 +58,7 @@ MigrateWhat Migration::parse_migrate_name(std::string name)
 size_t Migration::get_threshold_refs(ProcIdlePageType type,
                                      int& min_refs, int& max_refs)
 {
-  int nr_walks = proc_idle_pages.get_nr_walks();
+  int nr_walks = get_nr_walks();
 
   if (type & PAGE_ACCESSED_MASK && option.nr_walks == 0) {
     min_refs = nr_walks;
@@ -76,8 +76,8 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
     return 0;
   }
 
-  const AddrSequence& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs2;
-  vector<unsigned long> refs_count = proc_idle_pages.get_pagetype_refs(type).refs_count2;
+  const AddrSequence& page_refs = get_pagetype_refs(type).page_refs2;
+  vector<unsigned long> refs_count = get_pagetype_refs(type).refs_count2;
 
   double ratio;
 
@@ -123,7 +123,7 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
 
 int Migration::select_top_pages(ProcIdlePageType type)
 {
-  AddrSequence& page_refs = proc_idle_pages.get_pagetype_refs(type).page_refs2;
+  AddrSequence& page_refs = get_pagetype_refs(type).page_refs2;
   int min_refs;
   int max_refs;
   unsigned long addr;
@@ -235,7 +235,6 @@ long Migration::__move_pages(pid_t pid, unsigned long nr_pages,
 
 long Migration::do_move_pages(ProcIdlePageType type, const int *nodes)
 {
-  pid_t pid = proc_idle_pages.get_pid();
   auto& addrs = pages_addr[type];
   long nr_pages = addrs.size();
   long ret;
@@ -283,7 +282,7 @@ void Migration::show_numa_stats()
 
 void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
 {
-    unsigned long total_kb = proc_idle_pages.get_pagetype_refs(type).page_refs2.size() * (pagetype_size[type] >> 10);
+    unsigned long total_kb = get_pagetype_refs(type).page_refs2.size() * (pagetype_size[type] >> 10);
     unsigned long to_migrate = pages_addr[type].size() * (pagetype_size[type] >> 10);
 
     printf("    %s: %s\n", pagetype_name[type], stage);
@@ -338,7 +337,6 @@ void Migration::dump_node_percent()
 
 int Migration::dump_vma_nodes(proc_maps_entry& vma)
 {
-  pid_t pid = proc_idle_pages.get_pid();
   unsigned long nr_pages;
   int err = 0;
 
@@ -379,7 +377,6 @@ int Migration::dump_vma_nodes(proc_maps_entry& vma)
 
 int Migration::dump_task_nodes()
 {
-  pid_t pid = proc_idle_pages.get_pid();
   ProcMaps proc_maps;
   int err = 0;
 

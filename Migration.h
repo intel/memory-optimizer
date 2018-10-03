@@ -15,11 +15,11 @@
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
 
-class Migration
+class Migration : public ProcIdlePages
 {
   public:
     // functions
-    Migration(const Option& o, ProcIdlePages& pip);
+    Migration(const Option& o);
     ~Migration() {};
 
     static MigrateWhat parse_migrate_name(std::string name);
@@ -59,10 +59,7 @@ class Migration
     // variables
     static std::unordered_map<std::string, MigrateWhat> migrate_name_map;
 
-    const Option& option;
-
     ProcVmstat proc_vmstat;
-    ProcIdlePages& proc_idle_pages;
 
     // The Virtual Address of hot/cold pages.
     // [0...n] = [VA0...VAn]

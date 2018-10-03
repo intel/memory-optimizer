@@ -107,43 +107,42 @@ static void parse_cmdline(int argc, char *argv[])
     option.output_file = "refs-count-" + std::to_string(option.pid);
 }
 
-int account_refs(ProcIdlePages& proc_idle_pages)
+int account_refs(Migration& migration)
 {
   int err;
 
-  proc_idle_pages.set_pid(option.pid);
+  migration.set_pid(option.pid);
 
-  err = proc_idle_pages.walk_multi(option.nr_walks, option.interval);
+  err = migration.walk_multi(option.nr_walks, option.interval);
   if (err)
     return err;
 
-  proc_idle_pages.count_refs();
+  migration.count_refs();
 
-  err = proc_idle_pages.save_counts(option.output_file);
+  err = migration.save_counts(option.output_file);
   if (err)
     return err;
 
   return 0;
 }
 
-int migrate(ProcIdlePages& proc_idle_pages)
+int migrate(Migration& migration)
 {
   int err = 0;
-  auto migration = std::make_unique<Migration>(option, proc_idle_pages);
 
   if (option.migrate_what & MIGRATE_COLD) {
-    err = migration->migrate(PTE_IDLE);
+    err = migration.migrate(PTE_IDLE);
     if (!err)
-    err = migration->migrate(PMD_IDLE);
+    err = migration.migrate(PMD_IDLE);
   }
 
   if (option.migrate_what & MIGRATE_HOT) {
-    err = migration->migrate(PTE_ACCESSED);
+    err = migration.migrate(PTE_ACCESSED);
     if (!err)
-    err = migration->migrate(PMD_ACCESSED);
+    err = migration.migrate(PMD_ACCESSED);
   }
 
-  migration->dump_task_nodes();
+  migration.dump_task_nodes();
 
   return err;
 }
@@ -151,18 +150,18 @@ int migrate(ProcIdlePages& proc_idle_pages)
 int main(int argc, char *argv[])
 {
   int err = 0;
-  ProcIdlePages proc_idle_pages(option);
+  Migration migration(option);
 
   setlocale(LC_NUMERIC, "");
 
   parse_cmdline(argc, argv);
-  err = account_refs(proc_idle_pages);
+  err = account_refs(migration);
   if (err) {
     cout << "return err " << err;
 	  return err;
   }
 
-  err = migrate(proc_idle_pages);
+  err = migrate(migration);
 
   return err;
 }

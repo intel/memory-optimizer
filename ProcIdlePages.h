@@ -107,15 +107,16 @@ class ProcIdlePages
     unsigned long va_to_offset(unsigned long start_va);
     unsigned long offset_to_va(unsigned long start_va);
 
-  private:
-    static const int READ_BUF_SIZE = PAGE_SIZE * 8;
-
+  protected:
     pid_t pid;
     const Option& option;
 
     ProcMaps proc_maps;
-    int nr_walks;
 
+  private:
+    static const int READ_BUF_SIZE = PAGE_SIZE * 8;
+
+    int nr_walks;
     ProcIdleRefs pagetype_refs[MAX_ACCESSED + 1];
 
     int idle_fd;
