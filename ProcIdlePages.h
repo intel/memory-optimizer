@@ -102,8 +102,8 @@ class ProcIdlePages
     void inc_page_refs(ProcIdlePageType type, int nr,
                        unsigned long va, unsigned long end);
 
-    unsigned long va_to_offset(unsigned long start_va);
-    unsigned long offset_to_va(unsigned long start_va);
+    unsigned long va_to_offset(unsigned long va);
+    unsigned long offset_to_va(unsigned long offset);
 
   protected:
     pid_t pid;

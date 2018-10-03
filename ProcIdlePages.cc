@@ -372,16 +372,10 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
 
 unsigned long ProcIdlePages::va_to_offset(unsigned long va)
 {
-  unsigned long offset = va;
-
-  // offset /= PAGE_SIZE;
-  offset &= ~(PAGE_SIZE - 1);
-
-  return offset;
+  return va;
 }
 
-
-unsigned long ProcIdlePages::offset_to_va(unsigned long va)
+unsigned long ProcIdlePages::offset_to_va(unsigned long offset)
 {
-  return va;
+  return offset;
 }
