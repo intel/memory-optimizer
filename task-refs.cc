@@ -111,8 +111,6 @@ int account_refs(Migration& migration)
 {
   int err;
 
-  migration.set_pid(option.pid);
-
   err = migration.walk_multi(option.nr_walks, option.interval);
   if (err)
     return err;

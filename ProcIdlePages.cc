@@ -69,6 +69,11 @@ const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
   [PGDIR_HOLE]   = "512G_hole",
 };
 
+ProcIdlePages::ProcIdlePages(const Option& o)
+  : pid(o.pid), option(o)
+{
+}
+
 bool ProcIdlePages::should_stop()
 {
     if (!option.dram_percent)

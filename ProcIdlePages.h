@@ -74,7 +74,7 @@ struct ProcIdleRefs
 class ProcIdlePages
 {
   public:
-    ProcIdlePages(const Option& o): pid(0), option(o) {};
+    ProcIdlePages(const Option& o);
     ~ProcIdlePages() {};
 
     void set_pid(pid_t i) { pid = i; }
