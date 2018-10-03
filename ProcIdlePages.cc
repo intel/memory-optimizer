@@ -79,7 +79,7 @@ bool ProcIdlePages::should_stop()
     if (!option.dram_percent)
       return false;
 
-    // page_refs2.get_top_bytes() is 0 when nr_walks == 1
+    // page_refs.get_top_bytes() is 0 when nr_walks == 1
     if (nr_walks <= 2)
       return false;
 
@@ -87,8 +87,8 @@ bool ProcIdlePages::should_stop()
     unsigned long all_bytes = 0;
 
     for (auto& prc: pagetype_refs) {
-      top_bytes += prc.page_refs2.get_top_bytes();
-      all_bytes += prc.page_refs2.size() << prc.page_refs2.get_pageshift();
+      top_bytes += prc.page_refs.get_top_bytes();
+      all_bytes += prc.page_refs.size() << prc.page_refs.get_pageshift();
     }
 
     printdd("top_bytes=%'lu all_bytes=%'lu\n", top_bytes, all_bytes);
@@ -116,17 +116,17 @@ int ProcIdlePages::walk_multi(int nr, float interval)
 
   for (int type = 0; type <= MAX_ACCESSED; ++type) {
     auto& prc = pagetype_refs[type];
-    prc.page_refs2.clear();
-    prc.page_refs2.set_pageshift(pagetype_shift[type]);
-    prc.refs_count2.clear();
-    prc.refs_count2.resize(nr + 1);
+    prc.page_refs.clear();
+    prc.page_refs.set_pageshift(pagetype_shift[type]);
+    prc.refs_count.clear();
+    prc.refs_count.resize(nr + 1);
   }
 
   for (int i = 0; i < nr; ++i)
   {
       //must do rewind() before a walk() start.
     for (auto& prc: pagetype_refs)
-      prc.page_refs2.rewind();
+      prc.page_refs.rewind();
 
     ++nr_walks;
     err = walk();
@@ -225,21 +225,21 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
     int rc;
     unsigned long addr;
     uint8_t ref_count;
-    std::vector<unsigned long>& refs_count2 = prc.refs_count2;
+    std::vector<unsigned long>& refs_count = prc.refs_count;
 
-    refs_count2.clear();
-    refs_count2.resize(nr_walks +1 , 0);
+    refs_count.clear();
+    refs_count.resize(nr_walks +1 , 0);
 
-    // prc.page_refs2.smooth_payloads();
+    // prc.page_refs.smooth_payloads();
 
     // In the rare case of changed VMAs, their start/end boundary may not align
     // with the underlying huge page size. If the same huge page is covered by
     // 2 VMAs, there will be duplicate accounting for the same page. The easy
     // workaround is to enforce min() check here.
-    rc = prc.page_refs2.get_first(addr, ref_count);
+    rc = prc.page_refs.get_first(addr, ref_count);
     while(!rc) {
-      refs_count2[std::min(ref_count, (uint8_t)nr_walks)] += 1;
-      rc = prc.page_refs2.get_next(addr, ref_count);
+      refs_count[std::min(ref_count, (uint8_t)nr_walks)] += 1;
+      rc = prc.page_refs.get_next(addr, ref_count);
     }
 }
 
@@ -272,7 +272,7 @@ int ProcIdlePages::save_counts(std::string filename)
   for (int i = 0; i <= nr_walks; i++) {
     fprintf(file, "%4d", i);
     for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_ACCESSED}) {
-      unsigned long pages = pagetype_refs[type].refs_count2[i];
+      unsigned long pages = pagetype_refs[type].refs_count[i];
       unsigned long kb = pages * (pagetype_size[type] >> 10);
       fprintf(file, " %'15lu", kb);
       sum_kb[type] += kb;
@@ -313,7 +313,7 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
                                   unsigned long va, unsigned long end)
 {
   unsigned long page_size = pagetype_size[type];
-  AddrSequence& page_refs2 = pagetype_refs[type | PAGE_ACCESSED_MASK].page_refs2;
+  AddrSequence& page_refs = pagetype_refs[type | PAGE_ACCESSED_MASK].page_refs;
 
   if (va & (page_size - 1)) {
     printf("ignore unaligned addr: %d %lx+%d %lx\n", type, va, nr, page_size);
@@ -323,9 +323,9 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
   for (int i = 0; i < nr; ++i)
   {
     if (type & PAGE_ACCESSED_MASK)
-      page_refs2.inc_payload(va, 1);
+      page_refs.inc_payload(va, 1);
     else
-      page_refs2.inc_payload(va, 0);
+      page_refs.inc_payload(va, 0);
 
     //AddrSequence is not easy to random access, consider move
     //this checking into AddrSequence.

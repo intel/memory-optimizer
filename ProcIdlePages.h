@@ -62,13 +62,11 @@ struct ProcIdleRefs
 {
   // VA => refs
   // accumulated by walk()
-  //page_refs_map page_refs;
-  AddrSequence page_refs2;
+  AddrSequence page_refs;
 
   // refs => page count
   // accumulated by count_refs()
-  //std::vector<unsigned long> refs_count;
-  std::vector<unsigned long> refs_count2;
+  std::vector<unsigned long> refs_count;
 };
 
 class ProcIdlePages

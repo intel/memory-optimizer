@@ -76,8 +76,8 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
     return 0;
   }
 
-  const AddrSequence& page_refs = get_pagetype_refs(type).page_refs2;
-  vector<unsigned long> refs_count = get_pagetype_refs(type).refs_count2;
+  const AddrSequence& page_refs = get_pagetype_refs(type).page_refs;
+  vector<unsigned long> refs_count = get_pagetype_refs(type).refs_count;
 
   double ratio;
 
@@ -123,7 +123,7 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
 
 int Migration::select_top_pages(ProcIdlePageType type)
 {
-  AddrSequence& page_refs = get_pagetype_refs(type).page_refs2;
+  AddrSequence& page_refs = get_pagetype_refs(type).page_refs;
   int min_refs;
   int max_refs;
   unsigned long addr;
@@ -282,7 +282,7 @@ void Migration::show_numa_stats()
 
 void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
 {
-    unsigned long total_kb = get_pagetype_refs(type).page_refs2.size() * (pagetype_size[type] >> 10);
+    unsigned long total_kb = get_pagetype_refs(type).page_refs.size() * (pagetype_size[type] >> 10);
     unsigned long to_migrate = pages_addr[type].size() * (pagetype_size[type] >> 10);
 
     printf("    %s: %s\n", pagetype_name[type], stage);
