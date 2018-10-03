@@ -6,7 +6,7 @@ CFLAGS = $(DEBUG_FLAGS) -Wall
 CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++14
 LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
 CLASS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc AddrSequence.cc \
-                     PidList.cc
+                     ProcPid.cc ProcStatus.cc
 CLASS_HEADER_FILES = $(CLASS_SOURCE_FILES:.cc=.h)
 
 all: page-refs task-maps show-vmstat addr-seq task-refs pid-list
@@ -27,5 +27,5 @@ show-vmstat: show-vmstat.cc ProcVmstat.cc
 addr-seq: AddrSequence.cc AddrSequence.h
 	$(CXX) AddrSequence.cc -o $@ $(CXXFLAGS) -DADDR_SEQ_SELF_TEST
 
-pid-list: PidList.cc PidList.h
-	$(CXX) PidList.cc -o $@ $(CXXFLAGS) -DPID_LIST_SELF_TEST
+pid-list: ProcPid.cc ProcPid.h ProcStatus.cc ProcStatus.h
+	$(CXX) ProcPid.cc ProcStatus.cc -o $@ $(CXXFLAGS) -DPID_LIST_SELF_TEST
