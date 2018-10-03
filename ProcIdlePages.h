@@ -78,6 +78,8 @@ class ProcIdlePages
     void set_pid(pid_t i) { pid = i; }
     pid_t get_pid() { return pid; }
 
+    void set_va_range(unsigned long start, unsigned long end);
+
     int walk_multi(int nr, float interval);
     void count_refs();
     int save_counts(std::string filename);
@@ -110,6 +112,8 @@ class ProcIdlePages
     const Option& option;
 
     ProcMaps proc_maps;
+    unsigned long va_start;
+    unsigned long va_end;
 
   private:
     static const int READ_BUF_SIZE = PAGE_SIZE * 8;

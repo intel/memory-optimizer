@@ -72,6 +72,8 @@ const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
 ProcIdlePages::ProcIdlePages(const Option& o)
   : pid(o.pid), option(o)
 {
+  va_start = 0;
+  va_end = TASK_SIZE_MAX;
 }
 
 bool ProcIdlePages::should_stop()
@@ -147,8 +149,11 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     unsigned long va = vma.start;
     int rc = 0;
 
+    if (va < va_start)
+      return 0;
+
     // skip [vsyscall] etc. special kernel sections
-    if (va > TASK_SIZE_MAX)
+    if (va >= va_end)
       return 0;
 
     if (!proc_maps.is_anonymous(vma))
@@ -378,4 +383,10 @@ unsigned long ProcIdlePages::va_to_offset(unsigned long va)
 unsigned long ProcIdlePages::offset_to_va(unsigned long offset)
 {
   return offset;
+}
+
+void ProcIdlePages::set_va_range(unsigned long start, unsigned long end)
+{
+  va_start = start;
+  va_end = end;
 }
