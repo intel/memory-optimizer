@@ -83,8 +83,9 @@ class ProcIdlePages
     void prepare_walks(int max_walks);
     int walk();
 
+    static void reset_sys_refs_count();
     void count_refs();
-    int save_counts(std::string filename);
+    static int save_counts(std::string filename);
 
     ProcIdleRefs& get_pagetype_refs(ProcIdlePageType type)
                    { return pagetype_refs[type | PAGE_ACCESSED_MASK]; }
@@ -118,6 +119,7 @@ class ProcIdlePages
 
   private:
     static const int READ_BUF_SIZE = PAGE_SIZE * 8;
+    static std::vector<unsigned long> sys_refs_count[MAX_ACCESSED + 1];
 
     int nr_walks;
     ProcIdleRefs pagetype_refs[MAX_ACCESSED + 1];

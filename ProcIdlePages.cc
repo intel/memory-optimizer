@@ -236,6 +236,13 @@ int ProcIdlePages::walk()
     return 0;
 }
 
+std::vector<unsigned long> ProcIdlePages::sys_refs_count[MAX_ACCESSED + 1];
+void ProcIdlePages::reset_sys_refs_count()
+{
+  for (auto& src: sys_refs_count)
+    src.clear();
+}
+
 void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
 {
     int rc;
@@ -244,7 +251,7 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
     std::vector<unsigned long>& refs_count = prc.refs_count;
 
     refs_count.clear();
-    refs_count.resize(nr_walks +1 , 0);
+    refs_count.resize(nr_walks + 1, 0);
 
     // prc.page_refs.smooth_payloads();
 
@@ -261,8 +268,17 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
 
 void ProcIdlePages::count_refs()
 {
-  for (auto& prc: pagetype_refs)
+  for (int type = 0; type <= MAX_ACCESSED; ++type) {
+    auto& src = sys_refs_count[type];
+    auto& prc = pagetype_refs[type];
+
     count_refs_one(prc);
+
+    if (src.size() <= (unsigned long)nr_walks)
+      src.resize(nr_walks + 1, 0);
+    for (unsigned long i = 0; i < prc.refs_count.size(); ++i)
+      src[i] += prc.refs_count[i];
+  }
 }
 
 int ProcIdlePages::save_counts(std::string filename)
@@ -284,11 +300,12 @@ int ProcIdlePages::save_counts(std::string filename)
   fprintf(file, "======================================================\n");
 
   unsigned long sum_kb[IDLE_PAGE_TYPE_MAX] = {};
+  int nr = sys_refs_count[PTE_ACCESSED].size();
 
-  for (int i = 0; i <= nr_walks; i++) {
+  for (int i = 0; i <= nr; i++) {
     fprintf(file, "%4d", i);
     for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_ACCESSED}) {
-      unsigned long pages = pagetype_refs[type].refs_count[i];
+      unsigned long pages = sys_refs_count[type][i];
       unsigned long kb = pages * (pagetype_size[type] >> 10);
       fprintf(file, " %'15lu", kb);
       sum_kb[type] += kb;
