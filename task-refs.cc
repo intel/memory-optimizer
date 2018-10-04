@@ -148,11 +148,13 @@ int migrate(Migration& migration)
 int main(int argc, char *argv[])
 {
   int err = 0;
-  Migration migration(option);
 
   setlocale(LC_NUMERIC, "");
 
   parse_cmdline(argc, argv);
+
+  Migration migration(option.pid);
+
   err = account_refs(migration);
   if (err) {
     cout << "return err " << err;

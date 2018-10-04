@@ -6,7 +6,6 @@
 #include <string>
 #include <sys/types.h>
 #include <unordered_map>
-#include "Option.h"
 #include "ProcMaps.h"
 #include "AddrSequence.h"
 
@@ -72,7 +71,7 @@ struct ProcIdleRefs
 class ProcIdlePages
 {
   public:
-    ProcIdlePages(const Option& o);
+    ProcIdlePages(pid_t n);
     ~ProcIdlePages() {};
 
     void set_pid(pid_t i) { pid = i; }
@@ -109,7 +108,6 @@ class ProcIdlePages
 
   protected:
     pid_t pid;
-    const Option& option;
 
     ProcMaps proc_maps;
     unsigned long va_start;

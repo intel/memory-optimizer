@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "Option.h"
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
 
@@ -19,7 +18,7 @@ class Migration : public ProcIdlePages
 {
   public:
     // functions
-    Migration(const Option& o);
+    Migration(pid_t n);
     ~Migration() {};
 
     static MigrateWhat parse_migrate_name(std::string name);

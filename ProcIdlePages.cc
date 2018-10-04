@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "Option.h"
 #include "ProcIdlePages.h"
 #include "lib/debug.h"
 #include "lib/stats.h"
@@ -69,8 +70,8 @@ const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
   [PGDIR_HOLE]   = "512G_hole",
 };
 
-ProcIdlePages::ProcIdlePages(const Option& o)
-  : pid(o.pid), option(o)
+ProcIdlePages::ProcIdlePages(pid_t n)
+  : pid(n)
 {
   va_start = 0;
   va_end = TASK_SIZE_MAX;

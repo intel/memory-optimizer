@@ -9,6 +9,7 @@
 
 #include <numa.h>
 #include <numaif.h>
+#include "Option.h"
 #include "Migration.h"
 #include "lib/debug.h"
 #include "lib/stats.h"
@@ -25,8 +26,8 @@ std::unordered_map<std::string, MigrateWhat> Migration::migrate_name_map = {
 	    {"both", MIGRATE_BOTH},
 };
 
-Migration::Migration(const Option& o)
-  : ProcIdlePages(o)
+Migration::Migration(pid_t n)
+  : ProcIdlePages(n)
 {
   migrate_target_node.resize(PMD_ACCESSED + 1);
   migrate_target_node[PTE_IDLE]      = Option::PMEM_NUMA_NODE;
