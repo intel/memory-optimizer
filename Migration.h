@@ -24,6 +24,7 @@ class Migration : public ProcIdlePages
     static MigrateWhat parse_migrate_name(std::string name);
 
     // migrate pages to nodes
+    int migrate();
     int migrate(ProcIdlePageType type);
 
     int dump_task_nodes();

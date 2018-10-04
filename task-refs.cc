@@ -128,18 +128,7 @@ int migrate(Migration& migration)
 {
   int err = 0;
 
-  if (option.migrate_what & MIGRATE_COLD) {
-    err = migration.migrate(PTE_IDLE);
-    if (!err)
-    err = migration.migrate(PMD_IDLE);
-  }
-
-  if (option.migrate_what & MIGRATE_HOT) {
-    err = migration.migrate(PTE_ACCESSED);
-    if (!err)
-    err = migration.migrate(PMD_ACCESSED);
-  }
-
+  err = migration.migrate();
   migration.dump_task_nodes();
 
   return err;

@@ -191,6 +191,25 @@ int Migration::locate_numa_pages(ProcIdlePageType type)
   return 0;
 }
 
+int Migration::migrate()
+{
+  int err = 0;
+
+  if (option.migrate_what & MIGRATE_COLD) {
+    err = migrate(PTE_IDLE);
+    if (!err)
+    err = migrate(PMD_IDLE);
+  }
+
+  if (option.migrate_what & MIGRATE_HOT) {
+    err = migrate(PTE_ACCESSED);
+    if (!err)
+    err = migrate(PMD_ACCESSED);
+  }
+
+  return err;
+}
+
 int Migration::migrate(ProcIdlePageType type)
 {
   std::vector<int> nodes;
