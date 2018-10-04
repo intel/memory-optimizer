@@ -89,13 +89,18 @@ bool ProcIdlePages::should_stop()
     unsigned long top_bytes = 0;
     unsigned long all_bytes = 0;
 
+    get_sum(top_bytes, all_bytes);
+
+    return 2 * 100 * top_bytes < option.dram_percent * all_bytes;
+}
+
+void ProcIdlePages::get_sum(unsigned long& top_bytes, unsigned long& all_bytes)
+{
     for (auto& prc: pagetype_refs) {
       top_bytes += prc.page_refs.get_top_bytes();
       all_bytes += prc.page_refs.size() << prc.page_refs.get_pageshift();
     }
-
     printdd("top_bytes=%'lu all_bytes=%'lu\n", top_bytes, all_bytes);
-    return 2 * 100 * top_bytes < option.dram_percent * all_bytes;
 }
 
 int ProcIdlePages::walk_multi(int nr, float interval)

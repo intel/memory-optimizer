@@ -90,6 +90,7 @@ class ProcIdlePages
                    { return pagetype_refs[type | PAGE_ACCESSED_MASK]; }
 
     int get_nr_walks() { return nr_walks; }
+    void get_sum(unsigned long& top_bytes, unsigned long& all_bytes);
 
   private:
     bool should_stop();
