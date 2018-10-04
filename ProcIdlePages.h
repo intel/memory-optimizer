@@ -80,6 +80,9 @@ class ProcIdlePages
     void set_va_range(unsigned long start, unsigned long end);
 
     int walk_multi(int nr, float interval);
+    void prepare_walks(int max_walks);
+    int walk();
+
     void count_refs();
     int save_counts(std::string filename);
 
@@ -90,7 +93,6 @@ class ProcIdlePages
 
   private:
     bool should_stop();
-    int walk();
     int walk_vma(proc_maps_entry& vma);
     void count_refs_one(ProcIdleRefs& prc);
 

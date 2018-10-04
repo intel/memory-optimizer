@@ -117,21 +117,10 @@ int ProcIdlePages::walk_multi(int nr, float interval)
     nr = max_walks;
   }
 
-  for (int type = 0; type <= MAX_ACCESSED; ++type) {
-    auto& prc = pagetype_refs[type];
-    prc.page_refs.clear();
-    prc.page_refs.set_pageshift(pagetype_shift[type]);
-    prc.refs_count.clear();
-    prc.refs_count.resize(nr + 1);
-  }
+  prepare_walks(nr);
 
   for (int i = 0; i < nr; ++i)
   {
-      //must do rewind() before a walk() start.
-    for (auto& prc: pagetype_refs)
-      prc.page_refs.rewind();
-
-    ++nr_walks;
     err = walk();
     if (err)
       return err;
@@ -143,6 +132,17 @@ int ProcIdlePages::walk_multi(int nr, float interval)
   }
 
   return 0;
+}
+
+void ProcIdlePages::prepare_walks(int max_walks)
+{
+  for (int type = 0; type <= MAX_ACCESSED; ++type) {
+    auto& prc = pagetype_refs[type];
+    prc.page_refs.clear();
+    prc.page_refs.set_pageshift(pagetype_shift[type]);
+    prc.refs_count.clear();
+    prc.refs_count.resize(max_walks + 1);
+  }
 }
 
 int ProcIdlePages::walk_vma(proc_maps_entry& vma)
@@ -216,7 +216,12 @@ int ProcIdlePages::walk()
     if (idle_fd < 0)
       return idle_fd;
 
+    ++nr_walks;
     read_buf.resize(READ_BUF_SIZE);
+
+    // must do rewind() before a walk() start.
+    for (auto& prc: pagetype_refs)
+      prc.page_refs.rewind();
 
     for (auto &vma: address_map)
       walk_vma(vma);
