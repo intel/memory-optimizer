@@ -13,7 +13,12 @@ void ProcStatus::clear()
 
 unsigned long ProcStatus::get_number(std::string key) const
 {
-  return status_map.at(key);
+  auto it = status_map.find(key);
+
+  if (it != status_map.end())
+    return it->second;
+  else
+    return 0; // kthreadd does not has RssAnon
 }
 
 int ProcStatus::load(pid_t n)
