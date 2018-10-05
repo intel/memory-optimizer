@@ -285,7 +285,10 @@ int ProcIdlePages::save_counts(std::string filename)
 {
   int err = 0;
   FILE *file;
-  file = fopen(filename.c_str(), "w");
+  if (filename.empty())
+    file = stdout;
+  else
+    file = fopen(filename.c_str(), "w");
   if (!file) {
     std::cerr << "open file " << filename << "failed" << std::endl;
     perror(filename.c_str());
@@ -322,7 +325,8 @@ int ProcIdlePages::save_counts(std::string filename)
   }
   fprintf(file, "\nALL  %'15lu\n", total_kb);
 
-  fclose(file);
+  if (file != stdout)
+    fclose(file);
 
   return err;
 }
