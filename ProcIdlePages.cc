@@ -113,7 +113,6 @@ int ProcIdlePages::walk_multi(int nr, float interval)
   if (maps.empty())
     return -ENOENT;
 
-  nr_walks = 0; // for use by count_refs()
   if (nr > 0xff) {
     printf("limiting nr_walks to uint8_t size\n");
     nr = 0xff;
@@ -141,6 +140,8 @@ int ProcIdlePages::walk_multi(int nr, float interval)
 
 void ProcIdlePages::prepare_walks(int max_walks)
 {
+  nr_walks = 0; // for use by count_refs()
+
   for (int type = 0; type <= MAX_ACCESSED; ++type) {
     auto& prc = pagetype_refs[type];
     prc.page_refs.clear();
@@ -274,8 +275,10 @@ void ProcIdlePages::count_refs()
 
     count_refs_one(prc);
 
-    if (src.size() <= (unsigned long)nr_walks)
+    if (src.size() <= (unsigned long)nr_walks) {
       src.resize(nr_walks + 1, 0);
+      // printf("pid=%d nr_walks=%d\n", pid, nr_walks);
+    }
     for (unsigned long i = 0; i < prc.refs_count.size(); ++i)
       src[i] += prc.refs_count[i];
   }
@@ -305,7 +308,7 @@ int ProcIdlePages::save_counts(std::string filename)
   unsigned long sum_kb[IDLE_PAGE_TYPE_MAX] = {};
   int nr = sys_refs_count[PTE_ACCESSED].size();
 
-  for (int i = 0; i <= nr; i++) {
+  for (int i = 0; i < nr; i++) {
     fprintf(file, "%4d", i);
     for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_ACCESSED}) {
       unsigned long pages = sys_refs_count[type][i];
