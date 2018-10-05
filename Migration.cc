@@ -94,7 +94,7 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
   size_t portion = page_refs.size() * ratio;
   long quota = portion;
 
-  printf("migrate ratio: %.2f = %lu / %lu\n", ratio, portion, page_refs.size());
+  fmt.print("migrate ratio: %.2f = %lu / %lu\n", ratio, portion, page_refs.size());
 
   if (type & PAGE_ACCESSED_MASK) {
     min_refs = nr_walks;
@@ -117,7 +117,7 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
     max_refs >>= 1;
   }
 
-  printf("refs range: %d-%d\n", min_refs, max_refs);
+  fmt.print("refs range: %d-%d\n", min_refs, max_refs);
 
   return portion;
 }
@@ -195,6 +195,8 @@ int Migration::migrate()
 {
   int err = 0;
 
+  fmt.reserve(1<<10);
+
   if (option.migrate_what & MIGRATE_COLD) {
     err = migrate(PTE_IDLE);
     if (!err)
@@ -206,6 +208,8 @@ int Migration::migrate()
     if (!err)
     err = migrate(PMD_ACCESSED);
   }
+
+  std::cout << fmt.str();
 
   return err;
 }
@@ -287,7 +291,7 @@ void Migration::show_numa_stats()
                                 proc_vmstat.vmstat("nr_isolated_anon");
 
   total_anon_kb *= PAGE_SIZE >> 10;
-  printf("%'15lu       anon total\n", total_anon_kb);
+  fmt.print("%'15lu       anon total\n", total_anon_kb);
 
   int nid = 0;
   for (auto& map: numa_vmstat) {
@@ -295,7 +299,7 @@ void Migration::show_numa_stats()
                             map.at("nr_active_anon") +
                             map.at("nr_isolated_anon");
     anon_kb *= PAGE_SIZE >> 10;
-    printf("%'15lu  %2d%%  anon node %d\n", anon_kb, percent(anon_kb, total_anon_kb), nid);
+    fmt.print("%'15lu  %2d%%  anon node %d\n", anon_kb, percent(anon_kb, total_anon_kb), nid);
     ++nid;
   }
 }
@@ -305,12 +309,12 @@ void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
     unsigned long total_kb = get_pagetype_refs(type).page_refs.size() * (pagetype_size[type] >> 10);
     unsigned long to_migrate = pages_addr[type].size() * (pagetype_size[type] >> 10);
 
-    printf("    %s: %s\n", pagetype_name[type], stage);
+    fmt.print("    %s: %s\n", pagetype_name[type], stage);
 
     show_numa_stats();
 
-    printf("%'15lu       TOTAL\n", total_kb);
-    printf("%'15lu  %2d%%  TO_migrate\n", to_migrate, percent(to_migrate, total_kb));
+    fmt.print("%'15lu       TOTAL\n", total_kb);
+    fmt.print("%'15lu  %2d%%  TO_migrate\n", to_migrate, percent(to_migrate, total_kb));
 
     auto stats = calc_migrate_stats();
     for(auto &kv : stats)
@@ -319,9 +323,9 @@ void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
       unsigned long kb = kv.second * (pagetype_size[type] >> 10);
 
       if (status >= 0)
-        printf("%'15lu  %2d%%  IN_node %d\n", kb, percent(kb, total_kb), status);
+        fmt.print("%'15lu  %2d%%  IN_node %d\n", kb, percent(kb, total_kb), status);
       else
-        printf("%'15lu  %2d%%  %s\n", kb, percent(kb, total_kb), strerror(-status));
+        fmt.print("%'15lu  %2d%%  %s\n", kb, percent(kb, total_kb), strerror(-status));
     }
 }
 
@@ -350,9 +354,9 @@ void Migration::dump_node_percent()
       ++nr_err;
   }
 
-  printf("%3u ", percent(nr_node0, migrate_status.size()));
+  fmt.print("%3u ", percent(nr_node0, migrate_status.size()));
   if (nr_err)
-    printf("(-%u) ", percent(nr_err, migrate_status.size()));
+    fmt.print("(-%u) ", percent(nr_err, migrate_status.size()));
 }
 
 int Migration::dump_vma_nodes(proc_maps_entry& vma)
@@ -366,7 +370,7 @@ int Migration::dump_vma_nodes(proc_maps_entry& vma)
   nr_pages = (vma.end - vma.start) >> PAGE_SHIFT;
 
   unsigned long total_kb = (vma.end - vma.start) >> 10;
-  printf("VMA size: %'15lu \nN0 percent:", total_kb);
+  fmt.print("VMA size: %'15lu \nN0 percent:", total_kb);
 
   const int nr_slots = 10;
   unsigned long slot_pages = nr_pages / nr_slots;

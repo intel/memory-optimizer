@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include "Option.h"
+#include "Formatter.h"
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
 
@@ -70,6 +72,8 @@ class Migration : public ProcIdlePages
 
     // Get the status after migration
     std::vector<int> migrate_status;
+
+    Formatter fmt;
 };
 
 #endif
