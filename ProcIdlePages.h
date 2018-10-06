@@ -102,6 +102,7 @@ class ProcIdlePages
 
     void parse_idlepages(proc_maps_entry& vma,
                          unsigned long& va,
+                         unsigned long end,
                          int bytes);
 
     void inc_page_refs(ProcIdlePageType type, int nr,

@@ -154,9 +154,10 @@ void ProcIdlePages::prepare_walks(int max_walks)
 int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 {
     unsigned long va = vma.start;
+    unsigned long end = vma.end;
     int rc = 0;
 
-    if (va < va_start)
+    if (end <= va_start)
       return 0;
 
     // skip [vsyscall] etc. special kernel sections
@@ -169,6 +170,11 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     if (debug_level() >= 2)
       proc_maps.show(vma);
 
+    if (va < va_start)
+      va = va_start;
+    if (end > va_end)
+      end = va_end;
+
     if (lseek(idle_fd, va_to_offset(va), SEEK_SET) == (off_t) -1)
     {
       printf(" error: seek for addr %lx failed, skip.\n", va);
@@ -176,7 +182,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
       return -1;
     }
 
-    for (; va < vma.end;)
+    for (; va < end;)
     {
       off_t pos = lseek(idle_fd, 0, SEEK_CUR);
       if (pos == (off_t) -1) {
@@ -205,7 +211,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
         return 0;
       }
 
-      parse_idlepages(vma, va, rc);
+      parse_idlepages(vma, va, end, rc);
     }
 
     return 0;
@@ -380,6 +386,7 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
 
 void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
                                     unsigned long& va,
+                                    unsigned long end,
                                     int bytes)
 {
   for (int i = 0; i < bytes; ++i)
@@ -387,12 +394,12 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
     ProcIdlePageType type = (ProcIdlePageType) read_buf[i].type;
     int nr = read_buf[i].nr;
 
-    if (va >= vma.end) {
+    if (va >= end) {
       // This can happen infrequently when VMA changed. The new pages can be
       // simply ignored -- they arrive too late to have accurate accounting.
       if (debug_level() >= 2) {
         printf("WARNING: va >= end: %lx %lx i=%d bytes=%d type=%d nr=%d\n",
-               va, vma.end, i, bytes, type, nr);
+               va, end, i, bytes, type, nr);
         proc_maps.show(vma);
         for (int j = 0; j < bytes; ++j)
           printf("%x:%x  ", read_buf[j].type, read_buf[j].nr);
@@ -404,7 +411,7 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
     va &= ~(pagetype_size[type] - 1);
 
     if (type <= MAX_ACCESSED)
-      inc_page_refs(type, nr, va, vma.end);
+      inc_page_refs(type, nr, va, end);
 
     va += pagetype_size[type] * nr;
   }
