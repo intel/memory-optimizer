@@ -5,18 +5,23 @@ DEBUG_FLAGS = -g -O3
 CFLAGS = $(DEBUG_FLAGS) -Wall
 CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++14
 LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
-CLASS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc AddrSequence.cc \
-                     ProcPid.cc ProcStatus.cc
-CLASS_HEADER_FILES = $(CLASS_SOURCE_FILES:.cc=.h)
+TASK_REFS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc AddrSequence.cc \
+			 lib/debug.c lib/stats.h Formatter.h
+TASK_REFS_HEADER_FILES = $(TASK_REFS_SOURCE_FILES:.cc=.h)
+SYS_REFS_SOURCE_FILES = $(TASK_REFS_SOURCE_FILES) ProcPid.cc ProcStatus.cc Process.cc GlobalScan.cc Queue.h
+SYS_REFS_HEADER_FILES = $(SYS_REFS_SOURCE_FILES:.cc=.h)
 
-all: page-refs task-maps show-vmstat addr-seq task-refs pid-list
+all: sys-refs page-refs task-maps show-vmstat addr-seq task-refs pid-list
 	[ -x ./update ] && ./update || true
+
+sys-refs: sys-refs.cc $(SYS_REFS_SOURCE_FILES) $(SYS_REFS_HEADER_FILES)
+	$(CXX) $< $(SYS_REFS_SOURCE_FILES) -o $@ $(CXXFLAGS) -lnuma -pthread
 
 page-refs: page-refs.c $(LIB_SOURCE_FILES)
 	$(CC) $< $(LIB_SOURCE_FILES) -o $@ $(CFLAGS)
 
-task-refs: task-refs.cc $(CLASS_SOURCE_FILES) $(CLASS_HEADER_FILES) lib/debug.c lib/debug.h lib/stats.h
-	$(CXX) $< $(CLASS_SOURCE_FILES) lib/debug.c -o $@ $(CXXFLAGS) -lnuma
+task-refs: task-refs.cc $(TASK_REFS_SOURCE_FILES) $(TASK_REFS_HEADER_FILES)
+	$(CXX) $< $(TASK_REFS_SOURCE_FILES) -o $@ $(CXXFLAGS) -lnuma
 
 task-maps: task-maps.cc ProcMaps.cc ProcMaps.h
 	$(CXX) $< ProcMaps.cc -o $@ $(CXXFLAGS)

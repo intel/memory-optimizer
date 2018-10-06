@@ -24,7 +24,9 @@ public:
   pid_t pid;
 
   float interval;
+  float sleep_secs;
   int nr_walks;
+  int nr_loops;
 
   // set either dram_percent or hot_min_refs/cold_max_refs, but not both
   int dram_percent;
