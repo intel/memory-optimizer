@@ -56,7 +56,8 @@ void GlobalScan::create_threads()
 
 void GlobalScan::stop_threads()
 {
-  Job job = { .intent = JOB_QUIT };
+  Job job;
+  job.intent = JOB_QUIT;
 
   for (unsigned long i = 0; i < worker_threads.size(); ++i)
     work_queue.push(job);
@@ -107,8 +108,9 @@ bool GlobalScan::should_stop_walk()
 
 void GlobalScan::walk_once()
 {
-  Job job = { .intent = JOB_WALK };
   int nr = 0;
+  Job job;
+  job.intent = JOB_WALK;
 
   for (auto& m: idle_ranges)
   {
@@ -168,8 +170,9 @@ void GlobalScan::account(MigrationPtr migration)
 
 void GlobalScan::migrate()
 {
-  Job job = { .intent = JOB_MIGRATE };
   int nr = 0;
+  Job job;
+  job.intent = JOB_MIGRATE;
 
   for (auto& m: idle_ranges)
   {
