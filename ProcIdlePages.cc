@@ -75,6 +75,7 @@ ProcIdlePages::ProcIdlePages(pid_t n)
 {
   va_start = 0;
   va_end = TASK_SIZE_MAX;
+  io_error = 0;
 }
 
 bool ProcIdlePages::should_stop()
@@ -99,6 +100,9 @@ void ProcIdlePages::gather_walk_stats(unsigned long& young_bytes,
                                       unsigned long& top_bytes,
                                       unsigned long& all_bytes)
 {
+  if (io_error)
+    return;
+
     for (auto& prc: pagetype_refs) {
       young_bytes += prc.page_refs.get_young_bytes();
       top_bytes += prc.page_refs.get_top_bytes();
@@ -115,8 +119,10 @@ int ProcIdlePages::walk_multi(int nr, float interval)
   bool auto_stop = false;
 
   auto maps = proc_maps.load(pid);
-  if (maps.empty())
+  if (maps.empty()) {
+    io_error = -ENOENT;
     return -ENOENT;
+  }
 
   if (nr > 0xff) {
     printf("limiting nr_walks to uint8_t size\n");
@@ -184,6 +190,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     {
       printf(" error: seek for addr %lx failed, skip.\n", va);
       perror("lseek error");
+      io_error = -1;
       return -1;
     }
 
@@ -192,6 +199,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
       off_t pos = lseek(idle_fd, 0, SEEK_CUR);
       if (pos == (off_t) -1) {
         perror("SEEK_CUR error");
+        io_error = -1;
         return -1;
       }
       if ((unsigned long)pos != va) {
@@ -207,6 +215,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
           continue;
         perror("read error");
         proc_maps.show(vma);
+        io_error = rc;
         return rc;
       }
 
@@ -227,8 +236,10 @@ int ProcIdlePages::walk()
     std::vector<proc_maps_entry> address_map = proc_maps.load(pid);
     int err;
 
-    if (address_map.empty())
+    if (address_map.empty()) {
+      io_error = -ESRCH;
       return -ESRCH;
+    }
 
     idle_fd = open_file();
     if (idle_fd < 0)
@@ -287,6 +298,9 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
 
 void ProcIdlePages::count_refs()
 {
+  if (io_error)
+    return;
+
   for (int type = 0; type <= MAX_ACCESSED; ++type) {
     auto& src = sys_refs_count[type];
     auto& prc = pagetype_refs[type];
@@ -372,8 +386,10 @@ int ProcIdlePages::open_file()
     snprintf(filepath, sizeof(filepath), "/proc/%d/idle_bitmap", pid);
 
     idle_fd = open(filepath, O_RDWR);
-    if (idle_fd < 0)
+    if (idle_fd < 0) {
+      io_error = idle_fd;
       perror(filepath);
+    }
 
     return idle_fd;
 }

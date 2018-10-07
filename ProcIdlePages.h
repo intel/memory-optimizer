@@ -82,6 +82,7 @@ class ProcIdlePages
     int walk_multi(int nr, float interval);
     void prepare_walks(int max_walks);
     int walk();
+    int has_io_error() const { return io_error; }
 
     static void reset_sys_refs_count();
     void count_refs();
@@ -119,6 +120,8 @@ class ProcIdlePages
     ProcMaps proc_maps;
     unsigned long va_start;
     unsigned long va_end;
+
+    int io_error; // if set, indicates exited process
 
   private:
     static const int READ_BUF_SIZE = PAGE_SIZE * 8;
