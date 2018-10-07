@@ -14,6 +14,8 @@ class Formatter
 
   public:
 
+    void clear() { buf.clear(); }
+    bool empty() { return buf.empty(); }
     void reserve(size_t capacity) { buf.reserve(capacity); }
     std::string const & str() const { return buf; }
 

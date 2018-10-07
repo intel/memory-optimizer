@@ -154,7 +154,6 @@ int Migration::select_top_pages(ProcIdlePageType type)
     
     iter_ret = page_refs.get_next(addr, ref_count);
   }
-  
 
   
   if (pages_addr[type].empty())
@@ -195,21 +194,28 @@ int Migration::migrate()
 {
   int err = 0;
 
+  fmt.clear();
   fmt.reserve(1<<10);
 
   if (option.migrate_what & MIGRATE_COLD) {
     err = migrate(PTE_IDLE);
-    if (!err)
+    if (err)
+      goto out;
     err = migrate(PMD_IDLE);
+    if (err)
+      goto out;
   }
 
   if (option.migrate_what & MIGRATE_HOT) {
     err = migrate(PTE_ACCESSED);
-    if (!err)
+    if (err)
+      goto out;
     err = migrate(PMD_ACCESSED);
   }
 
-  std::cout << fmt.str();
+out:
+  if (!fmt.empty())
+    std::cout << fmt.str();
 
   return err;
 }
@@ -221,7 +227,7 @@ int Migration::migrate(ProcIdlePageType type)
 
   ret = select_top_pages(type);
   if (ret)
-    return ret;
+    return std::min(ret, 0);
 
   ret = locate_numa_pages(type);
   if (ret)
