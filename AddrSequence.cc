@@ -438,6 +438,18 @@ int AddrSequence::self_test()
   clear();
   set_pageshift(12);
   ret = do_self_test(4096, 30, true);
+  if (ret)
+    return ret;
+
+  clear();
+  set_pageshift(21);
+  ret = do_self_test(1<<21, 30, true);
+  if (ret)
+    return ret;
+
+  clear();
+  set_pageshift(21);
+  ret = do_self_test(1<<21, 30, false);
 
   return ret;
 }
