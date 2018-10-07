@@ -7,6 +7,10 @@
 #include "lib/debug.h"
 #include "GlobalScan.h"
 
+const float GlobalScan::MIN_INTERVAL = 0.001;
+const float GlobalScan::MAX_INTERVAL = 10;
+const float GlobalScan::INITIAL_INTERVAL = 0.1;
+
 GlobalScan::GlobalScan()
 {
 }
@@ -15,6 +19,11 @@ void GlobalScan::main_loop()
 {
   int nloop = option.nr_loops;
 
+  if (option.interval)
+    interval = option.interval;
+  else
+    interval = INITIAL_INTERVAL;
+
   create_threads();
   for (; !option.nr_loops || nloop-- > 0;)
   {
@@ -22,7 +31,6 @@ void GlobalScan::main_loop()
     walk_multi();
     migrate();
     count_refs();
-    update_interval();
 
     usleep(option.sleep_secs * 1000000);
   }
@@ -68,9 +76,6 @@ void GlobalScan::stop_threads()
 
 void GlobalScan::walk_multi()
 {
-  top_bytes = 0;
-  all_bytes = 0;
-
   for (auto& m: idle_ranges)
     m->prepare_walks(MAX_WALKS);
 
@@ -80,7 +85,11 @@ void GlobalScan::walk_multi()
 
     if (should_stop_walk())
       break;
+
+    update_interval(0);
   }
+
+  update_interval(1);
 }
 
 void GlobalScan::count_refs()
@@ -112,6 +121,10 @@ void GlobalScan::walk_once()
   Job job;
   job.intent = JOB_WALK;
 
+  young_bytes = 0;
+  top_bytes = 0;
+  all_bytes = 0;
+
   for (auto& m: idle_ranges)
   {
       job.migration = m;
@@ -120,13 +133,13 @@ void GlobalScan::walk_once()
       ++nr;
   }
 
-  usleep(option.interval * 1000000);
+  usleep(interval * 1000000);
 
   for (; nr; --nr)
   {
     printd("wait walk job %d\n", nr);
     job = done_queue.pop();
-    account(job.migration);
+    gather_walk_stats(job.migration);
   }
 }
 
@@ -163,9 +176,9 @@ void GlobalScan::do_migrate(MigrationPtr migration)
     migration->migrate();
 }
 
-void GlobalScan::account(MigrationPtr migration)
+void GlobalScan::gather_walk_stats(MigrationPtr migration)
 {
-  migration->get_sum(top_bytes, all_bytes);
+  migration->gather_walk_stats(young_bytes, top_bytes, all_bytes);
 }
 
 void GlobalScan::migrate()
@@ -185,11 +198,24 @@ void GlobalScan::migrate()
   {
     printd("wait migrate job %d\n", nr);
     job = done_queue.pop();
-    account(job.migration);
   }
 }
 
-void GlobalScan::update_interval()
+void GlobalScan::update_interval(bool finished)
 {
+  if (option.interval)
+    return;
+
+  if (!option.dram_percent)
+    return;
+
+  if (!nr_walks)
+    return;
+
+  if (100 * young_bytes > option.dram_percent * all_bytes)
+    interval /= 2;
+
+  if (finished && nr_walks < MAX_WALKS / 4)
+    interval *= 2;
 }
 

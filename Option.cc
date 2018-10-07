@@ -6,7 +6,7 @@ Option::Option()
 {
   nr_loops = 0;
   nr_walks = 0; // auto stop when nr_top_pages can fit in half DRAM size
-  interval = 0.1;
+  interval = 0; // auto adjust
   sleep_secs = 1;
   migrate_what = MIGRATE_HOT;
   hot_min_refs = -1;

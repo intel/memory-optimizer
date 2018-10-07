@@ -86,21 +86,26 @@ bool ProcIdlePages::should_stop()
     if (nr_walks <= 2)
       return false;
 
+    unsigned long young_bytes = 0;
     unsigned long top_bytes = 0;
     unsigned long all_bytes = 0;
 
-    get_sum(top_bytes, all_bytes);
+    gather_walk_stats(young_bytes, top_bytes, all_bytes);
 
     return 2 * 100 * top_bytes < option.dram_percent * all_bytes;
 }
 
-void ProcIdlePages::get_sum(unsigned long& top_bytes, unsigned long& all_bytes)
+void ProcIdlePages::gather_walk_stats(unsigned long& young_bytes,
+                                      unsigned long& top_bytes,
+                                      unsigned long& all_bytes)
 {
     for (auto& prc: pagetype_refs) {
+      young_bytes += prc.page_refs.get_young_bytes();
       top_bytes += prc.page_refs.get_top_bytes();
       all_bytes += prc.page_refs.size() << prc.page_refs.get_pageshift();
     }
-    printdd("top_bytes=%'lu all_bytes=%'lu\n", top_bytes, all_bytes);
+    printdd("top_bytes=%'lu young_bytes=%'lu all_bytes=%'lu\n",
+            top_bytes, young_bytes, all_bytes);
 }
 
 int ProcIdlePages::walk_multi(int nr, float interval)
@@ -285,8 +290,9 @@ void ProcIdlePages::count_refs()
       src.resize(nr_walks + 1, 0);
       // printf("pid=%d nr_walks=%d\n", pid, nr_walks);
     }
-    for (unsigned long i = 0; i < prc.refs_count.size(); ++i)
+    for (unsigned long i = 0; i < prc.refs_count.size(); ++i) {
       src[i] += prc.refs_count[i];
+    }
   }
 }
 

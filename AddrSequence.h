@@ -43,6 +43,7 @@ class AddrSequence
     size_t size() const { return addr_size; }
     bool empty() const  { return 0 == addr_size; }
     unsigned long get_top_bytes() const { return top_bytes; }
+    unsigned long get_young_bytes() const { return young_bytes; }
     int get_pageshift() const { return pageshift; }
 
     void set_pageshift(int shift);
@@ -137,6 +138,7 @@ class AddrSequence
     unsigned long pagesize;
     unsigned long addr_size;  // # of addrs stored
     unsigned long top_bytes;  // nr_top_pages * pagesize
+    unsigned long young_bytes; // all accessed in one scan
 
     std::vector<AddrCluster>     addr_clusters;
 

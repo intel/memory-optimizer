@@ -35,20 +35,25 @@ class GlobalScan
     void walk_multi();
     void migrate();
     void count_refs();
-    void update_interval();
+    void update_interval(bool finished);
 
   private:
     void consumer_loop();
     void walk_once();
     bool should_stop_walk();
     void do_walk(MigrationPtr migration);
-    void account(MigrationPtr migration);
     void do_migrate(MigrationPtr migration);
+    void gather_walk_stats(MigrationPtr migration);
 
   private:
     static const int NR_THREADS = 64;
     static const int MAX_WALKS = 30;
+    static const float MIN_INTERVAL;
+    static const float MAX_INTERVAL;
+    static const float INITIAL_INTERVAL;
     int nr_walks;
+    float interval;
+    unsigned long young_bytes;
     unsigned long top_bytes;
     unsigned long all_bytes;
 

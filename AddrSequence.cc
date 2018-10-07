@@ -13,6 +13,7 @@ AddrSequence::AddrSequence()
   pageshift = 0;
   pagesize = 0;
   top_bytes = 0;
+  young_bytes = 0;
 
   //set this to froce alloc buffer when add cluster
   buf_used_count = MAX_ITEM_COUNT;
@@ -51,6 +52,7 @@ int AddrSequence::rewind()
   ++nr_walks;
   last_cluster_end = 0;
   top_bytes = 0;
+  young_bytes = 0;
 
   return 0;
 }
@@ -182,6 +184,7 @@ void AddrSequence::do_walk_update_payload(walk_iterator& iter,
     ++iter.cur_delta_ptr[iter.delta_index].payload;
     if (iter.cur_delta_ptr[iter.delta_index].payload >= nr_walks)
       top_bytes += pagesize;
+    young_bytes += pagesize;
   } else
     iter.cur_delta_ptr[iter.delta_index].payload = 0;
 }
