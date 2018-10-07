@@ -49,6 +49,10 @@ int AddrSequence::rewind()
 {
   reset_iterator(find_iter, 0);
 
+  if (pageshift == 21 && young_bytes)
+    printf("nr_walks: %d  young: %'lu  top: %'lu all: %'lu\n",
+           nr_walks, young_bytes, top_bytes, addr_size << pageshift);
+
   ++nr_walks;
   last_cluster_end = 0;
   top_bytes = 0;

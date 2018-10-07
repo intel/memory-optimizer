@@ -236,6 +236,9 @@ int ProcIdlePages::walk()
     ++nr_walks;
     read_buf.resize(READ_BUF_SIZE);
 
+    if (pagetype_refs[PMD_ACCESSED].page_refs.get_young_bytes())
+      printf("HAD PMD young\n");
+
     // must do rewind() before a walk() start.
     for (auto& prc: pagetype_refs)
       prc.page_refs.rewind();
@@ -286,12 +289,22 @@ void ProcIdlePages::count_refs()
 
     count_refs_one(prc);
 
+    if (type == PMD_ACCESSED && prc.page_refs.get_young_bytes())
+      printf("SEE PMD young\n");
+
+    if ((unsigned long)nr_walks + 1 != prc.refs_count.size())
+      fprintf(stderr, "ERROR: nr_walks mismatch: %d %lu\n",
+              nr_walks, prc.refs_count.size());
+
     if (src.size() <= (unsigned long)nr_walks) {
       src.resize(nr_walks + 1, 0);
       // printf("pid=%d nr_walks=%d\n", pid, nr_walks);
     }
-    for (unsigned long i = 0; i < prc.refs_count.size(); ++i) {
+
+    for (int i = 0; i <= nr_walks; ++i) {
       src[i] += prc.refs_count[i];
+      if (type == PMD_ACCESSED && i && prc.refs_count[i])
+        printf("GOT PMD_ACCESSED\n");
     }
   }
 }
@@ -371,6 +384,9 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
     printf("ignore unaligned addr: %d %lx+%d %lx\n", type, va, nr, page_size);
     return;
   }
+
+  if (type == PMD_ACCESSED)
+    printf("SEE PMD_ACCESSED\n");
 
   for (int i = 0; i < nr; ++i)
   {
