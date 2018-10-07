@@ -41,9 +41,6 @@ class GlobalScan
     void consumer_loop();
     void walk_once();
     bool should_stop_walk();
-    void do_walk(MigrationPtr migration);
-    void do_migrate(MigrationPtr migration);
-    void gather_walk_stats(MigrationPtr migration);
 
   private:
     static const int NR_THREADS = 64;

@@ -41,11 +41,11 @@ int GlobalScan::collect()
 {
 	int err;
 
+	idle_ranges.clear();
+
 	err = process_collection.collect();
 	if (err)
 		return err;
-
-	idle_ranges.clear();
 
 	for (auto &kv: process_collection.get_proccesses())
     for (auto &m: kv.second->get_ranges())
@@ -139,7 +139,7 @@ void GlobalScan::walk_once()
   {
     printd("wait walk job %d\n", nr);
     job = done_queue.pop();
-    gather_walk_stats(job.migration);
+    job.migration->gather_walk_stats(young_bytes, top_bytes, all_bytes);
   }
 
   printf("nr_walks: %d young: %'lu  %.2f%%  top: %'lu  %.2f%%  all: %'lu\n",
@@ -158,10 +158,10 @@ void GlobalScan::consumer_loop()
     switch(job.intent)
     {
     case JOB_WALK:
-      do_walk(job.migration);
+      job.migration->walk();
       break;
     case JOB_MIGRATE:
-      do_migrate(job.migration);
+      job.migration->migrate();
       break;
     case JOB_QUIT:
       printd("consumer_loop quit job\n");
@@ -170,21 +170,6 @@ void GlobalScan::consumer_loop()
     printd("consumer_loop done job\n");
     done_queue.push(job);
   }
-}
-
-void GlobalScan::do_walk(MigrationPtr migration)
-{
-    migration->walk();
-}
-
-void GlobalScan::do_migrate(MigrationPtr migration)
-{
-    migration->migrate();
-}
-
-void GlobalScan::gather_walk_stats(MigrationPtr migration)
-{
-  migration->gather_walk_stats(young_bytes, top_bytes, all_bytes);
 }
 
 void GlobalScan::migrate()
