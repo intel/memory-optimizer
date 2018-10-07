@@ -141,6 +141,12 @@ void GlobalScan::walk_once()
     job = done_queue.pop();
     gather_walk_stats(job.migration);
   }
+
+  printf("nr_walks: %d young: %'lu  %.2f%%  top: %'lu  %.2f%%  all: %'lu\n",
+         nr_walks,
+         young_bytes, 100.0 * young_bytes / all_bytes,
+         top_bytes, 100.0 * top_bytes / all_bytes,
+         all_bytes);
 }
 
 void GlobalScan::consumer_loop()
@@ -212,10 +218,16 @@ void GlobalScan::update_interval(bool finished)
   if (!nr_walks)
     return;
 
-  if (100 * young_bytes > option.dram_percent * all_bytes)
+  if (100 * young_bytes > option.dram_percent * all_bytes) {
+    printf("interval %f /2 due to high young %f%%\n",
+           (double) interval,
+           (double) young_bytes / all_bytes);
     interval /= 2;
+  }
 
-  if (finished && nr_walks < MAX_WALKS / 4)
+  if (finished && nr_walks < MAX_WALKS / 4) {
+    printf("interval %f x2 due to low nr_walks %d\n",
+           (double) interval, nr_walks);
     interval *= 2;
+  }
 }
-
