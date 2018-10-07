@@ -29,8 +29,8 @@ void GlobalScan::main_loop()
   {
     collect();
     walk_multi();
-    migrate();
     count_refs();
+    migrate();
 
     usleep(option.sleep_secs * 1000000);
   }
