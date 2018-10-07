@@ -385,9 +385,6 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
     return;
   }
 
-  if (type == PMD_ACCESSED)
-    printf("SEE PMD_ACCESSED\n");
-
   for (int i = 0; i < nr; ++i)
   {
     if (type & PAGE_ACCESSED_MASK)
