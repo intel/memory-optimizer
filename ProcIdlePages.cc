@@ -131,7 +131,7 @@ int ProcIdlePages::walk_multi(int nr, float interval)
   for (int i = 0; i < nr; ++i)
   {
     err = walk();
-    if (err)
+    if (err < 0)
       return err;
 
     if (auto_stop && should_stop())
@@ -167,7 +167,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 
     // skip [vsyscall] etc. special kernel sections
     if (va >= va_end)
-      return 0;
+      return 1; // stop walking more vma
 
     if (!proc_maps.is_anonymous(vma))
       return 0;
@@ -225,11 +225,12 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 int ProcIdlePages::walk()
 {
     std::vector<proc_maps_entry> address_map = proc_maps.load(pid);
+    int err;
 
     if (address_map.empty())
       return -ESRCH;
 
-    int idle_fd = open_file();
+    idle_fd = open_file();
     if (idle_fd < 0)
       return idle_fd;
 
@@ -243,12 +244,15 @@ int ProcIdlePages::walk()
     for (auto& prc: pagetype_refs)
       prc.page_refs.rewind();
 
-    for (auto &vma: address_map)
-      walk_vma(vma);
+    for (auto &vma: address_map) {
+      err = walk_vma(vma);
+      if (err)
+        break;
+    }
 
     close(idle_fd);
 
-    return 0;
+    return err;
 }
 
 std::vector<unsigned long> ProcIdlePages::sys_refs_count[MAX_ACCESSED + 1];

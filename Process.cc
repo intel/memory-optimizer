@@ -71,6 +71,8 @@ int ProcessCollection::collect()
 {
   int err;
  
+  proccess_hash.clear();
+
   err = pids.collect();
   if (err)
     return err;
