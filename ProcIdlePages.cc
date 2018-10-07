@@ -80,20 +80,20 @@ ProcIdlePages::ProcIdlePages(pid_t n)
 
 bool ProcIdlePages::should_stop()
 {
-    if (!option.dram_percent)
-      return false;
+  if (!option.dram_percent)
+    return false;
 
-    // page_refs.get_top_bytes() is 0 when nr_walks == 1
-    if (nr_walks <= 2)
-      return false;
+  // page_refs.get_top_bytes() is 0 when nr_walks == 1
+  if (nr_walks <= 2)
+    return false;
 
-    unsigned long young_bytes = 0;
-    unsigned long top_bytes = 0;
-    unsigned long all_bytes = 0;
+  unsigned long young_bytes = 0;
+  unsigned long top_bytes = 0;
+  unsigned long all_bytes = 0;
 
-    gather_walk_stats(young_bytes, top_bytes, all_bytes);
+  gather_walk_stats(young_bytes, top_bytes, all_bytes);
 
-    return 2 * 100 * top_bytes < option.dram_percent * all_bytes;
+  return 2 * 100 * top_bytes < option.dram_percent * all_bytes;
 }
 
 void ProcIdlePages::gather_walk_stats(unsigned long& young_bytes,
@@ -103,13 +103,13 @@ void ProcIdlePages::gather_walk_stats(unsigned long& young_bytes,
   if (io_error)
     return;
 
-    for (auto& prc: pagetype_refs) {
-      young_bytes += prc.page_refs.get_young_bytes();
-      top_bytes += prc.page_refs.get_top_bytes();
-      all_bytes += prc.page_refs.size() << prc.page_refs.get_pageshift();
-    }
-    printdd("top_bytes=%'lu young_bytes=%'lu all_bytes=%'lu\n",
-            top_bytes, young_bytes, all_bytes);
+  for (auto& prc: pagetype_refs) {
+    young_bytes += prc.page_refs.get_young_bytes();
+    top_bytes += prc.page_refs.get_top_bytes();
+    all_bytes += prc.page_refs.size() << prc.page_refs.get_pageshift();
+  }
+  printdd("top_bytes=%'lu young_bytes=%'lu all_bytes=%'lu\n",
+          top_bytes, young_bytes, all_bytes);
 }
 
 int ProcIdlePages::walk_multi(int nr, float interval)
