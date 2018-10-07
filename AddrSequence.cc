@@ -28,6 +28,8 @@ void AddrSequence::clear()
 {
   addr_size = 0;
   nr_walks = 0;
+  top_bytes = 0;
+  young_bytes = 0;
   addr_clusters.clear();
   free_all_buf();
 
@@ -274,6 +276,11 @@ int AddrSequence::save_into_cluster(AddrCluster& cluster,
 
   cluster.deltas[index].delta = (uint8_t)delta;
   cluster.deltas[index].payload = n;
+
+  if (n) {
+      top_bytes += pagesize;
+    young_bytes += pagesize;
+  }
 
   ++cluster.size;
   ++buf_used_count;
