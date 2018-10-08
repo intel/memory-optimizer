@@ -87,6 +87,8 @@ run_test()
 
 	local sysbench_pid=$!
 
+	trap "kill $sysbench_pid; exit" SIGINT SIGQUIT
+
 	if [[ $suffix == 'h' ]]; then
 		run_migrations hot
 	elif [[ $suffix == 'c' ]]; then
