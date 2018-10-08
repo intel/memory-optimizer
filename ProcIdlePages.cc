@@ -233,7 +233,8 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 
       if (!rc)
       {
-        printf("read 0 size\n");
+        printf("read 0 size: pid=%d va_size=%'lu\n", pid, end - va);
+        proc_maps.show(vma);
         return 0;
       }
 
