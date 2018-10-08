@@ -100,16 +100,27 @@ void ProcIdlePages::gather_walk_stats(unsigned long& young_bytes,
                                       unsigned long& top_bytes,
                                       unsigned long& all_bytes)
 {
-  if (io_error)
+  unsigned long y = 0;
+  unsigned long t = 0;
+  unsigned long a = 0;
+
+  if (io_error) {
+    printdd("gather_walk_stats: skip pid %d\n", pid);
     return;
+  }
 
   for (auto& prc: pagetype_refs) {
-    young_bytes += prc.page_refs.get_young_bytes();
-    top_bytes += prc.page_refs.get_top_bytes();
-    all_bytes += prc.page_refs.size() << prc.page_refs.get_pageshift();
+    y += prc.page_refs.get_young_bytes();
+    t += prc.page_refs.get_top_bytes();
+    a += prc.page_refs.size() << prc.page_refs.get_pageshift();
   }
-  printdd("top_bytes=%'lu young_bytes=%'lu all_bytes=%'lu\n",
-          top_bytes, young_bytes, all_bytes);
+
+  printdd("pid=%d %lx-%lx top_bytes=%'lu young_bytes=%'lu all_bytes=%'lu\n",
+          pid, va_start, va_end, t, y, a);
+
+  young_bytes += y;
+  top_bytes += t;
+  all_bytes += a;
 }
 
 int ProcIdlePages::walk_multi(int nr, float interval)
