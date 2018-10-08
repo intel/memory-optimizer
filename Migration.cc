@@ -147,7 +147,6 @@ int Migration::select_top_pages(ProcIdlePageType type)
 
   iter_ret = page_refs.get_first(addr, ref_count);
   while (!iter_ret) {
-    printdd("va: %lx count: %d\n", addr, (int)ref_count);
     if (ref_count >= min_refs &&
         ref_count <= max_refs)
       pages_addr[type].push_back((void *)addr);
