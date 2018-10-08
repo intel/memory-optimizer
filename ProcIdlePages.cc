@@ -176,6 +176,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 {
     unsigned long va = vma.start;
     unsigned long end = vma.end;
+    unsigned long size;
     int rc = 0;
 
     if (end <= va_start)
@@ -217,7 +218,8 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
         return -2;
       }
 
-      rc = read(idle_fd, read_buf.data(), read_buf.size());
+      size = (end - va) >> 15;
+      rc = read(idle_fd, read_buf.data(), std::min(size, read_buf.size()));
       if (rc < 0) {
         if (rc == -ENXIO)
           return 0;

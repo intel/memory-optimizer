@@ -124,7 +124,7 @@ class ProcIdlePages
     int io_error; // if set, indicates exited process
 
   private:
-    static const int READ_BUF_SIZE = PAGE_SIZE * 8;
+    static const int READ_BUF_SIZE = PAGE_SIZE * 32;
     static std::vector<unsigned long> sys_refs_count[MAX_ACCESSED + 1];
 
     int nr_walks;
