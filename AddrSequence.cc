@@ -437,15 +437,31 @@ int AddrSequence::self_test()
 
   clear();
   set_pageshift(12);
-  ret = do_self_test(4096, 30, true);
+  ret = do_self_test(4096, 30, false);
   if (ret)
     return ret;
 
   clear();
   set_pageshift(21);
-  ret = do_self_test(1<<21, 30, true);
+  ret = do_self_test(1<<21, 30, false);
   if (ret)
     return ret;
+
+  clear();
+  set_pageshift(12);
+  ret = do_self_test(4096, rand() & 127, false);
+  if (ret)
+    return ret;
+
+  clear();
+  set_pageshift(12);
+  ret = do_self_test(4096, rand() & 127, false);
+  if (ret)
+    return ret;
+
+  clear();
+  set_pageshift(21);
+  ret = do_self_test(1<<21, 30, false);
 
   return ret;
 }
@@ -527,19 +543,19 @@ int test_static()
 
   as.clear();
   as.set_pageshift(12);
-  rc = as.do_self_test(1, rand() & 127, false);
+  rc = as.do_self_test(1, 12, true);
   if (rc)
     goto out;
-  
+
   as.clear();
   as.set_pageshift(12);
-  rc = as.do_self_test(4096, rand() & 127, false);
+  rc = as.do_self_test(4096, 17, true);
   if (rc)
     goto out;
 
   as.clear();
   as.set_pageshift(21);
-  rc = as.do_self_test(1<<21, 30, false);
+  rc = as.do_self_test(1<<21, 30, true);
 
 out:
   return rc;
@@ -549,12 +565,12 @@ int main(int argc, char* argv[])
 {
   if (argc >= 2) {
     if (!strcmp(argv[1], "check")) {
-      return test_static();
+      AddrSequence as;
+      return as.self_test();
     }
   }
 
-  AddrSequence as;
-  return as.self_test();
+  return test_static();
 }
 
 #endif
