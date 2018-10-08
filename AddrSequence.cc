@@ -186,13 +186,15 @@ void AddrSequence::do_walk_move_next(walk_iterator& iter)
 void AddrSequence::do_walk_update_payload(walk_iterator& iter,
                                           unsigned addr, uint8_t payload)
 {
-  if (payload) {
-    ++iter.cur_delta_ptr[iter.delta_index].payload;
-    if (iter.cur_delta_ptr[iter.delta_index].payload >= nr_walks)
-      top_bytes += pagesize;
-    young_bytes += pagesize;
-  } else
-    iter.cur_delta_ptr[iter.delta_index].payload = 0;
+  // payload == 0: ignore
+  if (!payload)
+    return;
+
+  // payload == 1: increase
+  ++iter.cur_delta_ptr[iter.delta_index].payload;
+  if (iter.cur_delta_ptr[iter.delta_index].payload >= nr_walks)
+    top_bytes += pagesize;
+  young_bytes += pagesize;
 }
 
 int AddrSequence::append_addr(unsigned long addr, int n)
@@ -423,8 +425,6 @@ int AddrSequence::do_self_test_walk(unsigned long pagesize, bool is_perf)
          */
         if (val)
           ++test_map[addr];
-        else
-          test_map[addr] = val;
     }
   }
 
