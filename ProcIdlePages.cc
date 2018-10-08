@@ -158,7 +158,6 @@ void ProcIdlePages::prepare_walks(int max_walks)
     prc.page_refs.clear();
     prc.page_refs.set_pageshift(pagetype_shift[type]);
     prc.refs_count.clear();
-    prc.refs_count.resize(max_walks + 1);
   }
 }
 
@@ -314,10 +313,8 @@ void ProcIdlePages::count_refs()
       fprintf(stderr, "ERROR: nr_walks mismatch: %d %lu\n",
               nr_walks, prc.refs_count.size());
 
-    if (src.size() <= (unsigned long)nr_walks) {
-      src.resize(nr_walks + 1, 0);
-      // printf("pid=%d nr_walks=%d\n", pid, nr_walks);
-    }
+    src.clear();
+    src.resize(nr_walks + 1, 0);
 
     for (int i = 0; i <= nr_walks; ++i) {
       src[i] += prc.refs_count[i];
