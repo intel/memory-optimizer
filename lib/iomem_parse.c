@@ -50,7 +50,7 @@ int get_memory_ranges_proc_iomem(struct memory_range **range, int *ranges)
 		return -1;
 	}
 
-	while(fgets(line, sizeof(line), fp) != 0) {
+	while (fgets(line, sizeof(line), fp) != 0) {
 		unsigned long long start, end;
 		char *str;
 		int type;

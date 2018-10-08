@@ -74,11 +74,11 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
   proc_maps_entry e;
 
   ret = -1;
-    
+
   snprintf(filename, sizeof(filename), "/proc/%d/maps", pid);
 
-  input_file.open(filename, std::ios_base::in);  
-  while(std::getline(input_file, each_line))
+  input_file.open(filename, std::ios_base::in);
+  while (std::getline(input_file, each_line))
   {
       split_array[0] = 0;
 
@@ -90,12 +90,12 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
           {break;}
 
           //+1 for begin from next non-space item
-          split_array[i] = each_split + 1;              
+          split_array[i] = each_split + 1;
 
           //-1 because we have +1 above
           str_value[i-1] = each_line.substr(split_array[i-1], split_array[i] - split_array[i-1] - 1);
       }
-      
+
       split_array[i] = each_line.find_first_not_of(" ", split_array[i-1]);
       if (std::string::npos != split_array[i])
       {
@@ -110,11 +110,11 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
       sscanf(str_value[2].c_str(), "%lx", &e.offset);
       sscanf(str_value[3].c_str(), "%d:%d", &e.dev_major, &e.dev_minor);
       sscanf(str_value[4].c_str(), "%lu", &e.ino);
-      
+
       e.read     = (str_value[1][0] == 'r');
       e.write    = (str_value[1][1] == 'w');
       e.exec     = (str_value[1][2] == 'x');
-      e.mayshare = (str_value[1][3] != 'p');      
+      e.mayshare = (str_value[1][3] != 'p');
       e.path     = str_value[5];
 
       maps.push_back(e);

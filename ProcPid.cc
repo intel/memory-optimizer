@@ -27,7 +27,7 @@ int ProcPid::collect()
 
   pids.clear();
 
-  for(;;) {
+  for (;;) {
     errno = 0;
     dirent = readdir(dir);
     if (!dirent) {
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
   setlocale(LC_NUMERIC, "");
 
   printf("\nList all pids:\n");
-  for(auto &pid : pp.get_pids()) {
+  for (auto &pid : pp.get_pids()) {
     ps.load(pid);
     printf("%8u  %'15lu  %s\n",
            pid,
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
     }
 
   printf("\nList kthreadd by name:\n");
-  for(auto &pid : pp.get_pids()) {
+  for (auto &pid : pp.get_pids()) {
     ps.load(pid);
     if (ps.get_name() == "kthreadd")
       printf("%8u  %'15lu  %s\n",

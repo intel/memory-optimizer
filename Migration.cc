@@ -130,7 +130,7 @@ int Migration::select_top_pages(ProcIdlePageType type)
   unsigned long addr;
   uint8_t ref_count;
   int iter_ret;
-  
+
   if (page_refs.empty())
     return 1;
 
@@ -146,16 +146,15 @@ int Migration::select_top_pages(ProcIdlePageType type)
   */
 
   iter_ret = page_refs.get_first(addr, ref_count);
-  while(!iter_ret) {
+  while (!iter_ret) {
     printdd("va: %lx count: %d\n", addr, (int)ref_count);
     if (ref_count >= min_refs &&
         ref_count <= max_refs)
       pages_addr[type].push_back((void *)addr);
-    
+
     iter_ret = page_refs.get_next(addr, ref_count);
   }
 
-  
   if (pages_addr[type].empty())
     return 1;
 
@@ -280,7 +279,7 @@ std::unordered_map<int, int> Migration::calc_migrate_stats()
 {
   std::unordered_map<int, int> stats;
 
-  for(int &i : migrate_status)
+  for (int &i : migrate_status)
     inc_count(stats, i);
 
   return stats;
@@ -323,7 +322,7 @@ void Migration::show_migrate_stats(ProcIdlePageType type, const char stage[])
     fmt.print("%'15lu  %2d%%  TO_migrate\n", to_migrate, percent(to_migrate, total_kb));
 
     auto stats = calc_migrate_stats();
-    for(auto &kv : stats)
+    for (auto &kv : stats)
     {
       int status = kv.first;
       unsigned long kb = kv.second * (pagetype_size[type] >> 10);
@@ -352,7 +351,7 @@ void Migration::dump_node_percent()
   size_t nr_node0 = (size_t)stats[0];
   size_t nr_err = 0;
 
-  for(auto &kv : stats)
+  for (auto &kv : stats)
   {
     int status = kv.first;
 

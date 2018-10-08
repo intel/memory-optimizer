@@ -81,7 +81,7 @@ int AddrSequence::update_addr(unsigned long addr, int n)
   unsigned long next_addr;
   uint8_t unused_payload;
 
-  for(;;) {
+  for (;;) {
       rc = do_walk(find_iter, next_addr, unused_payload);
 
       if (!do_walk_continue(rc))
@@ -177,7 +177,7 @@ void AddrSequence::do_walk_move_next(walk_iterator& iter)
     iter.delta_sum = 0;
     ++iter.cluster_iter;
 
-    if(iter.cluster_iter < iter.cluster_iter_end) {
+    if (iter.cluster_iter < iter.cluster_iter_end) {
         do_walk_update_current_ptr(iter);
     }
   }
@@ -335,7 +335,7 @@ int AddrSequence::allocate_buf()
 
 void AddrSequence::free_all_buf()
 {
-  for(auto& i : buf_pool)
+  for (auto& i : buf_pool)
     buf_allocator.deallocate(i, MAX_ITEM_COUNT);
 
   buf_pool.clear();
@@ -417,7 +417,7 @@ int AddrSequence::do_self_test_walk(unsigned long pagesize, bool is_perf)
     if (is_first_walk) {
       if (!err)
         test_map[addr] = val;
-    } else if(test_map.find(addr) != test_map.end()) {
+    } else if (test_map.find(addr) != test_map.end()) {
         /*
           for the nr_walk >=2 case, update stage, we do
           change payload(base on val) if addr already exists,
@@ -534,7 +534,7 @@ int test_static()
   rc = as.inc_payload(0x40000, 1); //should not update
 
   rc = as.get_first(addr, payload);
-  while(!rc) {
+  while (!rc) {
     printf("addr = %lx, payload = %u\n", addr, payload);
     rc = as.get_next(addr, payload);
   }

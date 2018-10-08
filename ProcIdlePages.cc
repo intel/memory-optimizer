@@ -289,7 +289,7 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
     // 2 VMAs, there will be duplicate accounting for the same page. The easy
     // workaround is to enforce min() check here.
     rc = prc.page_refs.get_first(addr, ref_count);
-    while(!rc) {
+    while (!rc) {
       refs_count[std::min(ref_count, (uint8_t)nr_walks)] += 1;
       rc = prc.page_refs.get_next(addr, ref_count);
     }
