@@ -94,7 +94,7 @@ void GlobalScan::walk_multi()
 
 void GlobalScan::count_refs()
 {
-  ProcIdlePages::reset_sys_refs_count();
+  ProcIdlePages::reset_sys_refs_count(nr_walks);
 
   for (auto& m: idle_ranges)
     m->count_refs();

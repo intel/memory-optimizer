@@ -111,11 +111,11 @@ int account_refs(Migration& migration)
 {
   int err;
 
-  ProcIdlePages::reset_sys_refs_count();
   err = migration.walk_multi(option.nr_walks, option.interval);
   if (err)
     return err;
 
+  ProcIdlePages::reset_sys_refs_count(migration.get_nr_walks());
   migration.count_refs();
 
   err = migration.save_counts(option.output_file);

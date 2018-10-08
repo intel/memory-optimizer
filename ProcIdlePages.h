@@ -84,7 +84,7 @@ class ProcIdlePages
     int walk();
     int has_io_error() const { return io_error; }
 
-    static void reset_sys_refs_count();
+    static void reset_sys_refs_count(int nr_walks);
     void count_refs();
     static int save_counts(std::string filename);
 

@@ -266,10 +266,12 @@ int ProcIdlePages::walk()
 }
 
 std::vector<unsigned long> ProcIdlePages::sys_refs_count[MAX_ACCESSED + 1];
-void ProcIdlePages::reset_sys_refs_count()
+void ProcIdlePages::reset_sys_refs_count(int nr_walks)
 {
-  for (auto& src: sys_refs_count)
+  for (auto& src: sys_refs_count) {
     src.clear();
+    src.resize(nr_walks + 1, 0);
+  }
 }
 
 void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
@@ -297,8 +299,10 @@ void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
 
 void ProcIdlePages::count_refs()
 {
-  if (io_error)
+  if (io_error) {
+    printd("count_refs: skip %d\n", pid);
     return;
+  }
 
   for (int type = 0; type <= MAX_ACCESSED; ++type) {
     auto& src = sys_refs_count[type];
@@ -312,9 +316,6 @@ void ProcIdlePages::count_refs()
     if ((unsigned long)nr_walks + 1 != prc.refs_count.size())
       fprintf(stderr, "ERROR: nr_walks mismatch: %d %lu\n",
               nr_walks, prc.refs_count.size());
-
-    src.clear();
-    src.resize(nr_walks + 1, 0);
 
     for (int i = 0; i <= nr_walks; ++i) {
       src[i] += prc.refs_count[i];
