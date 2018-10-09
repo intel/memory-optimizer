@@ -32,6 +32,8 @@ class Migration : public ProcIdlePages
     int dump_task_nodes();
     int dump_vma_nodes(proc_maps_entry& vma);
 
+    static void show_numa_stats();
+
  private:
     // functions
 
@@ -40,28 +42,18 @@ class Migration : public ProcIdlePages
     // select max counted pages in page_refs_4k and page_refs_2m
     int select_top_pages(ProcIdlePageType type);
 
-    // get the numa node in which the pages are
-    int locate_numa_pages(ProcIdlePageType type);
-
     void fill_addrs(std::vector<void *>& addrs, unsigned long start);
     void dump_node_percent();
 
-    long __move_pages(pid_t pid, unsigned long nr_pages,
-		      void **addrs, const int *nodes);
-
-    long do_move_pages(ProcIdlePageType type, const int *nodes);
+    long __move_pages(pid_t pid, unsigned long nr_pages, void **addrs, int node);
+    long do_move_pages(ProcIdlePageType type);
 
     // status => count
     std::unordered_map<int, int> calc_migrate_stats();
 
-    void show_migrate_stats(ProcIdlePageType type, const char stage[]);
-    void show_numa_stats();
-
   private:
     // variables
     static std::unordered_map<std::string, MigrateWhat> migrate_name_map;
-
-    ProcVmstat proc_vmstat;
 
     // The Virtual Address of hot/cold pages.
     // [0...n] = [VA0...VAn]

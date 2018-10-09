@@ -191,6 +191,8 @@ void GlobalScan::migrate()
     printd("wait migrate job %d\n", nr);
     job = done_queue.pop();
   }
+
+  Migration::show_numa_stats();
 }
 
 void GlobalScan::update_interval(bool finished)
