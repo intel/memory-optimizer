@@ -79,8 +79,9 @@ void GlobalScan::walk_multi()
   for (auto& m: idle_ranges)
     m->prepare_walks(MAX_WALKS);
 
-  for (nr_walks = 0; nr_walks < MAX_WALKS; ++nr_walks)
+  for (nr_walks = 0; nr_walks < MAX_WALKS;)
   {
+    ++nr_walks;
     walk_once();
 
     if (should_stop_walk())
@@ -200,7 +201,7 @@ void GlobalScan::update_interval(bool finished)
   if (!option.dram_percent)
     return;
 
-  if (!nr_walks)
+  if (nr_walks <= 1)
     return;
 
   if (100 * young_bytes > option.dram_percent * all_bytes) {
