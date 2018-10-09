@@ -204,9 +204,9 @@ void GlobalScan::update_interval(bool finished)
     return;
 
   if (100 * young_bytes > option.dram_percent * all_bytes) {
-    printf("interval %f /2 due to high young %f%%\n",
+    printf("interval %f /2 due to high young %.2f%%\n",
            (double) interval,
-           (double) young_bytes / all_bytes);
+           (double) 100 * young_bytes / all_bytes);
     interval /= 2;
   }
 
