@@ -206,12 +206,18 @@ void GlobalScan::update_interval(bool finished)
   if (nr_walks <= 1)
     return;
 
-  if (100 * young_bytes > option.dram_percent * all_bytes) {
-    printf("interval %f /2 due to high young %.2f%%\n",
-           (double) interval,
-           (double) 100 * young_bytes / all_bytes);
-    interval /= 2;
-  }
+  float ratio = (option.dram_percent * all_bytes) / (100 * young_bytes + 1);
+  if (ratio > 10)
+    ratio = 10;
+  else if (ratio < 0.2)
+    ratio = 0.2;
+
+  printf("interval %f * %.1f for young %.2f%%\n",
+         (double) interval,
+         (double) ratio,
+         (double) 100 * young_bytes / all_bytes);
+
+  interval *= ratio;
 
   if (finished && nr_walks < MAX_WALKS / 4) {
     printf("interval %f x2 due to low nr_walks %d\n",
