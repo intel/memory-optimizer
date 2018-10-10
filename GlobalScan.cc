@@ -241,8 +241,8 @@ void GlobalScan::update_interval(bool finished)
     interval = 0.000001;
 
   if (finished && nr_walks < MAX_WALKS / 4) {
-    printf("interval %f x2 due to low nr_walks %d\n",
+    printf("interval %f x1.2 due to low nr_walks %d\n",
            (double) interval, nr_walks);
-    interval *= 2;
+    interval *= 1.2;
   }
 }
