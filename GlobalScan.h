@@ -44,7 +44,7 @@ class GlobalScan
 
   private:
     static const int NR_THREADS = 64;
-    static const int MAX_WALKS = 30;
+    static const int MAX_WALKS = 20;
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;
     static const float INITIAL_INTERVAL;

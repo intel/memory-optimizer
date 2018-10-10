@@ -224,7 +224,9 @@ void GlobalScan::update_interval(bool finished)
   if (nr_walks <= 1)
     return;
 
-  float ratio = (option.dram_percent * all_bytes) / (100 * young_bytes + 1.0);
+  const int div = 66; // the smaller than 100, the more real nr_walks will be
+                      // in order to bring top_bytes down to dram_percent/2
+  float ratio = (option.dram_percent * all_bytes) / (div * young_bytes + 1.0);
   if (ratio > 10)
     ratio = 10;
   else if (ratio < 0.2)
