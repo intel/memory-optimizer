@@ -50,6 +50,8 @@ class GlobalScan
     static const float INITIAL_INTERVAL;
     int nr_walks;
     float interval;
+    float real_interval;
+    struct timeval last_scan_start;
     unsigned long young_bytes;
     unsigned long top_bytes;
     unsigned long all_bytes;

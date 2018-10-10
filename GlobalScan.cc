@@ -3,6 +3,7 @@
 #include <atomic>
 #include <iostream>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include "lib/debug.h"
 #include "GlobalScan.h"
@@ -74,20 +75,39 @@ void GlobalScan::stop_threads()
     th.join();
 }
 
+static inline float tv_secs(struct timeval& t1, struct timeval& t2)
+{
+  return  (t2.tv_sec  - t1.tv_sec) +
+          (t2.tv_usec - t1.tv_usec) * 0.000001;
+}
+
 void GlobalScan::walk_multi()
 {
+  struct timeval ts1, ts2;
+  float elapsed;
+
   for (auto& m: idle_ranges)
     m->prepare_walks(MAX_WALKS);
 
   for (nr_walks = 0; nr_walks < MAX_WALKS;)
   {
     ++nr_walks;
+
+    gettimeofday(&ts1, NULL);
+    real_interval = tv_secs(last_scan_start, ts1);
+    last_scan_start = ts1;
+
     walk_once();
+
+    gettimeofday(&ts2, NULL);
+    elapsed = tv_secs(ts1, ts2);
 
     if (should_stop_walk())
       break;
 
     update_interval(0);
+    if (interval > elapsed)
+      usleep((interval - elapsed) * 1000000);
   }
 
   update_interval(1);
@@ -133,8 +153,6 @@ void GlobalScan::walk_once()
       printd("push job %d\n", nr);
       ++nr;
   }
-
-  usleep(interval * 1000000);
 
   for (; nr; --nr)
   {
@@ -212,12 +230,15 @@ void GlobalScan::update_interval(bool finished)
   else if (ratio < 0.2)
     ratio = 0.2;
 
-  printf("interval %f * %.1f for young %.2f%%\n",
+  printf("interval %f real %f * %.1f for young %.2f%%\n",
          (double) interval,
+         (double) real_interval,
          (double) ratio,
          (double) 100 * young_bytes / all_bytes);
 
-  interval *= ratio;
+  interval = real_interval * ratio;
+  if (interval < 0.000001)
+    interval = 0.000001;
 
   if (finished && nr_walks < MAX_WALKS / 4) {
     printf("interval %f x2 due to low nr_walks %d\n",
