@@ -224,7 +224,7 @@ void GlobalScan::update_interval(bool finished)
   if (nr_walks <= 1)
     return;
 
-  float ratio = (option.dram_percent * all_bytes) / (100 * young_bytes + 1);
+  float ratio = (option.dram_percent * all_bytes) / (100 * young_bytes + 1.0);
   if (ratio > 10)
     ratio = 10;
   else if (ratio < 0.2)
