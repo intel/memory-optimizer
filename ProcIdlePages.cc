@@ -207,29 +207,37 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 
     for (; va < end;)
     {
-      off_t pos = lseek(idle_fd, va_to_offset(va), SEEK_SET);
+      off_t pos = lseek(idle_fd, 0, SEEK_CUR);
       if (pos == (off_t) -1) {
-        perror("SEEK_SET error");
+        perror("SEEK_CUR error");
         io_error = -1;
         return -1;
-      } 
+      }
       if ((unsigned long)pos != va) {
         fprintf(stderr, "error pos != va: %lu %lu\n", pos, va);
         return -2;
       }
 
-      size = (end - va) >> PAGE_SHIFT;
-      if (size < 1) 
-        return 0;
+      size = (end - va) >> (3 + PAGE_SHIFT);
+      if (size < 1)
+        size = 1;
+      else if (size > read_buf.size())
+        size = read_buf.size();
 
-      rc = read(idle_fd, read_buf.data(), std::min(size, read_buf.size()));
+      rc = read(idle_fd, read_buf.data(), size);
       if (rc < 0) {
         if (errno == ENXIO)
           return 0;
         if (errno == ERANGE) {
-          va += PAGE_SIZE;
+          va += size << (3 + PAGE_SHIFT);
+          pos = lseek(idle_fd, va_to_offset(va), SEEK_SET);
+          if (pos == (off_t) -1) {
+            perror("skip ERANGE");
+            io_error = -1;
+            return -1;
+          }
           continue;
-        }  
+        }
         perror("read error");
         proc_maps.show(vma);
         io_error = rc;
