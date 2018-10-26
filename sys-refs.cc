@@ -14,6 +14,7 @@
 #include "ProcIdlePages.h"
 #include "Migration.h"
 #include "GlobalScan.h"
+#include "version.h"
 
 using namespace std;
 
@@ -40,6 +41,7 @@ static const struct option opts[] = {
 static void usage(char *prog)
 {
   fprintf(stderr,
+          "version: %s\n"
           "%s [option] ...\n"
           "    -h|--help       Show this information\n"
           "    -p|--pid        The PID to scan\n"
@@ -50,6 +52,7 @@ static void usage(char *prog)
           "    -d|--dram       The DRAM percent, wrt. DRAM+PMEM total size\n"
           "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
           "    -v|--verbose    Show debug info\n",
+          VERSION_STRING,
           prog);
 
   exit(0);

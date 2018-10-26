@@ -15,12 +15,14 @@ all: sys-refs page-refs task-maps show-vmstat addr-seq task-refs pid-list
 	[ -x ./update ] && ./update || true
 
 sys-refs: sys-refs.cc $(SYS_REFS_SOURCE_FILES) $(SYS_REFS_HEADER_FILES)
+	./get_version.sh
 	$(CXX) $< $(SYS_REFS_SOURCE_FILES) -o $@ $(CXXFLAGS) -lnuma -pthread
 
 page-refs: page-refs.c $(LIB_SOURCE_FILES)
 	$(CC) $< $(LIB_SOURCE_FILES) -o $@ $(CFLAGS)
 
 task-refs: task-refs.cc $(TASK_REFS_SOURCE_FILES) $(TASK_REFS_HEADER_FILES)
+	./get_version.sh
 	$(CXX) $< $(TASK_REFS_SOURCE_FILES) -o $@ $(CXXFLAGS) -lnuma
 
 task-maps: task-maps.cc ProcMaps.cc ProcMaps.h
