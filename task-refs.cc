@@ -35,13 +35,14 @@ static const struct option opts[] = {
   {"migrate",   required_argument,  NULL, 'm'},
   {"verbose",   required_argument,  NULL, 'v'},
   {"help",      no_argument,        NULL, 'h'},
+  {"changes",   no_argument,        NULL, 'g'},
+  {"version",   no_argument,        NULL, 'r'},
   {NULL,        0,                  NULL, 0}
 };
 
 static void usage(char *prog)
 {
   fprintf(stderr,
-          "version: %s\n"
           "%s [option] ...\n"
           "    -h|--help       Show this information\n"
           "    -p|--pid        The PID to scan\n"
@@ -52,18 +53,49 @@ static void usage(char *prog)
           "    -H|--hot-refs   min_refs threshold for hot pages\n"
           "    -c|--cold-refs  max_refs threshold for cold pages\n"
           "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
-          "    -v|--verbose    Show debug info\n",
-          VERSION_STRING,
+          "    -v|--verbose    Show debug info\n"
+          "    -r|--version    Show version info\n",
           prog);
 
   exit(0);
+}
+
+static void print_unsubmit_changes()
+{
+    if (unstaged_change[0] != '\0') {
+        printf("### unstaged changes:\n");
+        printf("%s",unstaged_change);
+        printf("\n");
+    }
+
+    if (staged_change[0] != '\0') {
+        printf("### staged changes:\n");
+        printf("%s",staged_change);
+    }
+
+    exit(0);
+}
+
+static void print_version()
+{
+    printf("%s", VERSION_STRING);
+    
+    if (std::string("").compare(SOURCE_CODE_DIRTY)) {
+        printf(" %s\n", SOURCE_CODE_DIRTY);
+        printf("unstaged digest: %s\n", UNSTAGED_DIGEST);
+        printf("staged digest: %s", STAGED_DIGEST);
+    }
+    
+    printf("\n");
+    
+    exit(0);
 }
 
 static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
 	int opt = 0;
-	const char *optstr = "hvp:i:l:o:d:H:c:m:";
+	const char *optstr = "hvgrp:i:l:o:d:H:c:m:";
 
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
@@ -95,6 +127,12 @@ static void parse_cmdline(int argc, char *argv[])
       break;
     case 'v':
       ++option.debug_level;
+      break;
+    case 'g':
+      print_unsubmit_changes();
+      break;
+    case 'r':
+      print_version();
       break;
     case 'h':
     case '?':
