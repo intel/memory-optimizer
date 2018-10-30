@@ -60,22 +60,6 @@ static void usage(char *prog)
   exit(0);
 }
 
-static void print_unsubmit_changes()
-{
-    if (unstaged_change[0] != '\0') {
-        printf("### unstaged changes:\n");
-        printf("%s",unstaged_change);
-        printf("\n");
-    }
-
-    if (staged_change[0] != '\0') {
-        printf("### staged changes:\n");
-        printf("%s",staged_change);
-    }
-
-    exit(0);
-}
-
 static void print_version()
 {
     printf("%s", VERSION_STRING);
@@ -95,7 +79,7 @@ static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
 	int opt = 0;
-	const char *optstr = "hvgrp:i:l:o:d:H:c:m:";
+	const char *optstr = "hvrp:i:l:o:d:H:c:m:";
 
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
@@ -127,9 +111,6 @@ static void parse_cmdline(int argc, char *argv[])
       break;
     case 'v':
       ++option.debug_level;
-      break;
-    case 'g':
-      print_unsubmit_changes();
       break;
     case 'r':
       print_version();

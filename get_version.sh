@@ -14,10 +14,6 @@ else
     STAGED_DIGEST=""
 fi
 
-./patch2cstr.sh git diff > ./unstaged_patch.cstr
-./patch2cstr.sh git diff --cached > ./staged_patch.cstr
-
-
 echo "#ifndef _VERSION_H_"  > $TARGET_FILE
 echo "#define _VERSION_H_"  >> $TARGET_FILE
 
