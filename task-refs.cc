@@ -60,21 +60,6 @@ static void usage(char *prog)
   exit(0);
 }
 
-static void print_version()
-{
-    printf("%s", VERSION_STRING);
-    
-    if (std::string("").compare(SOURCE_CODE_DIRTY)) {
-        printf(" %s\n", SOURCE_CODE_DIRTY);
-        printf("unstaged digest: %s\n", UNSTAGED_DIGEST);
-        printf("staged digest: %s", STAGED_DIGEST);
-    }
-    
-    printf("\n");
-    
-    exit(0);
-}
-
 static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
@@ -114,7 +99,7 @@ static void parse_cmdline(int argc, char *argv[])
       break;
     case 'r':
       print_version();
-      break;
+      exit(0);
     case 'h':
     case '?':
     default:

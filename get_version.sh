@@ -1,37 +1,30 @@
 #!/bin/bash
 
-VERSION=$(git log -n 1 | grep ^commit)
-CHANGE_STATE=$(git diff --numstat)$(git diff --cached --numstat)
-TARGET_FILE=version.h
+commit=$(git rev-list -1 HEAD)
 
-if [[ "$CHANGE_STATE" != "" ]]; then
-    DIRTY_FLAG="+local_changes"
-    UNSTAGED_DIGEST=$(git diff | md5sum)
-    STAGED_DIGEST=$(git diff --cached | md5sum)
+diff=$(git diff HEAD)
+if [[ -n "$diff" ]]; then
+    diff_sum=+$(echo "$diff" | md5sum | cut -f1 -d ' ')
+    diff_stat=$(echo "$diff" | diffstat | sed 's/$/\\n\\/')
+    diff_stat="\n\\"$'\n'"${diff_stat::-3}"
 else
-    DIRTY_FLAG=""
-    UNSTAGED_DIGEST=""
-    STAGED_DIGEST=""
+    diff_sum=
+    diff_stat=
 fi
 
-echo "#ifndef _VERSION_H_"  > $TARGET_FILE
-echo "#define _VERSION_H_"  >> $TARGET_FILE
+cat > version.h <<EOF
+#ifndef _VERSION_H_
+#define _VERSION_H_
 
-echo ""  >> $TARGET_FILE
-echo "#define SOURCE_CODE_DIRTY \"$DIRTY_FLAG\""  >> $TARGET_FILE
-echo "#define VERSION_STRING \"$VERSION\""  >> $TARGET_FILE
-echo "#define UNSTAGED_DIGEST \"$UNSTAGED_DIGEST\""  >> $TARGET_FILE
-echo "#define STAGED_DIGEST \"$STAGED_DIGEST\""  >> $TARGET_FILE
+#define VERSION_TIME		"$(date +'%F %T')"
+#define VERSION_COMMIT		"$commit"
+#define VERSION_DIFFSUM		"$diff_sum"
+#define VERSION_DIFFSTAT	"$diff_stat"
 
-echo ""  >> $TARGET_FILE
-echo "static const char unstaged_change[] = {" >> $TARGET_FILE
-echo "#include \"unstaged_patch.cstr\"" >> $TARGET_FILE
-echo "};" >> $TARGET_FILE
+void print_version()
+{
+    printf("%s\n", VERSION_TIME " " VERSION_COMMIT VERSION_DIFFSUM VERSION_DIFFSTAT);
+}
 
-echo "" >> $TARGET_FILE
-echo "static const char staged_change[] = {" >> $TARGET_FILE
-echo "#include \"staged_patch.cstr\"" >> $TARGET_FILE
-echo "};" >> $TARGET_FILE
-echo "" >> $TARGET_FILE
-
-echo "#endif"  >> $TARGET_FILE
+#endif
+EOF

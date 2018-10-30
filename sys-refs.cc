@@ -52,7 +52,7 @@ static void usage(char *prog)
           "    -d|--dram       The DRAM percent, wrt. DRAM+PMEM total size\n"
           "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
           "    -v|--verbose    Show debug info\n",
-          VERSION_STRING,
+          "    -r|--version    Show version info\n",
           prog);
 
   exit(0);
@@ -62,7 +62,7 @@ static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
 	int opt = 0;
-	const char *optstr = "hvp:i:s:l:o:d:m:";
+	const char *optstr = "hvrp:i:s:l:o:d:m:";
 
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
@@ -92,6 +92,9 @@ static void parse_cmdline(int argc, char *argv[])
     case 'v':
       ++option.debug_level;
       break;
+    case 'r':
+      print_version();
+      exit(0);
     case 'h':
     case '?':
     default:
