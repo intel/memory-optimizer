@@ -218,10 +218,8 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
         return -2;
       }
 
-      size = (end - va) >> (3 + PAGE_SHIFT);
-      if (size < 1)
-        size = 1;
-      else if (size > read_buf.size())
+      size = (end - va + (7 << PAGE_SHIFT)) >> (3 + PAGE_SHIFT);
+      if (size > read_buf.size())
         size = read_buf.size();
 
       rc = read(idle_fd, read_buf.data(), size);
