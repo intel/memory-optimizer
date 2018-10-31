@@ -33,7 +33,7 @@ void GlobalScan::main_loop()
     count_refs();
     migrate();
 
-    usleep(option.sleep_secs * 1000000);
+    usleep(std::max(option.sleep_secs, interval) * 1000000);
   }
   stop_threads();
 }
