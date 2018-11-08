@@ -22,7 +22,7 @@ typedef enum {
 
 struct Policy
 {
-  int Pid;
+  pid_t Pid;
   std::string Name;
   MigrateWhat migrate_what;
   PlaceWhat place_what;
@@ -32,7 +32,8 @@ struct Option
 {
   Option();
   int set_dram_percent(int dp);
-
+  void dump();
+  
 public:
   int debug_level;
 
@@ -51,10 +52,11 @@ public:
   int hot_min_refs;
   int cold_max_refs;
 
+  unsigned long bandwidth_mbps;
   MigrateWhat migrate_what;
 
   std::string output_file;
-
+  std::string config_file;
   std::vector<Policy>  policies;
 };
 
