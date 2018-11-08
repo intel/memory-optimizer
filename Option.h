@@ -2,6 +2,7 @@
 #define _OPTION_H
 
 #include <string>
+#include <vector>
 
 typedef enum {
   MIGRATE_NONE,
@@ -9,6 +10,23 @@ typedef enum {
   MIGRATE_COLD,
   MIGRATE_BOTH = MIGRATE_HOT | MIGRATE_COLD,
 } MigrateWhat;
+
+
+typedef enum {
+  PLACEMENT_NONE,
+  PLACEMENT_DRAM,
+  PLACEMENT_AEP,
+  PLACEMENT_END,
+} PlaceWhat;
+
+
+struct Policy
+{
+  int Pid;
+  std::string Name;
+  MigrateWhat migrate_what;
+  PlaceWhat place_what;
+};
 
 struct Option
 {
@@ -36,6 +54,8 @@ public:
   MigrateWhat migrate_what;
 
   std::string output_file;
+
+  std::vector<Policy>  policies;
 };
 
 extern Option option;
