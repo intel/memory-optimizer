@@ -5,8 +5,8 @@ DEBUG_FLAGS = -g -O3
 CFLAGS = $(DEBUG_FLAGS) -Wall
 CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++14
 LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
-LIB_LINK_DIR = -I./include 
-LIB_HEADER_DIR = -L./lib
+LIB_LINK_DIR = -L./lib
+LIB_HEADER_DIR = -I./include
 TASK_REFS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc AddrSequence.cc \
 			 lib/debug.c lib/stats.h Formatter.h
 TASK_REFS_HEADER_FILES = $(TASK_REFS_SOURCE_FILES:.cc=.h)
