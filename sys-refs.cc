@@ -15,6 +15,7 @@
 #include "Migration.h"
 #include "GlobalScan.h"
 #include "version.h"
+#include "OptionParser.h"
 
 using namespace std;
 
@@ -34,6 +35,7 @@ static const struct option opts[] = {
   {"dram",      required_argument,  NULL, 'd'},
   {"migrate",   required_argument,  NULL, 'm'},
   {"verbose",   required_argument,  NULL, 'v'},
+  {"config",    required_argument,  NULL, 'f' },
   {"help",      no_argument,        NULL, 'h'},
   {NULL,        0,                  NULL, 0}
 };
@@ -41,7 +43,6 @@ static const struct option opts[] = {
 static void usage(char *prog)
 {
   fprintf(stderr,
-          "version: %s\n"
           "%s [option] ...\n"
           "    -h|--help       Show this information\n"
           "    -p|--pid        The PID to scan\n"
@@ -51,8 +52,9 @@ static void usage(char *prog)
           "    -o|--output     The output file, defaults to refs-count-PID\n"
           "    -d|--dram       The DRAM percent, wrt. DRAM+PMEM total size\n"
           "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
-          "    -v|--verbose    Show debug info\n",
-          "    -r|--version    Show version info\n",
+          "    -v|--verbose    Show debug info\n"
+          "    -r|--version    Show version info\n"
+          "    -f|--config     config file path name\n",
           prog);
 
   exit(0);
@@ -61,12 +63,14 @@ static void usage(char *prog)
 static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
-	int opt = 0;
-	const char *optstr = "hvrp:i:s:l:o:d:m:";
+  int opt = 0;
+  const char *optstr = "hvrp:i:s:l:o:d:m:f:";
 
+  optind = 1;
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
     case 0:
+    case 'f':
       break;
     case 'p':
       option.pid = atoi(optarg);
@@ -103,11 +107,46 @@ static void parse_cmdline(int argc, char *argv[])
   }
 }
 
+
+static int parse_get_config_file(int argc, char* argv[])
+{
+  int options_index = 0;
+  int opt = 0;
+  const char *optstr = ":f:";
+
+  optind = 1;
+  while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
+    switch (opt) {
+    case 'f':
+      option.config_file = optarg;
+      return 1;
+    default:
+        ;
+    }
+  }
+
+  return 0;
+}
+
+
+static void parse_parameter(int argc, char* argv[])
+{
+    if (parse_get_config_file(argc, argv))
+    {
+        OptionParser Parser;
+        Parser.Parse(option.config_file, option);
+    }
+
+    //cmd line paramsters override config file, for easy debug
+    parse_cmdline(argc, argv);
+}
+
+
 int main(int argc, char *argv[])
 {
   setlocale(LC_NUMERIC, "");
 
-  parse_cmdline(argc, argv);
+  parse_parameter(argc, argv);
 
   GlobalScan gscan;
 
