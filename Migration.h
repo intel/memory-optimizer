@@ -23,8 +23,6 @@ class Migration : public ProcIdlePages
     Migration(pid_t n);
     ~Migration() {};
 
-    static MigrateWhat parse_migrate_name(std::string name);
-
     // migrate pages to nodes
     int migrate();
     int migrate(ProcIdlePageType type);
@@ -52,9 +50,6 @@ class Migration : public ProcIdlePages
     std::unordered_map<int, int> calc_migrate_stats();
 
   private:
-    // variables
-    static std::unordered_map<std::string, MigrateWhat> migrate_name_map;
-
     // The Virtual Address of hot/cold pages.
     // [0...n] = [VA0...VAn]
     //std::vector<unsigned long> hot_pages;

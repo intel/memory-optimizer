@@ -92,7 +92,7 @@ static void parse_cmdline(int argc, char *argv[])
       option.cold_max_refs = atoi(optarg);
       break;
     case 'm':
-      option.migrate_what = Migration::parse_migrate_name(optarg);
+      option.migrate_what = Option::parse_migrate_name(optarg);
       break;
     case 'v':
       ++option.debug_level;

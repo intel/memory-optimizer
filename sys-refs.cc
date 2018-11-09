@@ -91,7 +91,7 @@ static void parse_cmdline(int argc, char *argv[])
       option.dram_percent = atoi(optarg);
       break;
     case 'm':
-      option.migrate_what = Migration::parse_migrate_name(optarg);
+      option.migrate_what = Option::parse_migrate_name(optarg);
       break;
     case 'v':
       ++option.debug_level;
@@ -133,8 +133,12 @@ static void parse_parameter(int argc, char* argv[])
 {
     if (parse_get_config_file(argc, argv))
     {
-        OptionParser Parser;
-        Parser.Parse(option.config_file, option);
+      OptionParser Parser;
+
+      if (Parser.Parse(option.config_file, option) < 0)
+        std::cerr<<"failed to parse config file."<<std::endl;
+
+      option.dump();
     }
 
     //cmd line paramsters override config file, for easy debug

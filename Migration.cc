@@ -19,12 +19,6 @@
 
 using namespace std;
 
-std::unordered_map<std::string, MigrateWhat> Migration::migrate_name_map = {
-	    {"none", MIGRATE_NONE},
-	    {"hot",  MIGRATE_HOT},
-	    {"cold", MIGRATE_COLD},
-	    {"both", MIGRATE_BOTH},
-};
 
 Migration::Migration(pid_t n)
   : ProcIdlePages(n)
@@ -37,24 +31,6 @@ Migration::Migration(pid_t n)
   migrate_target_node[PMD_ACCESSED]  = Option::DRAM_NUMA_NODE;
 }
 
-MigrateWhat Migration::parse_migrate_name(std::string name)
-{
-  if (isdigit(name[0])) {
-    int m = atoi(name.c_str());
-    if (m <= MIGRATE_BOTH)
-      return (MigrateWhat)m;
-    cerr << "invalid migrate type: " << name << endl;
-    return MIGRATE_NONE;
-  }
-
-  auto search = migrate_name_map.find(name);
-
-  if (search != migrate_name_map.end())
-    return search->second;
-
-  cerr << "invalid migrate type: " << name << endl;
-  return MIGRATE_NONE;
-}
 
 size_t Migration::get_threshold_refs(ProcIdlePageType type,
                                      int& min_refs, int& max_refs)
