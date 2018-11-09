@@ -143,3 +143,15 @@ int ProcessCollection::filter_by_policy(std::shared_ptr<Process> &process,
 
   return false;
 }
+
+
+void ProcessCollection::dump()
+{
+    printf("dump process collection start:\n");
+    for (auto &iter: proccess_hash) {
+        printf("pid: %d, name: %s\n",
+               iter.first,
+               iter.second->proc_status.get_name().c_str());
+    }
+    printf("dump proces collection end.\n");
+}

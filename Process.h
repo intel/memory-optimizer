@@ -38,11 +38,13 @@ class ProcessCollection
     int collect();
     int collect(PolicySet& policies);
     ProcessHash& get_proccesses() { return proccess_hash; }
+    void dump();
 
   private:
     static const unsigned long SPLIT_RANGE_SIZE = (1<<30);
     int filter_by_policy(std::shared_ptr<Process> &process,
                          Policy &policy);
+
 
   private:
     ProcPid pids;
