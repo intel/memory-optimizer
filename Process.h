@@ -45,7 +45,6 @@ class ProcessCollection
     int filter_by_policy(std::shared_ptr<Process> &process,
                          Policy &policy);
 
-
   private:
     ProcPid pids;
     ProcessHash proccess_hash;
