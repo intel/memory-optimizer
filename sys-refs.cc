@@ -7,6 +7,7 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <string.h>
 
 #include "lib/debug.h"
 #include "Option.h"
@@ -65,6 +66,7 @@ static void parse_cmdline(int argc, char *argv[])
   int options_index = 0;
   int opt = 0;
   const char *optstr = "hvrp:i:s:l:o:d:m:f:";
+  Policy cmdline_policy;
 
   optind = 1;
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
@@ -74,6 +76,7 @@ static void parse_cmdline(int argc, char *argv[])
       break;
     case 'p':
       option.pid = atoi(optarg);
+      cmdline_policy.pid = option.pid;
       break;
     case 's':
       option.sleep_secs = atof(optarg);
@@ -92,6 +95,7 @@ static void parse_cmdline(int argc, char *argv[])
       break;
     case 'm':
       option.migrate_what = Option::parse_migrate_name(optarg);
+      cmdline_policy.migrate_what = option.migrate_what;
       break;
     case 'v':
       ++option.debug_level;
@@ -105,6 +109,9 @@ static void parse_cmdline(int argc, char *argv[])
       usage(argv[0]);
     }
   }
+
+  option.add_policy(cmdline_policy);
+
 }
 
 
@@ -131,18 +138,25 @@ static int parse_get_config_file(int argc, char* argv[])
 
 static void parse_parameter(int argc, char* argv[])
 {
-    if (parse_get_config_file(argc, argv))
-    {
-      OptionParser Parser;
+  //the getopt_long() will change the elements odrer in argv[]
+  //which cause getopt_long() can NOT work on argv[] again
+  //A workaround here is to have a duplication for use it later
+  char* argv_bak[512];
+  memcpy(argv_bak, argv,
+         std::min(sizeof(argv_bak), sizeof(char*) * argc));
 
-      if (Parser.Parse(option.config_file, option) < 0)
-        std::cerr << "failed to parse config file." << std::endl;
+  if (parse_get_config_file(argc, argv)) {
+    OptionParser Parser;
 
-      option.dump();
-    }
+    if (Parser.Parse(option.config_file, option) < 0)
+      std::cerr << "failed to parse config file." << std::endl;
+  }
 
-    //cmd line paramsters override config file, for easy debug
-    parse_cmdline(argc, argv);
+  //cmd line paramsters override config file, for easy debug
+  parse_cmdline(argc, argv_bak);
+
+  if (option.debug_level >= 2)
+   option.dump();
 }
 
 
