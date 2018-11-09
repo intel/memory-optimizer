@@ -1,7 +1,7 @@
 Dependency:
     use package name from Ubuntu to describe the dependencies here, you may need to check more for other distributions.
     install below packages before you start to make:
-    yamlcpp: libyam-cpp-dev
+    yamlcpp: libyaml-cpp-dev
     libnuma: libnuma-dev
 
 Config file format:
@@ -12,8 +12,8 @@ options:
     sleep: 3                # wait time between scan round
     loop: 4                 # total scan round to run
     output: /tmp/date/.log  # log file path name
-    bandwidth_mbps: 1024000 # migration speed throttler, bytes per second.
-    dram_percent: 51        # the dram percent, used for tuning the interval if not specified.
+    bandwidth_mbps: 1024    # migration speed throttler, Mb per second
+    dram_percent: 51        # 100 * (DRAM / total memory)
 
 policies:
     - pid: 1024             # process id filter
@@ -23,4 +23,3 @@ policies:
       placement: dram       # or aep
 ...
 
-    
