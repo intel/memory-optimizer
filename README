@@ -1,0 +1,26 @@
+Dependency:
+    use package name from Ubuntu to describe the dependencies here, you may need to check more for other distributions.
+    install below packages before you start to make:
+    yamlcpp: libyam-cpp-dev
+    libnuma: libnuma-dev
+
+Config file format:
+    format of configuration file:
+---
+options:
+    interval: 2             # interval between scans
+    sleep: 3                # wait time between scan round
+    loop: 4                 # total scan round to run
+    output: /tmp/date/.log  # log file path name
+    bandwidth_mbps: 1024000 # migration speed throttler, bytes per second.
+    dram_percent: 51        # the dram percent, used for tuning the interval if not specified.
+
+policies:
+    - pid: 1024             # process id filter
+      migration: cold       # hot or both
+
+    - name: zsh             # process name filter
+      placement: dram       # or aep
+...
+
+    
