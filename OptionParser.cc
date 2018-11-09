@@ -39,6 +39,9 @@ int OptionParser::parse_option(YAML::Node &&option_node,
 {
     if (!option_node)
       return -1;
+
+    if (!option_node.IsMap())
+      return -1;
     
     for (YAML::const_iterator iter = option_node.begin();
          iter != option_node.end();
