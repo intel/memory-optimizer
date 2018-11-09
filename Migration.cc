@@ -29,6 +29,9 @@ Migration::Migration(pid_t n)
 
   migrate_target_node[PMD_IDLE]      = Option::PMEM_NUMA_NODE;
   migrate_target_node[PMD_ACCESSED]  = Option::DRAM_NUMA_NODE;
+
+  //inherit from global settings
+  migrate_what = option.migrate_what;
 }
 
 
@@ -152,7 +155,7 @@ int Migration::migrate()
   fmt.clear();
   fmt.reserve(1<<10);
 
-  if (option.migrate_what & MIGRATE_COLD) {
+  if (migrate_what & MIGRATE_COLD) {
     err = migrate(PTE_IDLE);
     if (err)
       goto out;
@@ -161,7 +164,7 @@ int Migration::migrate()
       goto out;
   }
 
-  if (option.migrate_what & MIGRATE_HOT) {
+  if (migrate_what & MIGRATE_HOT) {
     err = migrate(PTE_ACCESSED);
     if (err)
       goto out;
@@ -346,3 +349,10 @@ int Migration::dump_task_nodes()
   return err;
 }
 
+
+void Migration::set_policy(Policy &policy)
+{
+    migrate_what = policy.migrate_what;
+
+    //add more here
+}

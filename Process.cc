@@ -121,6 +121,11 @@ int ProcessCollection::collect(PolicySet& policies)
       if (err)
         continue;
 
+      // set policy to the process's all VMAs
+      for (auto &migration: p->idle_ranges) {
+        migration->set_policy(policy);
+      }
+
       proccess_hash[pid] = p;
     }
   }
