@@ -8,6 +8,7 @@
 #include "ProcPid.h"
 #include "ProcMaps.h"
 #include "ProcStatus.h"
+#include "Option.h"
 
 class Migration;
 typedef std::vector<std::shared_ptr<Migration>> IdleRanges;
@@ -35,6 +36,7 @@ class ProcessCollection
 {
   public:
     int collect();
+    int collect(PolicySet& policies);
     ProcessHash& get_proccesses() { return proccess_hash; }
 
   private:

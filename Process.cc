@@ -94,3 +94,20 @@ int ProcessCollection::collect()
 
   return 0;
 }
+
+
+int ProcessCollection::collect(PolicySet& policies)
+{
+    /*
+      collect pid by pids
+      for each pid:
+        make process object po
+        cal po->load(pid)
+        for each policies:
+          check if it matchs to po:
+            matched: split_range and add into process_hash[]
+            not matched: release po
+     */
+
+    return -1;
+}

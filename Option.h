@@ -35,6 +35,7 @@ struct Policy
   PlaceWhat place_what;
 };
 
+typedef std::vector<Policy> PolicySet;
 
 struct Option
 {
@@ -84,7 +85,7 @@ public:
   std::string output_file;
   std::string config_file;
 
-  std::vector<Policy>  policies;
+  PolicySet  policies;
 };
 
 
