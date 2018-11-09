@@ -52,6 +52,7 @@ void Option::dump()
   printf("hot_min_refs = %d\n", hot_min_refs);
   printf("cold_max_refs = %d\n", cold_max_refs);
   printf("bandwidth_mbps = %lu\n", bandwidth_mbps);
+  printf("migrate_what = %d\n", migrate_what);
   printf("output_file = %s\n", output_file.c_str());
   printf("config_file = %s\n", config_file.c_str());
 
