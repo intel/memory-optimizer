@@ -40,15 +40,19 @@ void GlobalScan::main_loop()
 
 int GlobalScan::collect()
 {
-	int err;
+  int err;
 
-	idle_ranges.clear();
+  idle_ranges.clear();
 
-	err = process_collection.collect();
-	if (err)
-		return err;
+  if (option.policies.empty())
+    err = process_collection.collect();
+  else
+    err = process_collection.collect(option.policies);
 
-	for (auto &kv: process_collection.get_proccesses())
+  if (err)
+    return err;
+
+  for (auto &kv: process_collection.get_proccesses())
     for (auto &m: kv.second->get_ranges())
       idle_ranges.push_back(m);
 
