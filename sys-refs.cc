@@ -36,8 +36,9 @@ static const struct option opts[] = {
   {"dram",      required_argument,  NULL, 'd'},
   {"migrate",   required_argument,  NULL, 'm'},
   {"verbose",   required_argument,  NULL, 'v'},
-  {"config",    required_argument,  NULL, 'f' },
+  {"config",    required_argument,  NULL, 'f'},
   {"help",      no_argument,        NULL, 'h'},
+  {"version",   no_argument,        NULL, 'r'},
   {NULL,        0,                  NULL, 0}
 };
 
