@@ -30,8 +30,8 @@ int OptionParser::Parse(std::string &filename, Option &option)
   } catch (...) {
     ret_val = -1;
   }
-    
-    return ret_val;
+
+  return ret_val;
 }
 
 int OptionParser::parse_option(YAML::Node &&option_node,

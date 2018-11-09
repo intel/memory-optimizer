@@ -9,6 +9,7 @@ typedef enum {
   MIGRATE_HOT,
   MIGRATE_COLD,
   MIGRATE_BOTH = MIGRATE_HOT | MIGRATE_COLD,
+  MIGRATE_END,
 } MigrateWhat;
 
 

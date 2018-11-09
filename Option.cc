@@ -4,16 +4,16 @@
 
 
 std::unordered_map<std::string, MigrateWhat> Option::migrate_name_map = {
-	    {"none", MIGRATE_NONE},
-	    {"hot",  MIGRATE_HOT},
-	    {"cold", MIGRATE_COLD},
-	    {"both", MIGRATE_BOTH},
+  {"none", MIGRATE_NONE},
+  {"hot",  MIGRATE_HOT},
+  {"cold", MIGRATE_COLD},
+  {"both", MIGRATE_BOTH},
 };
 
 std::unordered_map<std::string, PlaceWhat> Option::placement_name_map = {
-        {"none", PLACEMENT_NONE},
-        {"dram", PLACEMENT_DRAM},
-        {"aep", PLACEMENT_AEP},
+  {"none", PLACEMENT_NONE},
+  {"dram", PLACEMENT_DRAM},
+  {"aep", PLACEMENT_AEP},
 };
 
 
@@ -55,13 +55,12 @@ void Option::dump()
   printf("output_file = %s\n", output_file.c_str());
   printf("config_file = %s\n", config_file.c_str());
 
-  for (size_t i = 0; i < policies.size(); ++i)
-  {
-      printf("policy %ld :\n", i);
-      printf("  pid : %d\n", policies[i].pid);
-      printf("  name : %s\n", policies[i].name.c_str());
-      printf("  migration: %d\n", policies[i].migrate_what);
-      printf("  placement: %d\n", policies[i].place_what);
+  for (size_t i = 0; i < policies.size(); ++i) {
+      printf("policy %ld:\n", i);
+      printf("pid: %d\n", policies[i].pid);
+      printf("name: %s\n", policies[i].name.c_str());
+      printf("migration: %d\n", policies[i].migrate_what);
+      printf("placement: %d\n", policies[i].place_what);
       printf("\n");
   }
 
@@ -74,7 +73,7 @@ MigrateWhat Option::parse_migrate_name(std::string name)
  
   if (isdigit(name[0])) {
     int m = atoi(name.c_str());
-    if (m <= MIGRATE_BOTH)
+    if (m < MIGRATE_END)
       return (MigrateWhat)m;
     std::cerr << "invalid migrate type: " << name << std::endl;
     return MIGRATE_NONE;

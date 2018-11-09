@@ -136,7 +136,7 @@ static void parse_parameter(int argc, char* argv[])
       OptionParser Parser;
 
       if (Parser.Parse(option.config_file, option) < 0)
-        std::cerr<<"failed to parse config file."<<std::endl;
+        std::cerr << "failed to parse config file." << std::endl;
 
       option.dump();
     }
