@@ -109,5 +109,5 @@ void OptionParser::parse_one_policy(YAML::Node &&policy_node, Option &option)
       }
     }
 
-    option.policies.push_back(new_policy);
+    option.add_policy(new_policy);
 }

@@ -44,10 +44,13 @@ int GlobalScan::collect()
 
   idle_ranges.clear();
 
-  if (option.policies.empty())
+  if (option.get_policies().empty())
     err = process_collection.collect();
   else
-    err = process_collection.collect(option.policies);
+    err = process_collection.collect(option.get_policies());
+
+  if (option.debug_level >= 2)
+    process_collection.dump();
 
   if (err)
     return err;

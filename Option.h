@@ -42,6 +42,12 @@ struct Option
   Option();
 
   int set_dram_percent(int dp);
+
+  int add_policy(Policy& new_policy);
+  PolicySet& get_policies() {
+    return policies;
+  }
+
   void dump();
 
   static MigrateWhat parse_migrate_name(std::string name);
@@ -85,6 +91,7 @@ public:
   std::string output_file;
   std::string config_file;
 
+private:
   PolicySet  policies;
 };
 

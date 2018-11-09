@@ -100,3 +100,18 @@ PlaceWhat Option::parse_placement_name(std::string name)
 
   return ret_val;
 }
+
+
+int Option::add_policy(Policy& new_policy)
+{
+  // a policy should have at least pid or name
+  if (new_policy.pid < 0
+    && new_policy.name.empty()) {
+    std::cerr << "invalid policy: no pid and no name" << std::endl;
+    return -1;
+  }
+
+  policies.push_back(new_policy);
+
+  return 0;
+}
