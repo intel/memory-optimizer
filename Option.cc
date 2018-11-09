@@ -26,6 +26,7 @@ Option::Option()
   migrate_what = MIGRATE_HOT;
   hot_min_refs = -1;
   cold_max_refs = -1;
+  pid = -1;
 }
 
 int Option::set_dram_percent(int dp)

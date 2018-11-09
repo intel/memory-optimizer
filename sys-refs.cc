@@ -67,7 +67,8 @@ static void parse_cmdline(int argc, char *argv[])
   int options_index = 0;
   int opt = 0;
   const char *optstr = "hvrp:i:s:l:o:d:m:f:";
-  Policy cmdline_policy;
+  pid_t pid_param = -1;
+  MigrateWhat migrate_param = option.migrate_what;
 
   optind = 1;
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
@@ -76,8 +77,7 @@ static void parse_cmdline(int argc, char *argv[])
     case 'f':
       break;
     case 'p':
-      option.pid = atoi(optarg);
-      cmdline_policy.pid = option.pid;
+      pid_param = atoi(optarg);
       break;
     case 's':
       option.sleep_secs = atof(optarg);
@@ -95,8 +95,7 @@ static void parse_cmdline(int argc, char *argv[])
       option.dram_percent = atoi(optarg);
       break;
     case 'm':
-      option.migrate_what = Option::parse_migrate_name(optarg);
-      cmdline_policy.migrate_what = option.migrate_what;
+      migrate_param = Option::parse_migrate_name(optarg);
       break;
     case 'v':
       ++option.debug_level;
@@ -111,7 +110,24 @@ static void parse_cmdline(int argc, char *argv[])
     }
   }
 
-  option.add_policy(cmdline_policy);
+  /*
+    when -p and -m both exist:
+      create a new policy by -p and -m
+    when only -p
+      create a new policy by -p and defualt migrate policy
+    when only -m
+      update the default migrate policy
+  */
+  if (-1 != pid_param) {
+    Policy cmdline_policy;
+
+    cmdline_policy.pid = pid_param;
+    cmdline_policy.migrate_what = migrate_param;
+
+    option.add_policy(cmdline_policy);
+  } else {
+    option.migrate_what = migrate_param;
+  }
 
 }
 
