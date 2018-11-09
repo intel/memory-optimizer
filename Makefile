@@ -5,8 +5,6 @@ DEBUG_FLAGS = -g -O3
 CFLAGS = $(DEBUG_FLAGS) -Wall
 CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++14
 LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
-LIB_LINK_DIR = -L./lib
-LIB_HEADER_DIR = -I./include
 TASK_REFS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc AddrSequence.cc \
 			 lib/debug.c lib/stats.h Formatter.h
 TASK_REFS_HEADER_FILES = $(TASK_REFS_SOURCE_FILES:.cc=.h)
@@ -19,7 +17,7 @@ all: sys-refs page-refs task-maps show-vmstat addr-seq task-refs pid-list
 
 sys-refs: sys-refs.cc $(SYS_REFS_SOURCE_FILES) $(SYS_REFS_HEADER_FILES)
 	./get_version.sh
-	$(CXX) $< $(SYS_REFS_SOURCE_FILES) $(LIB_LINK_DIR) $(LIB_HEADER_DIR) -o $@ $(CXXFLAGS) -lnuma -pthread -lyaml-cpp
+	$(CXX) $< $(SYS_REFS_SOURCE_FILES) -o $@ $(CXXFLAGS) -lnuma -pthread -lyaml-cpp
 
 page-refs: page-refs.c $(LIB_SOURCE_FILES)
 	$(CC) $< $(LIB_SOURCE_FILES) -o $@ $(CFLAGS)

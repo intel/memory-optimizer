@@ -2,7 +2,7 @@
 #define __OPTIONPARSER_H__
 
 #include <string>
-#include "yaml-cpp/yaml.h"
+#include <yaml-cpp/yaml.h>
 #include "Option.h"
 
 class OptionParser
