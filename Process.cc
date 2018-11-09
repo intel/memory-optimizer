@@ -79,7 +79,7 @@ int ProcessCollection::collect()
 
   for (pid_t pid: pids.get_pids())
   {
-    std::shared_ptr<Process> p = std::make_shared<Process>();
+    auto p = std::make_shared<Process>();
 
     err = p->load(pid);
     if (err)
@@ -98,16 +98,48 @@ int ProcessCollection::collect()
 
 int ProcessCollection::collect(PolicySet& policies)
 {
-    /*
-      collect pid by pids
-      for each pid:
-        make process object po
-        cal po->load(pid)
-        for each policies:
-          check if it matchs to po:
-            matched: split_range and add into process_hash[]
-            not matched: release po
-     */
+  int err;
 
-    return -1;
+  proccess_hash.clear();
+
+  err = pids.collect();
+  if (err)
+    return err;
+
+  for (pid_t pid: pids.get_pids()) {
+    auto p = std::make_shared<Process>();
+
+    err = p->load(pid);
+    if (err)
+      continue;
+
+    for (Policy &policy: policies) {        
+      if (!filter_by_policy(p, policy))
+        continue;
+
+      err = p->split_ranges(SPLIT_RANGE_SIZE);
+      if (err)
+        continue;
+
+      proccess_hash[pid] = p;
+    }
+  }
+
+  return 0;
+}
+
+int ProcessCollection::filter_by_policy(std::shared_ptr<Process> &process,
+                                        Policy &policy)
+{
+  if (policy.pid >= 0) {
+    if (policy.pid == process->pid)
+      return true;
+  }
+
+  if (!policy.name.empty()) {
+    if (!policy.name.compare(process->proc_status.get_name()))
+      return true;
+  }
+
+  return false;
 }
