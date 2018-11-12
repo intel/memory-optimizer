@@ -133,14 +133,21 @@ void GlobalScan::count_refs()
 // similar to ProcIdlePages::should_stop()
 bool GlobalScan::should_stop_walk()
 {
-  if (!option.dram_percent)
-    return false;
-
   // page_refs.get_top_bytes() is 0 when nr_walks == 1
   if (nr_walks <= 2)
     return false;
 
-  return 2 * 100 * top_bytes < option.dram_percent * all_bytes;
+  return 2 * 100 * top_bytes < dram_free_anon_bytes;
+}
+
+void GlobalScan::update_dram_free_anon_bytes()
+{
+  if (option.dram_percent) {
+    dram_free_anon_bytes = option.dram_percent * all_bytes;
+  } else {
+    ProcVmstat proc_vmstat;
+    dram_free_anon_bytes = proc_vmstat.anon_capacity();
+  }
 }
 
 void GlobalScan::walk_once()
@@ -167,6 +174,8 @@ void GlobalScan::walk_once()
     job = done_queue.pop();
     job.migration->gather_walk_stats(young_bytes, top_bytes, all_bytes);
   }
+
+  update_dram_free_anon_bytes();
 
   printf("nr_walks: %d young: %'lu  %.2f%%  top: %'lu  %.2f%%  all: %'lu\n",
          nr_walks,
@@ -225,15 +234,12 @@ void GlobalScan::update_interval(bool finished)
   if (option.interval)
     return;
 
-  if (!option.dram_percent)
-    return;
-
   if (nr_walks <= 1)
     return;
 
   const int div = 66; // the smaller than 100, the more real nr_walks will be
                       // in order to bring top_bytes down to dram_percent/2
-  float ratio = (option.dram_percent * all_bytes) / (div * young_bytes + 1.0);
+  float ratio = dram_free_anon_bytes / (div * young_bytes + 1.0);
   if (ratio > 10)
     ratio = 10;
   else if (ratio < 0.2)

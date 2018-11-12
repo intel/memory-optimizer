@@ -41,6 +41,7 @@ class GlobalScan
     void consumer_loop();
     void walk_once();
     bool should_stop_walk();
+    void update_dram_free_anon_bytes();
 
   private:
     static const int NR_THREADS = 64;
@@ -55,6 +56,7 @@ class GlobalScan
     unsigned long young_bytes;
     unsigned long top_bytes;
     unsigned long all_bytes;
+    unsigned long dram_free_anon_bytes;
 
     ProcessCollection process_collection;
     std::vector<std::shared_ptr<Migration>> idle_ranges;
