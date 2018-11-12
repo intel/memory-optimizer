@@ -73,6 +73,7 @@ static void parse_cmdline(int argc, char *argv[])
     case 0:
     case 'c':
       option.config_file = optarg;
+      OptionParser().Parse(option.config_file, option);
       break;
     case 's':
       option.sleep_secs = atof(optarg);
