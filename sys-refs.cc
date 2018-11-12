@@ -28,7 +28,6 @@ int debug_level()
 }
 
 static const struct option opts[] = {
-  {"pid",       required_argument,  NULL, 'p'},
   {"interval",  required_argument,  NULL, 'i'},
   {"sleep",     required_argument,  NULL, 's'},
   {"loop",      required_argument,  NULL, 'l'},
@@ -47,11 +46,10 @@ static void usage(char *prog)
   fprintf(stderr,
           "%s [option] ...\n"
           "    -h|--help       Show this information\n"
-          "    -p|--pid        The PID to scan\n"
           "    -i|--interval   The scan interval in seconds\n"
           "    -s|--sleep      Seconds to sleep between scan rounds\n"
           "    -l|--loop       The number of scan rounds\n"
-          "    -o|--output     The output file, defaults to refs-count-PID\n"
+          "    -o|--output     The output file, defaults to refs-count\n"
           "    -d|--dram       The DRAM percent, wrt. DRAM+PMEM total size\n"
           "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
           "    -v|--verbose    Show debug info\n"
@@ -66,18 +64,13 @@ static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
   int opt = 0;
-  const char *optstr = "hvrp:i:s:l:o:d:m:f:";
-  pid_t pid_param = -1;
-  MigrateWhat migrate_param = option.migrate_what;
+  const char *optstr = "hvri:s:l:o:d:m:f:";
 
   optind = 1;
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
     case 0:
     case 'f':
-      break;
-    case 'p':
-      pid_param = atoi(optarg);
       break;
     case 's':
       option.sleep_secs = atof(optarg);
@@ -95,7 +88,7 @@ static void parse_cmdline(int argc, char *argv[])
       option.dram_percent = atoi(optarg);
       break;
     case 'm':
-      migrate_param = Option::parse_migrate_name(optarg);
+      option.migrate_what = Option::parse_migrate_name(optarg);
       break;
     case 'v':
       ++option.debug_level;
@@ -108,25 +101,6 @@ static void parse_cmdline(int argc, char *argv[])
     default:
       usage(argv[0]);
     }
-  }
-
-  /*
-    when -p and -m both exist:
-      create a new policy by -p and -m
-    when only -p
-      create a new policy by -p and defualt migrate policy
-    when only -m
-      update the default migrate policy
-  */
-  if (-1 != pid_param) {
-    Policy cmdline_policy;
-
-    cmdline_policy.pid = pid_param;
-    cmdline_policy.migrate_what = migrate_param;
-
-    option.add_policy(cmdline_policy);
-  } else {
-    option.migrate_what = migrate_param;
   }
 
 }
