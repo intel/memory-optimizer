@@ -35,7 +35,7 @@ static const struct option opts[] = {
   {"dram",      required_argument,  NULL, 'd'},
   {"migrate",   required_argument,  NULL, 'm'},
   {"verbose",   required_argument,  NULL, 'v'},
-  {"config",    required_argument,  NULL, 'f'},
+  {"config",    required_argument,  NULL, 'c'},
   {"help",      no_argument,        NULL, 'h'},
   {"version",   no_argument,        NULL, 'r'},
   {NULL,        0,                  NULL, 0}
@@ -55,7 +55,7 @@ static void usage(char *prog)
           "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
           "    -v|--verbose    Show debug info\n"
           "    -r|--version    Show version info\n"
-          "    -f|--config     config file path name\n",
+          "    -c|--config     config file path name\n",
           prog);
 
   exit(0);
@@ -65,13 +65,13 @@ static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
   int opt = 0;
-  const char *optstr = "hvri:s:l:o:d:m:f:";
+  const char *optstr = "hvri:s:l:o:d:m:c:";
 
   optind = 1;
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
     switch (opt) {
     case 0:
-    case 'f':
+    case 'c':
       option.config_file = optarg;
       break;
     case 's':
