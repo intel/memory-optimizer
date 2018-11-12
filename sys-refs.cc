@@ -45,6 +45,7 @@ static void usage(char *prog)
 {
   fprintf(stderr,
           "%s [option] ...\n"
+          "Options (order matters, the latter takes effect):\n"
           "    -h|--help       Show this information\n"
           "    -i|--interval   The scan interval in seconds\n"
           "    -s|--sleep      Seconds to sleep between scan rounds\n"
@@ -71,6 +72,7 @@ static void parse_cmdline(int argc, char *argv[])
     switch (opt) {
     case 0:
     case 'f':
+      option.config_file = optarg;
       break;
     case 's':
       option.sleep_secs = atof(optarg);
@@ -105,57 +107,11 @@ static void parse_cmdline(int argc, char *argv[])
 
 }
 
-
-static int parse_get_config_file(int argc, char* argv[])
-{
-  int options_index = 0;
-  int opt = 0;
-  const char *optstr = ":f:";
-
-  optind = 1;
-  while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
-    switch (opt) {
-    case 'f':
-      option.config_file = optarg;
-      return 1;
-    default:
-        ;
-    }
-  }
-
-  return 0;
-}
-
-
-static void parse_parameter(int argc, char* argv[])
-{
-  //the getopt_long() will change the elements odrer in argv[]
-  //which cause getopt_long() can NOT work on argv[] again
-  //A workaround here is to have a duplication for use it later
-  char* argv_bak[512];
-  memcpy(argv_bak, argv,
-         std::min(sizeof(argv_bak), sizeof(char*) * argc));
-
-  if (parse_get_config_file(argc, argv)) {
-    OptionParser Parser;
-
-    if (Parser.Parse(option.config_file, option) < 0)
-      std::cerr << "failed to parse config file." << std::endl;
-  }
-
-  //cmd line paramsters override config file, for easy debug
-  parse_cmdline(argc, argv_bak);
-
-  if (option.debug_level >= 2)
-   option.dump();
-}
-
-
 int main(int argc, char *argv[])
 {
   setlocale(LC_NUMERIC, "");
 
-  parse_parameter(argc, argv);
+  parse_cmdline(argc, argv);
 
   GlobalScan gscan;
 
