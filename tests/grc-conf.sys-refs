@@ -1,0 +1,27 @@
+# Workload
+regexp=time -v (.*)
+colours=default,bright_green
+-
+# sysbench
+regexp=^Running .*
+colours=yellow
+-
+# sysbench
+regexp=[0-9.]+ MiB/sec
+colours=blue
+-
+# migrator
+regexp=/c/[a-zA-Z0-9./ -]*
+colours=bright_red
+-
+# migrator
+regexp=.* anon .*
+colours=red
+-
+# sys-refs
+regexp=^nr_walks: .*
+colours=cyan
+-
+# sys-refs
+regexp=^interval .*
+colours=yellow
