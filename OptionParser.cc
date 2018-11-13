@@ -22,9 +22,10 @@ int OptionParser::parse_file(std::string filename)
     YAML::Node config = YAML::LoadFile(config_file);
 
     ret_val = parse_option(config["options"]);
-    if (ret_val >= 0) {
-      ret_val = parse_policies(config["policies"]);
-    }
+    if (ret_val < 0)
+      return ret_val;
+
+    ret_val = parse_policies(config["policies"]);
 
   } catch (...) {
     ret_val = -1;
