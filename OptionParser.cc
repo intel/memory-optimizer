@@ -14,7 +14,7 @@ OptionParser::~OptionParser()
 }
 
 
-int OptionParser::Parse(std::string &filename, Option &option)
+int OptionParser::parse(std::string &filename, Option &option)
 {
   int ret_val;
 
