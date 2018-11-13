@@ -17,8 +17,8 @@
 
 #define MPOL_MF_SW_YOUNG (1<<7)
 
+extern Option option;
 using namespace std;
-
 
 Migration::Migration(pid_t n)
   : ProcIdlePages(n)

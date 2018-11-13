@@ -96,9 +96,5 @@ private:
   PolicySet  policies;
 };
 
-
-extern Option option;
-
-
 #endif
 // vim:set ts=2 sw=2 et:

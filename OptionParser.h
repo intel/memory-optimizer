@@ -5,18 +5,23 @@
 #include <yaml-cpp/yaml.h>
 #include "Option.h"
 
-class OptionParser
+// OptionParser only adds parsing functions.
+//
+// All data members and accessing functions are in Option,
+// for easy access by other classes.
+//
+class OptionParser: public Option
 {
   public:
     OptionParser();
     ~OptionParser();
 
-    int parse(std::string &filename, Option &option);
+    int parse_file(std::string filename);
 
   private:
-    int parse_option(YAML::Node &&option_node, Option &option);
-    int parse_policies(YAML::Node &&policies_node, Option &option);
-    void parse_one_policy(YAML::Node &&policy_node, Option &option);
+    int parse_option(YAML::Node &&option_node);
+    int parse_policies(YAML::Node &&policies_node);
+    void parse_one_policy(YAML::Node &&policy_node);
 
     template<typename Tval>
     int get_value(const YAML::const_iterator  &iter,

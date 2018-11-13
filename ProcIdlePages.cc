@@ -12,6 +12,8 @@
 #include "lib/debug.h"
 #include "lib/stats.h"
 
+extern Option option;
+
 unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX] = {
 	// 4k page
 	[PTE_IDLE]      = PAGE_SIZE,

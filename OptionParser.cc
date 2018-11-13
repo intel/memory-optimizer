@@ -3,28 +3,27 @@
 
 
 OptionParser::OptionParser()
+  : Option()
 {
-
 }
-
 
 OptionParser::~OptionParser()
 {
-
 }
 
-
-int OptionParser::parse(std::string &filename, Option &option)
+int OptionParser::parse_file(std::string filename)
 {
   int ret_val;
 
+  config_file = filename;
+
   try {
 
-    YAML::Node config = YAML::LoadFile(filename);
+    YAML::Node config = YAML::LoadFile(config_file);
 
-    ret_val = parse_option(config["options"], option);
+    ret_val = parse_option(config["options"]);
     if (ret_val >= 0) {
-      ret_val = parse_policies(config["policies"], option);
+      ret_val = parse_policies(config["policies"]);
     }
 
   } catch (...) {
@@ -34,8 +33,7 @@ int OptionParser::parse(std::string &filename, Option &option)
   return ret_val;
 }
 
-int OptionParser::parse_option(YAML::Node &&option_node,
-                               Option &option)
+int OptionParser::parse_option(YAML::Node &&option_node)
 {
     if (!option_node)
       return -1;
@@ -46,25 +44,20 @@ int OptionParser::parse_option(YAML::Node &&option_node,
     for (YAML::const_iterator iter = option_node.begin();
          iter != option_node.end();
          ++iter) {
-      if (get_value(iter, "interval", option.interval))
-        continue;
-      if (get_value(iter, "sleep", option.sleep_secs))
-        continue;
-      if (get_value(iter, "loop", option.nr_loops))
-        continue;
-      if (get_value(iter, "bandwidth_mbps", option.bandwidth_mbps))
-        continue;
-      if (get_value(iter, "dram_percent", option.dram_percent))
-        continue;
-      if (get_value(iter, "output", option.output_file))
-        continue;
+#define OP_GET_VALUE(name, member) if (get_value(iter, name, member)) continue;
+      OP_GET_VALUE("interval",        interval);
+      OP_GET_VALUE("sleep",           sleep_secs);
+      OP_GET_VALUE("loop",            nr_loops);
+      OP_GET_VALUE("bandwidth_mbps",  bandwidth_mbps);
+      OP_GET_VALUE("dram_percent",    dram_percent);
+      OP_GET_VALUE("output",          output_file);
+#undef OP_GET_VALUE
     }
 
     return 0;
 }
 
-
-int OptionParser::parse_policies(YAML::Node &&policies_node, Option &option)
+int OptionParser::parse_policies(YAML::Node &&policies_node)
 {
     if (!policies_node)
       return -1;
@@ -76,14 +69,13 @@ int OptionParser::parse_policies(YAML::Node &&policies_node, Option &option)
       if (!policies_node[i].IsMap())
         continue;
 
-      parse_one_policy(policies_node[i], option);
+      parse_one_policy(policies_node[i]);
     }
 
     return 0;
 }
 
-
-void OptionParser::parse_one_policy(YAML::Node &&policy_node, Option &option)
+void OptionParser::parse_one_policy(YAML::Node &&policy_node)
 {
     struct Policy new_policy;
     std::string str_val;
@@ -109,5 +101,5 @@ void OptionParser::parse_one_policy(YAML::Node &&policy_node, Option &option)
       }
     }
 
-    option.add_policy(new_policy);
+    add_policy(new_policy);
 }

@@ -20,7 +20,7 @@
 
 using namespace std;
 
-Option option;
+OptionParser option;
 
 int debug_level()
 {
@@ -72,8 +72,7 @@ static void parse_cmdline(int argc, char *argv[])
     switch (opt) {
     case 0:
     case 'c':
-      option.config_file = optarg;
-      OptionParser().parse(option.config_file, option);
+      option.parse_file(optarg);
       break;
     case 's':
       option.sleep_secs = atof(optarg);

@@ -8,6 +8,8 @@
 #include "lib/debug.h"
 #include "GlobalScan.h"
 
+extern Option option;
+
 const float GlobalScan::MIN_INTERVAL = 0.001;
 const float GlobalScan::MAX_INTERVAL = 10;
 const float GlobalScan::INITIAL_INTERVAL = 0.1;

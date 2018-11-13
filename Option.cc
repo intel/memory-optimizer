@@ -2,7 +2,6 @@
 
 #include <iostream>
 
-
 std::unordered_map<std::string, MigrateWhat> Option::migrate_name_map = {
   {"none", MIGRATE_NONE},
   {"hot",  MIGRATE_HOT},
@@ -15,7 +14,6 @@ std::unordered_map<std::string, PlaceWhat> Option::placement_name_map = {
   {"dram", PLACEMENT_DRAM},
   {"aep", PLACEMENT_AEP},
 };
-
 
 Option::Option()
 {
@@ -102,7 +100,6 @@ PlaceWhat Option::parse_placement_name(std::string name)
 
   return ret_val;
 }
-
 
 int Option::add_policy(Policy& new_policy)
 {
