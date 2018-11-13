@@ -250,6 +250,7 @@ void Migration::show_numa_stats()
                                 proc_vmstat.vmstat("nr_isolated_anon");
 
   total_anon_kb *= PAGE_SIZE >> 10;
+  printf("\nAfter migration:\n");
   printf("%'15lu       anon total\n", total_anon_kb);
 
   int nid = 0;

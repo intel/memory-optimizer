@@ -35,7 +35,9 @@ void GlobalScan::main_loop()
     count_refs();
     migrate();
 
-    usleep(std::max(option.sleep_secs, interval) * 1000000);
+    double sleep_time = std::max(option.sleep_secs, interval);
+    printf("\nSleeping for %.2f seconds\n", sleep_time);
+    usleep(sleep_time * 1000000);
   }
   stop_threads();
 }
@@ -98,6 +100,10 @@ void GlobalScan::walk_multi()
   for (auto& m: idle_ranges)
     m->prepare_walks(MAX_WALKS);
 
+  printf("\nStarting page table scans:\n");
+  printf("%7s  %8s  %23s  %23s  %15s\n", "nr_scan", "interval", "young", "top", "all");
+  printf("====================================================================================\n");
+
   for (nr_walks = 0; nr_walks < MAX_WALKS;)
   {
     ++nr_walks;
@@ -119,6 +125,7 @@ void GlobalScan::walk_multi()
       usleep((interval - elapsed) * 1000000);
   }
 
+  printf("\n");
   update_interval(1);
 }
 
@@ -179,11 +186,12 @@ void GlobalScan::walk_once()
 
   update_dram_free_anon_bytes();
 
-  printf("nr_walks: %d young: %'lu  %.2f%%  top: %'lu  %.2f%%  all: %'lu\n",
+  printf("%7d  %8.2f  %'15lu %6.2f%%  %'15lu %6.2f%%  %'15lu\n",
          nr_walks,
-         young_bytes, 100.0 * young_bytes / all_bytes,
-         top_bytes, 100.0 * top_bytes / all_bytes,
-         all_bytes);
+         (double)interval,
+         young_bytes >> 10, 100.0 * young_bytes / all_bytes,
+         top_bytes >> 10, 100.0 * top_bytes / all_bytes,
+         all_bytes >> 10);
 }
 
 void GlobalScan::consumer_loop()
@@ -247,7 +255,7 @@ void GlobalScan::update_interval(bool finished)
   else if (ratio < 0.2)
     ratio = 0.2;
 
-  printf("interval %f real %f * %.1f for young %.2f%%\n",
+  printd("interval %f real %f * %.1f for young %.2f%%\n",
          (double) interval,
          (double) real_interval,
          (double) ratio,
@@ -258,7 +266,7 @@ void GlobalScan::update_interval(bool finished)
     interval = 0.000001;
 
   if (finished && nr_walks < MAX_WALKS / 4) {
-    printf("interval %f x1.2 due to low nr_walks %d\n",
+    printd("interval %f x1.2 due to low nr_walks %d\n",
            (double) interval, nr_walks);
     interval *= 1.2;
   }

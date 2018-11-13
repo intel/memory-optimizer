@@ -360,6 +360,7 @@ int ProcIdlePages::save_counts(std::string filename)
     return -1;
   }
 
+  fprintf(file, "Scan result: memory (KB) group by reference count\n");
   fprintf(file, "%4s %15s %15s %15s\n",
                 "refs",
                 "4k_page",

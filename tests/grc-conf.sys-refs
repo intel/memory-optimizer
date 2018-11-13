@@ -1,27 +1,32 @@
 # Workload
-regexp=time -v (.*)
+regexp= -- (.*)
 colours=default,bright_green
 -
 # sysbench
-regexp=^Running .*
-colours=yellow
+regexp=^Running .* options:$
+colours=bright_magenta
 -
 # sysbench
 regexp=[0-9.]+ MiB/sec
-colours=blue
+colours=bright_blue
 -
 # migrator
 regexp=/c/[a-zA-Z0-9./ -]*
-colours=bright_red
+colours=bright_cyan
 -
 # migrator
 regexp=.* anon .*
-colours=red
--
-# sys-refs
-regexp=^nr_walks: .*
-colours=cyan
--
-# sys-refs
-regexp=^interval .*
 colours=yellow
+-
+# sys-refs
+regexp=^(Scan result:|After migration:).*
+colours=on_blue bold white
+-
+# sys-refs
+regexp=^Starting page table scans:
+colours=on_red bold yellow
+-
+# sys-refs
+regexp=^Sleeping for ([0-9.]+) seconds
+colours=bold cyan,bold white
+
