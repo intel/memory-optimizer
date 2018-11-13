@@ -72,7 +72,7 @@ void Option::dump()
 MigrateWhat Option::parse_migrate_name(std::string name)
 {
   MigrateWhat ret_val;
- 
+
   if (isdigit(name[0])) {
     int m = atoi(name.c_str());
     if (m < MIGRATE_END)

@@ -70,7 +70,7 @@ int Process::split_ranges(unsigned long max_bytes)
 int ProcessCollection::collect()
 {
   int err;
- 
+
   proccess_hash.clear();
 
   err = pids.collect();
@@ -95,7 +95,6 @@ int ProcessCollection::collect()
   return 0;
 }
 
-
 int ProcessCollection::collect(PolicySet& policies)
 {
   int err;
@@ -113,7 +112,7 @@ int ProcessCollection::collect(PolicySet& policies)
     if (err)
       continue;
 
-    for (Policy &policy: policies) {        
+    for (Policy &policy: policies) {
       if (!filter_by_policy(p, policy))
         continue;
 

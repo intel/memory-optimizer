@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+
 typedef enum {
   MIGRATE_NONE,
   MIGRATE_HOT,

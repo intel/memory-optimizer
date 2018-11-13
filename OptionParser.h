@@ -10,7 +10,7 @@ class OptionParser
   public:
     OptionParser();
     ~OptionParser();
-    
+
     int parse(std::string &filename, Option &option);
 
   private:
