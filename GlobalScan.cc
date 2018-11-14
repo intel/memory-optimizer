@@ -68,9 +68,9 @@ int GlobalScan::collect()
 
 void GlobalScan::create_threads()
 {
-  worker_threads.reserve(NR_THREADS);
+  worker_threads.reserve(option.max_threads);
 
-  for (int i = 0; i < NR_THREADS; ++i)
+  for (int i = 0; i < option.max_threads; ++i)
     worker_threads.push_back(std::thread(&GlobalScan::consumer_loop, this));
 }
 

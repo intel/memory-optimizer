@@ -26,6 +26,7 @@ Option::Option()
   cold_max_refs = -1;
   pid = -1;
 
+  max_threads = 1;
   split_rss_size = 0; // no split task address space
 }
 
@@ -52,6 +53,7 @@ void Option::dump()
   printf("dram_percent = %d\n", dram_percent);
   printf("hot_min_refs = %d\n", hot_min_refs);
   printf("cold_max_refs = %d\n", cold_max_refs);
+  printf("max_threads = %d\n", max_threads);
   printf("split_rss_size = %lu\n", split_rss_size);
   printf("bandwidth_mbps = %lu\n", bandwidth_mbps);
   printf("migrate_what = %d\n", migrate_what);

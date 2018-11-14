@@ -86,6 +86,7 @@ public:
   int hot_min_refs;
   int cold_max_refs;
 
+  int max_threads;
   unsigned long split_rss_size;
 
   unsigned long bandwidth_mbps;

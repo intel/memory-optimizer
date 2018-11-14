@@ -44,7 +44,6 @@ class GlobalScan
     void update_dram_free_anon_bytes();
 
   private:
-    static const int NR_THREADS = 64;
     static const int MAX_WALKS = 20;
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;
