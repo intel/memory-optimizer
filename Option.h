@@ -29,12 +29,14 @@ struct Policy
     pid = -1;
     migrate_what = MIGRATE_NONE;
     place_what = PLACEMENT_NONE;
+    dump_distribution = false;
   }
 
   pid_t pid;
   std::string name;
   MigrateWhat migrate_what;
   PlaceWhat place_what;
+  bool dump_distribution;
 };
 
 typedef std::vector<Policy> PolicySet;
@@ -66,7 +68,7 @@ struct Option
   }
 
   template<typename Tmap, typename Tval>
-  static int parse_name_map(Tmap& map, std::string name, Tval& val, Tval max_val)
+  static int parse_name_map(Tmap& map, std::string name, Tval& val, int max_val)
   {
     if (isdigit(name[0])) {
       int m = atoi(name.c_str());
@@ -92,6 +94,7 @@ public:
   static const int DRAM_NUMA_NODE = 0;
   static const int PMEM_NUMA_NODE = 1;
 
+  static std::unordered_map<std::string, bool> bool_name_map;
   static std::unordered_map<std::string, MigrateWhat> migrate_name_map;
   static std::unordered_map<std::string, PlaceWhat> placement_name_map;
 

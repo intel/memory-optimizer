@@ -105,6 +105,12 @@ void OptionParser::parse_one_policy(YAML::Node &&policy_node)
         Option::parse_name_map(placement_name_map, str_val, new_policy.place_what, PLACEMENT_END);
         continue;
       }
+
+      if (get_value(iter, "dump_distribution", str_val)) {
+        Option::parse_name_map(bool_name_map, str_val, new_policy.dump_distribution, 2);
+        continue;
+      }
+
     }
 
     add_policy(new_policy);

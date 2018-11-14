@@ -2,6 +2,13 @@
 
 #include <iostream>
 
+std::unordered_map<std::string, bool> Option::bool_name_map = {
+  {"true",  true},
+  {"yes",   true},
+  {"false", false},
+  {"no",    false},
+};
+
 std::unordered_map<std::string, MigrateWhat> Option::migrate_name_map = {
   {"none", MIGRATE_NONE},
   {"hot",  MIGRATE_HOT},
@@ -69,6 +76,7 @@ void Option::dump()
       printf("name: %s\n", policies[i].name.c_str());
       printf("migration: %d\n", policies[i].migrate_what);
       printf("placement: %d\n", policies[i].place_what);
+      printf("dump_distribution: %d\n", policies[i].dump_distribution);
       printf("\n");
   }
 
