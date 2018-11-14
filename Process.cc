@@ -132,7 +132,7 @@ int ProcessCollection::collect(PolicySet& policies)
   return 0;
 }
 
-int ProcessCollection::filter_by_policy(std::shared_ptr<Process> &process,
+int ProcessCollection::filter_by_policy(std::shared_ptr<Process> process,
                                         Policy &policy)
 {
   if (policy.pid >= 0) {
