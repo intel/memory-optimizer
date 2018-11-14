@@ -28,6 +28,8 @@ Option::Option()
 
   max_threads = 1;
   split_rss_size = 0; // no split task address space
+
+  dump_options = false;
 }
 
 int Option::set_dram_percent(int dp)
@@ -51,6 +53,7 @@ void Option::dump()
   printf("nr_walks = %d\n", nr_walks);
   printf("nr_loops = %d\n", nr_loops);
   printf("dram_percent = %d\n", dram_percent);
+  printf("dump_options = %d\n", dump_options);
   printf("hot_min_refs = %d\n", hot_min_refs);
   printf("cold_max_refs = %d\n", cold_max_refs);
   printf("max_threads = %d\n", max_threads);

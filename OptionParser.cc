@@ -27,6 +27,9 @@ int OptionParser::parse_file(std::string filename)
 
     ret_val = parse_policies(config["policies"]);
 
+    if (dump_options)
+      dump();
+
   } catch (...) {
     ret_val = -1;
   }
@@ -53,6 +56,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("split_rss_size",  split_rss_size);
       OP_GET_VALUE("bandwidth_mbps",  bandwidth_mbps);
       OP_GET_VALUE("dram_percent",    dram_percent);
+      OP_GET_VALUE("dump_options",    dump_options);
       OP_GET_VALUE("output",          output_file);
 #undef OP_GET_VALUE
     }
