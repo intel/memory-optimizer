@@ -65,6 +65,7 @@ class Migration : public ProcIdlePages
     Formatter fmt;
 
     MigrateWhat migrate_what;
+    bool dump_distribution;
 };
 
 #endif

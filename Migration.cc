@@ -32,6 +32,7 @@ Migration::Migration(pid_t n)
 
   //inherit from global settings
   migrate_what = option.migrate_what;
+  dump_distribution = false;
 }
 
 
@@ -170,6 +171,9 @@ int Migration::migrate()
       goto out;
     err = migrate(PMD_ACCESSED);
   }
+
+  if (dump_distribution)
+    dump_task_nodes();
 
 out:
   if (!fmt.empty())
@@ -354,6 +358,7 @@ int Migration::dump_task_nodes()
 void Migration::set_policy(Policy &policy)
 {
     migrate_what = policy.migrate_what;
+    dump_distribution = policy.dump_distribution;
 
     //add more here
 }
