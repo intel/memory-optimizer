@@ -254,7 +254,7 @@ void Migration::show_numa_stats()
                                 proc_vmstat.vmstat("nr_isolated_anon");
 
   total_anon_kb *= PAGE_SIZE >> 10;
-  printf("\nAfter migration:\n");
+  printf("\nAnonymous page distribution across NUMA nodes:\n");
   printf("%'15lu       anon total\n", total_anon_kb);
 
   int nid = 0;
@@ -279,7 +279,7 @@ void Migration::fill_addrs(std::vector<void *>& addrs, unsigned long start)
     }
 }
 
-void Migration::dump_node_percent()
+void Migration::dump_node_percent(int slot)
 {
   auto stats = calc_migrate_stats();
   size_t nr_node0 = (size_t)stats[0];
@@ -293,9 +293,11 @@ void Migration::dump_node_percent()
       ++nr_err;
   }
 
-  fmt.print("%3u ", percent(nr_node0, migrate_status.size()));
-  if (nr_err)
-    fmt.print("(-%u) ", percent(nr_err, migrate_status.size()));
+  int pct = percent(nr_node0, migrate_status.size());
+  fmt.print("%2d %3d%% |", slot, pct);
+  for (int i = 0; i < pct; ++i)
+    fmt.print("#");
+  fmt.print("\n");
 }
 
 int Migration::dump_vma_nodes(proc_maps_entry& vma)
@@ -308,8 +310,9 @@ int Migration::dump_vma_nodes(proc_maps_entry& vma)
 
   nr_pages = (vma.end - vma.start) >> PAGE_SHIFT;
 
-  unsigned long total_kb = (vma.end - vma.start) >> 10;
-  fmt.print("VMA size: %'15lu \nN0 percent:", total_kb);
+  unsigned long total_mb = (vma.end - vma.start) >> 20;
+  fmt.print("\nDRAM page distribution across 10 VMA slots: ");
+  fmt.print("(pid=%d vma_mb=%'lu)\n", pid, total_mb);
 
   const int nr_slots = 10;
   unsigned long slot_pages = nr_pages / nr_slots;
@@ -332,7 +335,7 @@ int Migration::dump_vma_nodes(proc_maps_entry& vma)
       return err;
     }
 
-    dump_node_percent();
+    dump_node_percent(i);
   }
 
   return err;

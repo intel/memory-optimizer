@@ -19,7 +19,7 @@ regexp=.* anon .*
 colours=yellow
 -
 # sys-refs
-regexp=^(Scan result:|After migration:).*
+regexp=^(Scan result:|DRAM page distribution across 10 VMA slots:|Anonymous page distribution across NUMA nodes:)
 colours=on_blue bold white
 -
 # sys-refs
@@ -29,4 +29,7 @@ colours=on_red bold yellow
 # sys-refs
 regexp=^Sleeping for ([0-9.]+) seconds
 colours=bold cyan,bold white
-
+-
+# sys-refs
+regexp=^ *\d+ +\d+% (\|#+)$
+colours=default,on_magenta bold white

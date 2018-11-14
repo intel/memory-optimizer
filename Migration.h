@@ -43,7 +43,7 @@ class Migration : public ProcIdlePages
     int select_top_pages(ProcIdlePageType type);
 
     void fill_addrs(std::vector<void *>& addrs, unsigned long start);
-    void dump_node_percent();
+    void dump_node_percent(int slot);
 
     long __move_pages(pid_t pid, unsigned long nr_pages, void **addrs, int node);
     long do_move_pages(ProcIdlePageType type);
