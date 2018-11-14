@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <iostream>
 
 typedef enum {
   MIGRATE_NONE,
@@ -52,7 +53,6 @@ struct Option
   void dump();
 
   static MigrateWhat parse_migrate_name(std::string name);
-  static PlaceWhat parse_placement_name(std::string name);
 
   template<typename Tmap, typename Tval>
   static int parse_str_from_map(Tmap& map, std::string &name, Tval& val)
@@ -63,6 +63,27 @@ struct Option
       return 0;
     }
     return -1;
+  }
+
+  template<typename Tmap, typename Tval>
+  static int parse_name_map(Tmap& map, std::string name, Tval& val, Tval max_val)
+  {
+    if (isdigit(name[0])) {
+      int m = atoi(name.c_str());
+      if (m >= max_val) {
+        std::cerr << "invalid value: " << name << std::endl;
+        return -1;
+      }
+      val = (Tval) m;
+      return 0;
+    }
+
+    if (parse_str_from_map(map, name, val) < 0) {
+      std::cerr << "invalid value: " << name << std::endl;
+      return -2;
+    }
+
+    return 0;
   }
 
 public:

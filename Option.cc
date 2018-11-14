@@ -77,34 +77,9 @@ void Option::dump()
 
 MigrateWhat Option::parse_migrate_name(std::string name)
 {
-  MigrateWhat ret_val;
+  MigrateWhat ret_val = MIGRATE_NONE;
 
-  if (isdigit(name[0])) {
-    int m = atoi(name.c_str());
-    if (m < MIGRATE_END)
-      return (MigrateWhat)m;
-    std::cerr << "invalid migrate type: " << name << std::endl;
-    return MIGRATE_NONE;
-  }
-
-  if (parse_str_from_map(migrate_name_map,
-                       name, ret_val) < 0) {
-    std::cerr << "invalid migrate type: " << name << std::endl;
-    ret_val = MIGRATE_NONE;
-  }
-
-  return ret_val;
-}
-
-PlaceWhat Option::parse_placement_name(std::string name)
-{
-  PlaceWhat ret_val;
-
-  if (parse_str_from_map(placement_name_map,
-                        name, ret_val) < 0) {
-    std::cerr << "invalid placement type: " << name << std::endl;
-    ret_val = PLACEMENT_NONE;
-  }
+  parse_name_map(migrate_name_map, name, ret_val, MIGRATE_END);
 
   return ret_val;
 }
