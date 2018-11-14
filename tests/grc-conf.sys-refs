@@ -15,7 +15,7 @@ regexp=/c/[a-zA-Z0-9./ -]*
 colours=bright_cyan
 -
 # migrator
-regexp=.* anon .*
+regexp=.*  anon .*
 colours=yellow
 -
 # sys-refs

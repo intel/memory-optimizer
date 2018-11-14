@@ -16,6 +16,17 @@
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
 
+struct MigrateStats
+{
+    unsigned long anon_kb;
+    unsigned long to_move_kb;
+    unsigned long skip_kb;
+    unsigned long move_kb;
+
+    void init();
+    void show(Formatter& fmt, const char type[]);
+};
+
 class Migration : public ProcIdlePages
 {
   public:
@@ -45,7 +56,8 @@ class Migration : public ProcIdlePages
     void fill_addrs(std::vector<void *>& addrs, unsigned long start);
     void dump_node_percent(int slot);
 
-    long __move_pages(pid_t pid, unsigned long nr_pages, void **addrs, int node);
+    long __move_pages(ProcIdlePageType type, pid_t pid, unsigned long nr_pages, void **addrs, int node);
+    long __locate_pages(ProcIdlePageType type, pid_t pid, unsigned long size, void **addrs, int *status, int node);
     long do_move_pages(ProcIdlePageType type);
 
     // status => count
@@ -61,6 +73,8 @@ class Migration : public ProcIdlePages
 
     // Get the status after migration
     std::vector<int> migrate_status;
+
+    MigrateStats migrate_stats;
 
     Formatter fmt;
 
