@@ -49,6 +49,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("interval",        interval);
       OP_GET_VALUE("sleep",           sleep_secs);
       OP_GET_VALUE("loop",            nr_loops);
+      OP_GET_VALUE("split_rss_size",  split_rss_size);
       OP_GET_VALUE("bandwidth_mbps",  bandwidth_mbps);
       OP_GET_VALUE("dram_percent",    dram_percent);
       OP_GET_VALUE("output",          output_file);

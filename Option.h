@@ -86,6 +86,8 @@ public:
   int hot_min_refs;
   int cold_max_refs;
 
+  unsigned long split_rss_size;
+
   unsigned long bandwidth_mbps;
   MigrateWhat migrate_what;
 

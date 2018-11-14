@@ -17,7 +17,7 @@ class Process
 {
   public:
     int load(pid_t n);
-    int split_ranges(unsigned long max_bytes);
+    int split_ranges();
     IdleRanges& get_ranges() { return idle_ranges; }
 
   private:
@@ -41,7 +41,6 @@ class ProcessCollection
     void dump();
 
   private:
-    static const unsigned long SPLIT_RANGE_SIZE = (1<<30);
     int filter_by_policy(std::shared_ptr<Process> process,
                          Policy &policy);
 

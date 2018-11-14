@@ -4,6 +4,8 @@
 #include "ProcStatus.h"
 #include "Migration.h"
 
+extern Option option;
+
 int Process::load(pid_t n)
 {
   pid = n;
@@ -21,12 +23,16 @@ void Process::add_range(unsigned long start, unsigned long end)
   printdd("pid=%d add_range %lx-%lx=%lx\n", pid, start, end, end - start);
 }
 
-int Process::split_ranges(unsigned long max_bytes)
+int Process::split_ranges()
 {
   unsigned long rss_anon = proc_status.get_number("RssAnon") << 10;
+  unsigned long max_bytes = option.split_rss_size;
 
   if (rss_anon <= 0)
     return 0;
+
+  if (max_bytes == 0)
+    max_bytes = TASK_SIZE_MAX;
 
   if (rss_anon < max_bytes) {
     add_range(0, TASK_SIZE_MAX);
@@ -85,7 +91,7 @@ int ProcessCollection::collect()
     if (err)
       continue;
 
-    err = p->split_ranges(SPLIT_RANGE_SIZE);
+    err = p->split_ranges();
     if (err)
       continue;
 
@@ -116,7 +122,7 @@ int ProcessCollection::collect(PolicySet& policies)
       if (!filter_by_policy(p, policy))
         continue;
 
-      err = p->split_ranges(SPLIT_RANGE_SIZE);
+      err = p->split_ranges();
       if (err)
         continue;
 

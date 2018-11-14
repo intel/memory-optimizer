@@ -25,6 +25,8 @@ Option::Option()
   hot_min_refs = -1;
   cold_max_refs = -1;
   pid = -1;
+
+  split_rss_size = 0; // no split task address space
 }
 
 int Option::set_dram_percent(int dp)
@@ -50,6 +52,7 @@ void Option::dump()
   printf("dram_percent = %d\n", dram_percent);
   printf("hot_min_refs = %d\n", hot_min_refs);
   printf("cold_max_refs = %d\n", cold_max_refs);
+  printf("split_rss_size = %lu\n", split_rss_size);
   printf("bandwidth_mbps = %lu\n", bandwidth_mbps);
   printf("migrate_what = %d\n", migrate_what);
   printf("output_file = %s\n", output_file.c_str());
