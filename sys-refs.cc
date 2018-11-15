@@ -22,6 +22,7 @@
 using namespace std;
 
 OptionParser option;
+GlobalScan gscan;
 
 int debug_level()
 {
@@ -126,8 +127,6 @@ int main(int argc, char *argv[])
 
   parse_cmdline(argc, argv);
   register_signal_handler();
-
-  GlobalScan gscan;
 
   gscan.main_loop();
 
