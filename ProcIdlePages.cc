@@ -491,3 +491,8 @@ void ProcIdlePages::set_va_range(unsigned long start, unsigned long end)
   va_start = start;
   va_end = end;
 }
+
+void ProcIdlePages::set_policy(Policy &pol)
+{
+  policy = pol;
+}

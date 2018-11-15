@@ -417,8 +417,3 @@ int Migration::dump_task_nodes()
   return err;
 }
 
-
-void Migration::set_policy(Policy &pol)
-{
-  policy = pol;
-}

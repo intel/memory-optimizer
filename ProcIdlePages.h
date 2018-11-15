@@ -79,6 +79,7 @@ class ProcIdlePages
     pid_t get_pid() { return pid; }
 
     void set_va_range(unsigned long start, unsigned long end);
+    void set_policy(Policy &pol);
 
     int walk_multi(int nr, float interval);
     void prepare_walks(int max_walks);
@@ -117,6 +118,7 @@ class ProcIdlePages
 
   protected:
     pid_t pid;
+    Policy policy;
 
     ProcMaps proc_maps;
     unsigned long va_start;
