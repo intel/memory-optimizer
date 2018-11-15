@@ -60,7 +60,7 @@ void Option::dump()
   printf("nr_walks = %d\n", nr_walks);
   printf("nr_loops = %d\n", nr_loops);
   printf("dram_percent = %d\n", dram_percent);
-  printf("dump_options = %d\n", dump_options);
+  printf("dump_options = %d\n", (int)dump_options);
   printf("hot_min_refs = %d\n", hot_min_refs);
   printf("cold_max_refs = %d\n", cold_max_refs);
   printf("max_threads = %d\n", max_threads);

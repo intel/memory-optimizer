@@ -56,9 +56,15 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("split_rss_size",  split_rss_size);
       OP_GET_VALUE("bandwidth_mbps",  bandwidth_mbps);
       OP_GET_VALUE("dram_percent",    dram_percent);
-      OP_GET_VALUE("dump_options",    dump_options);
       OP_GET_VALUE("output",          output_file);
 #undef OP_GET_VALUE
+
+      std::string str_val;
+      if (get_value(iter, "dump_options", str_val)) {
+        Option::parse_name_map(bool_name_map, str_val, dump_options, 1);
+        continue;
+      }
+
     }
 
     return 0;
