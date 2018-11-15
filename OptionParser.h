@@ -1,5 +1,5 @@
-#ifndef __OPTIONPARSER_H__
-#define __OPTIONPARSER_H__
+#ifndef __OPTION_PARSER_H__
+#define __OPTION_PARSER_H__
 
 #include <string>
 #include <yaml-cpp/yaml.h>
@@ -27,17 +27,16 @@ class OptionParser: public Option
     int get_value(const YAML::const_iterator  &iter,
                   const char* key_name, Tval &value)
     {
-        std::string key = iter->first.as<std::string>();
-        if (!key.compare(key_name))
-        {
-            value = iter->second.as<Tval>();
-            return 1;
-        }
+      std::string key = iter->first.as<std::string>();
+      if (!key.compare(key_name))
+      {
+        value = iter->second.as<Tval>();
+        return 1;
+      }
 
-        return 0;
+      return 0;
     }
 };
 
-
-
 #endif
+// vim:set ts=2 sw=2 et:
