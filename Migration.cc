@@ -174,6 +174,11 @@ int Migration::migrate()
 {
   int err = 0;
 
+  // Assume PLACEMENT_DRAM processes will mlock themselves to LRU_UNEVICTABLE.
+  // Just need to skip them in user space migration.
+  if (policy.placement == PLACEMENT_DRAM)
+    return 0;
+
   fmt.clear();
   fmt.reserve(1<<10);
 

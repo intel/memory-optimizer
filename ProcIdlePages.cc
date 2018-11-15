@@ -261,6 +261,13 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 
 int ProcIdlePages::walk()
 {
+  // Assume PLACEMENT_DRAM processes will mlock themselves to LRU_UNEVICTABLE.
+  // Just need to skip them in user space migration.
+  if (policy.placement == PLACEMENT_DRAM) {
+    io_error = 1;
+    return 0;
+  }
+
     std::vector<proc_maps_entry> address_map = proc_maps.load(pid);
     int err;
 

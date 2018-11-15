@@ -124,7 +124,9 @@ class ProcIdlePages
     unsigned long va_start;
     unsigned long va_end;
 
-    int io_error; // if set, indicates exited process
+    // if negative, indicates exited process;
+    // if positive, indicates skipped process
+    int io_error;
 
   private:
     static const int READ_BUF_SIZE = PAGE_SIZE * 32;
