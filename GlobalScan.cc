@@ -14,7 +14,7 @@ const float GlobalScan::MIN_INTERVAL = 0.001;
 const float GlobalScan::MAX_INTERVAL = 10;
 const float GlobalScan::INITIAL_INTERVAL = 0.1;
 
-GlobalScan::GlobalScan()
+GlobalScan::GlobalScan():conf_reload_flag(0)
 {
 }
 
@@ -270,4 +270,13 @@ void GlobalScan::update_interval(bool finished)
            (double) interval, nr_walks);
     interval *= 1.2;
   }
+}
+
+void GlobalScan::request_reload_conf()
+{
+}
+
+
+void GlobalScan::reload_conf()
+{
 }

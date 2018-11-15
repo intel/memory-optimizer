@@ -2,6 +2,7 @@
 #define AEP_GLOBAL_SCAN_H
 
 #include <vector>
+#include <atomic>
 
 #include "Queue.h"
 #include "Process.h"
@@ -36,12 +37,14 @@ class GlobalScan
     void migrate();
     void count_refs();
     void update_interval(bool finished);
+    void request_reload_conf();
 
   private:
     void consumer_loop();
     void walk_once();
     bool should_stop_walk();
     void update_dram_free_anon_bytes();
+    void reload_conf();
 
   private:
     static const int MAX_WALKS = 20;
@@ -62,6 +65,8 @@ class GlobalScan
     std::vector<std::thread> worker_threads;
     Queue<Job> work_queue;
     Queue<Job> done_queue;
+
+    std::atomic_int conf_reload_flag;
 };
 
 #endif
