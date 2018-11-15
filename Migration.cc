@@ -49,9 +49,9 @@ Migration::Migration(pid_t n)
   migrate_target_node[PMD_IDLE]      = Option::PMEM_NUMA_NODE;
   migrate_target_node[PMD_ACCESSED]  = Option::DRAM_NUMA_NODE;
 
-  //inherit from global settings
-  migrate_what = option.migrate_what;
-  dump_distribution = false;
+  // inherit from global settings
+  policy.migrate_what = option.migrate_what;
+  policy.dump_distribution = false;
 }
 
 
@@ -177,7 +177,7 @@ int Migration::migrate()
   fmt.clear();
   fmt.reserve(1<<10);
 
-  if (migrate_what & MIGRATE_COLD) {
+  if (policy.migrate_what & MIGRATE_COLD) {
     migrate_stats.init();
     err = migrate(PTE_IDLE);
     if (err)
@@ -188,7 +188,7 @@ int Migration::migrate()
     migrate_stats.show(fmt, MIGRATE_COLD);
   }
 
-  if (migrate_what & MIGRATE_HOT) {
+  if (policy.migrate_what & MIGRATE_HOT) {
     migrate_stats.init();
     err = migrate(PTE_ACCESSED);
     if (err)
@@ -197,7 +197,7 @@ int Migration::migrate()
     migrate_stats.show(fmt, MIGRATE_HOT);
   }
 
-  if (dump_distribution)
+  if (policy.dump_distribution)
     dump_task_nodes();
 
 out:
@@ -418,10 +418,7 @@ int Migration::dump_task_nodes()
 }
 
 
-void Migration::set_policy(Policy &policy)
+void Migration::set_policy(Policy &pol)
 {
-    migrate_what = policy.migrate_what;
-    dump_distribution = policy.dump_distribution;
-
-    //add more here
+  policy = pol;
 }

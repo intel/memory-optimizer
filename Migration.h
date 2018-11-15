@@ -38,7 +38,7 @@ class Migration : public ProcIdlePages
     int migrate();
     int migrate(ProcIdlePageType type);
 
-    void set_policy(Policy &policy);
+    void set_policy(Policy &pol);
 
     int dump_task_nodes();
     int dump_vma_nodes(proc_maps_entry& vma);
@@ -78,8 +78,7 @@ class Migration : public ProcIdlePages
 
     Formatter fmt;
 
-    MigrateWhat migrate_what;
-    bool dump_distribution;
+    Policy policy;
 };
 
 #endif
