@@ -8,6 +8,7 @@
 #include <memory>
 #include <iostream>
 #include <string.h>
+#include <signal.h>
 
 #include "lib/debug.h"
 #include "Option.h"
@@ -107,11 +108,24 @@ static void parse_cmdline(int argc, char *argv[])
 
 }
 
+void signal_handler(int sign_num)
+{
+  printf("got singal val = %d\n", sign_num);
+}
+
+int register_signal_handler()
+{
+  if (SIG_ERR != signal(SIGUSR1, signal_handler))
+      return 0;
+  return -1;
+}
+
 int main(int argc, char *argv[])
 {
   setlocale(LC_NUMERIC, "");
 
   parse_cmdline(argc, argv);
+  register_signal_handler();
 
   GlobalScan gscan;
 
