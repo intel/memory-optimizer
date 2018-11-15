@@ -28,9 +28,10 @@ void MigrateStats::init()
     move_kb = 0;
 }
 
-void MigrateStats::show(Formatter& fmt, const char type[])
+void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
 {
-  const char *node = type[0] == 'h' ? "DRAM" : "PMEM";
+  const char *type = (mwhat == MIGRATE_HOT ? "hot" : "cold");
+  const char *node = (mwhat == MIGRATE_HOT ? "DRAM" : "PMEM");
 
   fmt.print("\n");
   fmt.print("find %4s pages: %'15lu %3d%% of anon pages\n", type, to_move_kb, percent(to_move_kb, anon_kb));
@@ -184,7 +185,7 @@ int Migration::migrate()
     err = migrate(PMD_IDLE);
     if (err)
       goto out;
-    migrate_stats.show(fmt, "cold");
+    migrate_stats.show(fmt, MIGRATE_COLD);
   }
 
   if (migrate_what & MIGRATE_HOT) {
@@ -193,7 +194,7 @@ int Migration::migrate()
     if (err)
       goto out;
     err = migrate(PMD_ACCESSED);
-    migrate_stats.show(fmt, "hot");
+    migrate_stats.show(fmt, MIGRATE_HOT);
   }
 
   if (dump_distribution)

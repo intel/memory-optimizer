@@ -24,7 +24,7 @@ struct MigrateStats
     unsigned long move_kb;
 
     void init();
-    void show(Formatter& fmt, const char type[]);
+    void show(Formatter& fmt, MigrateWhat mwhat);
 };
 
 class Migration : public ProcIdlePages
