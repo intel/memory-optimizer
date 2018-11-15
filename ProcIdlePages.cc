@@ -176,87 +176,87 @@ void ProcIdlePages::prepare_walks(int max_walks)
 
 int ProcIdlePages::walk_vma(proc_maps_entry& vma)
 {
-    unsigned long va = vma.start;
-    unsigned long end = vma.end;
-    unsigned long size;
-    int rc = 0;
+  unsigned long va = vma.start;
+  unsigned long end = vma.end;
+  unsigned long size;
+  int rc = 0;
 
-    if (end <= va_start)
-      return 0;
+  if (end <= va_start)
+    return 0;
 
-    // skip [vsyscall] etc. special kernel sections
-    if (va >= va_end)
-      return 1; // stop walking more vma
+  // skip [vsyscall] etc. special kernel sections
+  if (va >= va_end)
+    return 1; // stop walking more vma
 
-    if (!proc_maps.is_anonymous(vma))
-      return 0;
+  if (!proc_maps.is_anonymous(vma))
+    return 0;
 
-    if (debug_level() >= 2)
-      proc_maps.show(vma);
+  if (debug_level() >= 2)
+    proc_maps.show(vma);
 
-    if (va < va_start)
-      va = va_start;
-    if (end > va_end)
-      end = va_end;
+  if (va < va_start)
+    va = va_start;
+  if (end > va_end)
+    end = va_end;
 
-    if (lseek(idle_fd, va_to_offset(va), SEEK_SET) == (off_t) -1)
-    {
-      printf(" error: seek for addr %lx failed, skip.\n", va);
-      perror("lseek error");
+  if (lseek(idle_fd, va_to_offset(va), SEEK_SET) == (off_t) -1)
+  {
+    printf(" error: seek for addr %lx failed, skip.\n", va);
+    perror("lseek error");
+    io_error = -1;
+    return -1;
+  }
+
+  for (; va < end;)
+  {
+    off_t pos = lseek(idle_fd, 0, SEEK_CUR);
+    if (pos == (off_t) -1) {
+      perror("SEEK_CUR error");
       io_error = -1;
       return -1;
     }
-
-    for (; va < end;)
-    {
-      off_t pos = lseek(idle_fd, 0, SEEK_CUR);
-      if (pos == (off_t) -1) {
-        perror("SEEK_CUR error");
-        io_error = -1;
-        return -1;
-      }
-      if ((unsigned long)pos != va) {
-        fprintf(stderr, "error pos != va: %lu %lu\n", pos, va);
-        return -2;
-      }
-
-      size = (end - va + (7 << PAGE_SHIFT)) >> (3 + PAGE_SHIFT);
-      if (size > read_buf.size())
-        size = read_buf.size();
-
-      rc = read(idle_fd, read_buf.data(), size);
-      if (rc < 0) {
-        if (errno == ENXIO)
-          return 0;
-        if (errno == ERANGE) {
-          va += size << (3 + PAGE_SHIFT);
-          pos = lseek(idle_fd, va_to_offset(va), SEEK_SET);
-          if (pos == (off_t) -1) {
-            perror("skip ERANGE");
-            io_error = -1;
-            return -1;
-          }
-          continue;
-        }
-        perror("read error");
-        proc_maps.show(vma);
-        io_error = rc;
-        return rc;
-      }
-
-      if (!rc)
-      {
-        if (end - va >= PMD_SIZE) {
-          printf("read 0 size: pid=%d bytes=%'lu\n", pid, end - va);
-          proc_maps.show(vma);
-        }
-        return 0;
-      }
-
-      parse_idlepages(vma, va, end, rc);
+    if ((unsigned long)pos != va) {
+      fprintf(stderr, "error pos != va: %lu %lu\n", pos, va);
+      return -2;
     }
 
-    return 0;
+    size = (end - va + (7 << PAGE_SHIFT)) >> (3 + PAGE_SHIFT);
+    if (size > read_buf.size())
+      size = read_buf.size();
+
+    rc = read(idle_fd, read_buf.data(), size);
+    if (rc < 0) {
+      if (errno == ENXIO)
+        return 0;
+      if (errno == ERANGE) {
+        va += size << (3 + PAGE_SHIFT);
+        pos = lseek(idle_fd, va_to_offset(va), SEEK_SET);
+        if (pos == (off_t) -1) {
+          perror("skip ERANGE");
+          io_error = -1;
+          return -1;
+        }
+        continue;
+      }
+      perror("read error");
+      proc_maps.show(vma);
+      io_error = rc;
+      return rc;
+    }
+
+    if (!rc)
+    {
+      if (end - va >= PMD_SIZE) {
+        printf("read 0 size: pid=%d bytes=%'lu\n", pid, end - va);
+        proc_maps.show(vma);
+      }
+      return 0;
+    }
+
+    parse_idlepages(vma, va, end, rc);
+  }
+
+  return 0;
 }
 
 int ProcIdlePages::walk()
@@ -268,34 +268,34 @@ int ProcIdlePages::walk()
     return 0;
   }
 
-    std::vector<proc_maps_entry> address_map = proc_maps.load(pid);
-    int err;
+  std::vector<proc_maps_entry> address_map = proc_maps.load(pid);
+  int err;
 
-    if (address_map.empty()) {
-      io_error = -ESRCH;
-      return -ESRCH;
-    }
+  if (address_map.empty()) {
+    io_error = -ESRCH;
+    return -ESRCH;
+  }
 
-    idle_fd = open_file();
-    if (idle_fd < 0)
-      return idle_fd;
+  idle_fd = open_file();
+  if (idle_fd < 0)
+    return idle_fd;
 
-    ++nr_walks;
-    read_buf.resize(READ_BUF_SIZE);
+  ++nr_walks;
+  read_buf.resize(READ_BUF_SIZE);
 
-    // must do rewind() before a walk() start.
-    for (auto& prc: pagetype_refs)
-      prc.page_refs.rewind();
+  // must do rewind() before a walk() start.
+  for (auto& prc: pagetype_refs)
+    prc.page_refs.rewind();
 
-    for (auto &vma: address_map) {
-      err = walk_vma(vma);
-      if (err)
-        break;
-    }
+  for (auto &vma: address_map) {
+    err = walk_vma(vma);
+    if (err)
+      break;
+  }
 
-    close(idle_fd);
+  close(idle_fd);
 
-    return err;
+  return err;
 }
 
 std::vector<unsigned long> ProcIdlePages::sys_refs_count[MAX_ACCESSED + 1];
@@ -309,25 +309,25 @@ void ProcIdlePages::reset_sys_refs_count(int nr_walks)
 
 void ProcIdlePages::count_refs_one(ProcIdleRefs& prc)
 {
-    int rc;
-    unsigned long addr;
-    uint8_t ref_count;
-    std::vector<unsigned long>& refs_count = prc.refs_count;
+  int rc;
+  unsigned long addr;
+  uint8_t ref_count;
+  std::vector<unsigned long>& refs_count = prc.refs_count;
 
-    refs_count.clear();
-    refs_count.resize(nr_walks + 1, 0);
+  refs_count.clear();
+  refs_count.resize(nr_walks + 1, 0);
 
-    // prc.page_refs.smooth_payloads();
+  // prc.page_refs.smooth_payloads();
 
-    // In the rare case of changed VMAs, their start/end boundary may not align
-    // with the underlying huge page size. If the same huge page is covered by
-    // 2 VMAs, there will be duplicate accounting for the same page. The easy
-    // workaround is to enforce min() check here.
-    rc = prc.page_refs.get_first(addr, ref_count);
-    while (!rc) {
-      refs_count[std::min(ref_count, (uint8_t)nr_walks)] += 1;
-      rc = prc.page_refs.get_next(addr, ref_count);
-    }
+  // In the rare case of changed VMAs, their start/end boundary may not align
+  // with the underlying huge page size. If the same huge page is covered by
+  // 2 VMAs, there will be duplicate accounting for the same page. The easy
+  // workaround is to enforce min() check here.
+  rc = prc.page_refs.get_first(addr, ref_count);
+  while (!rc) {
+    refs_count[std::min(ref_count, (uint8_t)nr_walks)] += 1;
+    rc = prc.page_refs.get_next(addr, ref_count);
+  }
 }
 
 void ProcIdlePages::count_refs()
@@ -407,18 +407,18 @@ int ProcIdlePages::save_counts(std::string filename)
 
 int ProcIdlePages::open_file()
 {
-    char filepath[PATH_MAX];
+  char filepath[PATH_MAX];
 
-    memset(filepath, 0, sizeof(filepath));
-    snprintf(filepath, sizeof(filepath), "/proc/%d/idle_bitmap", pid);
+  memset(filepath, 0, sizeof(filepath));
+  snprintf(filepath, sizeof(filepath), "/proc/%d/idle_bitmap", pid);
 
-    idle_fd = open(filepath, O_RDWR);
-    if (idle_fd < 0) {
-      io_error = idle_fd;
-      perror(filepath);
-    }
+  idle_fd = open(filepath, O_RDWR);
+  if (idle_fd < 0) {
+    io_error = idle_fd;
+    perror(filepath);
+  }
 
-    return idle_fd;
+  return idle_fd;
 }
 
 void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
