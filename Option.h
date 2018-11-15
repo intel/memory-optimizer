@@ -20,7 +20,7 @@ typedef enum {
   PLACEMENT_DRAM,
   PLACEMENT_AEP,
   PLACEMENT_END,
-} PlaceWhat;
+} Placement;
 
 
 struct Policy
@@ -28,14 +28,14 @@ struct Policy
   Policy() {
     pid = -1;
     migrate_what = MIGRATE_NONE;
-    place_what = PLACEMENT_NONE;
+    placement = PLACEMENT_NONE;
     dump_distribution = false;
   }
 
   pid_t pid;
   std::string name;
   MigrateWhat migrate_what;
-  PlaceWhat place_what;
+  Placement placement;
   bool dump_distribution;
 };
 
@@ -96,7 +96,7 @@ public:
 
   static std::unordered_map<std::string, bool> bool_name_map;
   static std::unordered_map<std::string, MigrateWhat> migrate_name_map;
-  static std::unordered_map<std::string, PlaceWhat> placement_name_map;
+  static std::unordered_map<std::string, Placement> placement_name_map;
 
   pid_t pid;
 

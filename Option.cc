@@ -16,7 +16,7 @@ std::unordered_map<std::string, MigrateWhat> Option::migrate_name_map = {
   {"both", MIGRATE_BOTH},
 };
 
-std::unordered_map<std::string, PlaceWhat> Option::placement_name_map = {
+std::unordered_map<std::string, Placement> Option::placement_name_map = {
   {"none", PLACEMENT_NONE},
   {"dram", PLACEMENT_DRAM},
   {"aep", PLACEMENT_AEP},
@@ -75,7 +75,7 @@ void Option::dump()
       printf("pid: %d\n", policies[i].pid);
       printf("name: %s\n", policies[i].name.c_str());
       printf("migration: %d\n", policies[i].migrate_what);
-      printf("placement: %d\n", policies[i].place_what);
+      printf("placement: %d\n", policies[i].placement);
       printf("dump_distribution: %d\n", policies[i].dump_distribution);
       printf("\n");
   }

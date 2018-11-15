@@ -108,7 +108,7 @@ void OptionParser::parse_one_policy(YAML::Node &&policy_node)
       }
 
       if (get_value(iter, "placement", str_val)) {
-        Option::parse_name_map(placement_name_map, str_val, new_policy.place_what, PLACEMENT_END);
+        Option::parse_name_map(placement_name_map, str_val, new_policy.placement, PLACEMENT_END);
         continue;
       }
 
