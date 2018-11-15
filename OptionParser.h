@@ -17,6 +17,7 @@ class OptionParser: public Option
     ~OptionParser();
 
     int parse_file(std::string filename);
+    int reparse();
 
   private:
     int parse_option(YAML::Node &&option_node);

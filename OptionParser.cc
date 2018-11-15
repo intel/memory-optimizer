@@ -13,9 +13,13 @@ OptionParser::~OptionParser()
 
 int OptionParser::parse_file(std::string filename)
 {
-  int ret_val;
-
   config_file = filename;
+  return reparse();
+}
+
+int OptionParser::reparse()
+{
+  int ret_val;
 
   try {
 

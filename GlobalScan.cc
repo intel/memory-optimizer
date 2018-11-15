@@ -7,8 +7,9 @@
 
 #include "lib/debug.h"
 #include "GlobalScan.h"
+#include "OptionParser.h"
 
-extern Option option;
+extern OptionParser option;
 
 const float GlobalScan::MIN_INTERVAL = 0.001;
 const float GlobalScan::MAX_INTERVAL = 10;
@@ -274,9 +275,14 @@ void GlobalScan::update_interval(bool finished)
 
 void GlobalScan::request_reload_conf()
 {
+  conf_reload_flag.store(1, std::memory_order_relaxed);
 }
-
 
 void GlobalScan::reload_conf()
 {
+  int flag = conf_reload_flag.exchange(0, std::memory_order_relaxed);
+  if (flag) {
+    printf("start to reload conf file.\n");
+    option.reparse();
+  }
 }

@@ -111,7 +111,7 @@ static void parse_cmdline(int argc, char *argv[])
 
 void signal_handler(int sign_num)
 {
-  printf("got singal val = %d\n", sign_num);
+  gscan.request_reload_conf();
 }
 
 int register_signal_handler()
