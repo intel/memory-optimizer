@@ -103,7 +103,7 @@ void GlobalScan::walk_multi()
     m->prepare_walks(MAX_WALKS);
 
   printf("\nStarting page table scans:\n");
-  printf("%7s  %8s  %23s  %23s  %15s\n", "nr_scan", "interval", "young", "top", "all");
+  printf("%7s  %8s  %23s  %23s  %15s\n", "nr_scan", "interval", "young", "top hot", "all");
   printf("====================================================================================\n");
 
   for (nr_walks = 0; nr_walks < MAX_WALKS;)
