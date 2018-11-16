@@ -4,6 +4,7 @@
 // interface to /proc/PID/idle_pages
 
 #include <string>
+#include <sys/user.h>
 #include <sys/types.h>
 #include <unordered_map>
 #include "ProcMaps.h"
@@ -14,8 +15,6 @@ static const unsigned long PMD_SIZE = 1UL << 21;
 static const unsigned long PUD_SIZE = 1UL << 30;
 static const unsigned long P4D_SIZE = 1UL << 39;
 static const unsigned long PGDIR_SIZE = 1UL << 39;
-static const unsigned long PAGE_SHIFT = 12;
-static const unsigned long PAGE_SIZE = 1UL << PAGE_SHIFT;
 static const unsigned long TASK_SIZE_MAX = (1UL << 47) - PAGE_SIZE;
 
 enum ProcIdlePageType

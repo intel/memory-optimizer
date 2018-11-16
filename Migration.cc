@@ -306,33 +306,6 @@ std::unordered_map<int, int> Migration::calc_migrate_stats()
   return stats;
 }
 
-void Migration::show_numa_stats()
-{
-  ProcVmstat proc_vmstat;
-
-  proc_vmstat.load_vmstat();
-  proc_vmstat.load_numa_vmstat();
-
-  const auto& numa_vmstat = proc_vmstat.get_numa_vmstat();
-  unsigned long total_anon_kb = proc_vmstat.vmstat("nr_inactive_anon") +
-                                proc_vmstat.vmstat("nr_active_anon") +
-                                proc_vmstat.vmstat("nr_isolated_anon");
-
-  total_anon_kb *= PAGE_SIZE >> 10;
-  printf("\nAnonymous page distribution across NUMA nodes:\n");
-  printf("%'15lu       anon total\n", total_anon_kb);
-
-  int nid = 0;
-  for (auto& map: numa_vmstat) {
-    unsigned long anon_kb = map.at("nr_inactive_anon") +
-                            map.at("nr_active_anon") +
-                            map.at("nr_isolated_anon");
-    anon_kb *= PAGE_SIZE >> 10;
-    printf("%'15lu  %2d%%  anon node %d\n", anon_kb, percent(anon_kb, total_anon_kb), nid);
-    ++nid;
-  }
-}
-
 void Migration::fill_addrs(std::vector<void *>& addrs, unsigned long start)
 {
     void **p = &addrs[0];

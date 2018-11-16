@@ -1,8 +1,10 @@
 #include <numa.h>
 #include <stdio.h>
+#include <sys/user.h>
 
 #include <string>
 #include <vector>
+#include "lib/stats.h"
 #include "ProcVmstat.h"
 
 int ProcVmstat::load_vmstat()
@@ -94,4 +96,29 @@ unsigned long ProcVmstat::anon_capacity(int nid)
   sum += vmstat(nid, "nr_active_anon");
 
   return sum;
+}
+
+void ProcVmstat::show_numa_stats()
+{
+  load_vmstat();
+  load_numa_vmstat();
+
+  const auto& numa_vmstat = get_numa_vmstat();
+  unsigned long total_anon_kb = vmstat("nr_inactive_anon") +
+                                vmstat("nr_active_anon") +
+                                vmstat("nr_isolated_anon");
+
+  total_anon_kb *= PAGE_SIZE >> 10;
+  printf("\nAnonymous page distribution across NUMA nodes:\n");
+  printf("%'15lu       anon total\n", total_anon_kb);
+
+  int nid = 0;
+  for (auto& map: numa_vmstat) {
+    unsigned long anon_kb = map.at("nr_inactive_anon") +
+                            map.at("nr_active_anon") +
+                            map.at("nr_isolated_anon");
+    anon_kb *= PAGE_SIZE >> 10;
+    printf("%'15lu  %2d%%  anon node %d\n", anon_kb, percent(anon_kb, total_anon_kb), nid);
+    ++nid;
+  }
 }

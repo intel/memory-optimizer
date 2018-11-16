@@ -24,6 +24,8 @@ class ProcVmstat
     unsigned long anon_capacity();
     unsigned long anon_capacity(int nid);
 
+    void show_numa_stats();
+
   private:
     vmstat_map __load_vmstat(const char *path);
 

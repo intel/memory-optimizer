@@ -41,8 +41,6 @@ class Migration : public ProcIdlePages
     int dump_task_nodes();
     int dump_vma_nodes(proc_maps_entry& vma);
 
-    static void show_numa_stats();
-
  private:
     // functions
 
