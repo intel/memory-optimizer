@@ -31,6 +31,7 @@ void GlobalScan::main_loop()
   create_threads();
   for (; !option.nr_loops || nloop-- > 0;)
   {
+    reload_conf();
     collect();
     walk_multi();
     count_refs();
