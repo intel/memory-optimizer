@@ -296,16 +296,6 @@ long Migration::do_move_pages(ProcIdlePageType type)
   return ret;
 }
 
-std::unordered_map<int, int> Migration::calc_migrate_stats()
-{
-  std::unordered_map<int, int> stats;
-
-  for (int &i : migrate_status)
-    inc_count(stats, i);
-
-  return stats;
-}
-
 void Migration::fill_addrs(std::vector<void *>& addrs, unsigned long start)
 {
     void **p = &addrs[0];
@@ -319,11 +309,11 @@ void Migration::fill_addrs(std::vector<void *>& addrs, unsigned long start)
 
 void Migration::dump_node_percent(int slot)
 {
-  auto stats = calc_migrate_stats();
-  size_t nr_node0 = (size_t)stats[0];
+  auto status_count = locator.get_status_count();
+  size_t nr_node0 = (size_t)status_count[0];
   size_t nr_err = 0;
 
-  for (auto &kv : stats)
+  for (auto &kv : status_count)
   {
     int status = kv.first;
 
@@ -331,7 +321,7 @@ void Migration::dump_node_percent(int slot)
       ++nr_err;
   }
 
-  int pct = percent(nr_node0, migrate_status.size());
+  int pct = percent(nr_node0, locator.get_status().size());
   fmt.print("%2d %3d%% |", slot, pct);
   for (int i = 0; i < pct; ++i)
     fmt.print("#");
@@ -355,6 +345,8 @@ int Migration::dump_vma_nodes(proc_maps_entry& vma)
   const int nr_slots = 10;
   unsigned long slot_pages = nr_pages / nr_slots;
 
+  locator.set_pid(pid);
+
   std::vector<void *> addrs;
   addrs.resize(slot_pages);
   migrate_status.resize(slot_pages);
@@ -363,11 +355,7 @@ int Migration::dump_vma_nodes(proc_maps_entry& vma)
   {
     fill_addrs(addrs, vma.start + i * addrs.size() * PAGE_SIZE);
 
-    err = move_pages(pid,
-                     slot_pages,
-                     &addrs[0],
-                     NULL,
-                     &migrate_status[0], MPOL_MF_MOVE);
+    err = locator.move_pages(addrs);
     if (err) {
       perror("move_pages");
       return err;

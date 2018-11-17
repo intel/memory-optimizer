@@ -13,6 +13,7 @@
 
 #include "Option.h"
 #include "Formatter.h"
+#include "MovePages.h"
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
 
@@ -71,6 +72,9 @@ class Migration : public ProcIdlePages
     std::vector<int> migrate_status;
 
     MigrateStats migrate_stats;
+
+    MovePages locator;
+    MovePages migrator;
 
     Formatter fmt;
 };
