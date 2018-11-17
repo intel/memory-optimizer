@@ -36,6 +36,9 @@ long MovePages::move_pages(std::vector<void *>& addrs)
   if (ret)
     perror("move_pages");
 
+  if (!ret)
+    calc_status_count();
+
   return ret;
 }
 
@@ -45,3 +48,33 @@ void MovePages::calc_status_count()
     inc_count(status_count, i);
 }
 
+void MovePages::add_status_count(MovePagesStatusCount& status_sum)
+{
+  for (auto &kv : status_count)
+    add_count(status_sum, kv.first, kv.second);
+}
+
+void MovePages::show_status_count(Formatter* fmt)
+{
+  show_status_count(fmt, status_count);
+}
+
+void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum)
+{
+  unsigned long total_kb = 0;
+
+  for (auto &kv : status_sum)
+    total_kb += kv.second;
+  total_kb <<= page_shift - 10;
+
+  for (auto &kv : status_sum)
+  {
+    int nid = kv.first;
+    unsigned long kb = kv.second << (page_shift - 10);
+
+    if (nid >= 0)
+      fmt->print("%'15lu  %2d%%  node %d\n", kb, percent(kb, total_kb), nid);
+    else
+      fmt->print("%'15lu  %2d%%  %s\n", kb, percent(kb, total_kb), strerror(-nid));
+  }
+}

@@ -1,5 +1,6 @@
 #include <sys/user.h>
 
+#include "lib/debug.h"
 #include "lib/stats.h"
 #include "ProcMaps.h"
 #include "Formatter.h"
@@ -20,15 +21,6 @@ void VMAInspect::dump_node_percent(int slot)
 {
   auto status_count = locator.get_status_count();
   size_t nr_node0 = (size_t)status_count[0];
-  size_t nr_err = 0;
-
-  for (auto &kv : status_count)
-  {
-    int status = kv.first;
-
-    if (status < 0)
-      ++nr_err;
-  }
 
   int pct = percent(nr_node0, locator.get_status().size());
   fmt->print("%2d %3d%% |", slot, pct);
@@ -59,10 +51,13 @@ int VMAInspect::dump_vma_nodes(proc_maps_entry& vma)
   std::vector<void *> addrs;
   addrs.resize(slot_pages);
 
+  MovePagesStatusCount status_sum;
+
   for (int i = 0; i < nr_slots; ++i)
   {
     fill_addrs(addrs, vma.start + i * addrs.size() * PAGE_SIZE);
 
+    locator.clear_status_count();
     err = locator.move_pages(addrs);
     if (err) {
       perror("move_pages");
@@ -70,7 +65,11 @@ int VMAInspect::dump_vma_nodes(proc_maps_entry& vma)
     }
 
     dump_node_percent(i);
+    locator.add_status_count(status_sum);
   }
+
+  if (!err && debug_level())
+    locator.show_status_count(fmt, status_sum);
 
   return err;
 }

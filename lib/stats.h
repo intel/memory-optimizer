@@ -2,14 +2,20 @@
 #define AEP_STATS_H
 
 template<class M, class K>
-void inc_count(M& map, const K& key)
+void add_count(M& map, const K& key, int n)
 {
   auto search = map.find(key);
 
   if (search != map.end())
-    ++search->second;
+    search->second += n;
   else
-    map[key] = 1;
+    map[key] = n;
+}
+
+template<class M, class K>
+void inc_count(M& map, const K& key)
+{
+  add_count(map, key, 1);
 }
 
 template<class T>

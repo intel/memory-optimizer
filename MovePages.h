@@ -27,6 +27,10 @@ class MovePages
 
     std::vector<int>& get_status()            { return status; }
     MovePagesStatusCount& get_status_count()  { return status_count; }
+    void clear_status_count()                 { status_count.clear(); }
+    void add_status_count(MovePagesStatusCount& status_sum);
+    void show_status_count(Formatter* fmt);
+    void show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum);
 
   private:
     void calc_status_count();
@@ -41,7 +45,6 @@ class MovePages
 
     // Get the status after migration
     std::vector<int> status;
-    std::vector<int> nodes;
 
     MovePagesStatusCount status_count;
 };
