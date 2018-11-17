@@ -1,10 +1,6 @@
 #ifndef _MIGRATION_H
 #define _MIGRATION_H
 
-/*
- * The header for migrating pages.
- */
-
 #include <sys/types.h>
 
 #include <unordered_map>
@@ -39,9 +35,6 @@ class Migration : public ProcIdlePages
     int migrate();
     int migrate(ProcIdlePageType type);
 
-    int dump_task_nodes();
-    int dump_vma_nodes(proc_maps_entry& vma);
-
  private:
     // functions
 
@@ -49,9 +42,6 @@ class Migration : public ProcIdlePages
 
     // select max counted pages in page_refs_4k and page_refs_2m
     int select_top_pages(ProcIdlePageType type);
-
-    void fill_addrs(std::vector<void *>& addrs, unsigned long start);
-    void dump_node_percent(int slot);
 
     long __move_pages(ProcIdlePageType type, pid_t pid, unsigned long nr_pages, void **addrs, int node);
     long __locate_pages(ProcIdlePageType type, pid_t pid, unsigned long size, void **addrs, int *status, int node);

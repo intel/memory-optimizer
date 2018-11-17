@@ -137,7 +137,6 @@ int migrate(Migration& migration)
   int err = 0;
 
   err = migration.migrate();
-  migration.dump_task_nodes();
 
   return err;
 }
