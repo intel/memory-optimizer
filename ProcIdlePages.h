@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include "ProcMaps.h"
 #include "AddrSequence.h"
+#include "Option.h"
 
 static const unsigned long PTE_SIZE = 1UL << 12;
 static const unsigned long PMD_SIZE = 1UL << 21;
@@ -80,27 +81,16 @@ class ProcIdlePages
     void set_va_range(unsigned long start, unsigned long end);
     void set_policy(Policy &pol);
 
-    int walk_multi(int nr, float interval);
-    void prepare_walks(int max_walks);
     int walk();
     int has_io_error() const { return io_error; }
-
-    static void reset_sys_refs_count(int nr_walks);
-    void count_refs();
-    static int save_counts(std::string filename);
 
     ProcIdleRefs& get_pagetype_refs(ProcIdlePageType type)
                    { return pagetype_refs[type | PAGE_ACCESSED_MASK]; }
 
     int get_nr_walks() { return nr_walks; }
-    void gather_walk_stats(unsigned long& young_bytes,
-                           unsigned long& top_bytes,
-                           unsigned long& all_bytes);
 
   private:
-    bool should_stop();
     int walk_vma(proc_maps_entry& vma);
-    void count_refs_one(ProcIdleRefs& prc);
 
     int open_file(void);
 
@@ -127,12 +117,12 @@ class ProcIdlePages
     // if positive, indicates skipped process
     int io_error;
 
-  private:
-    static const int READ_BUF_SIZE = PAGE_SIZE * 32;
-    static std::vector<unsigned long> sys_refs_count[MAX_ACCESSED + 1];
-
+  protected:
     int nr_walks;
     ProcIdleRefs pagetype_refs[MAX_ACCESSED + 1];
+
+  private:
+    static const int READ_BUF_SIZE = PAGE_SIZE * 32;
 
     int idle_fd;
     std::vector<ProcIdleExtent> read_buf;

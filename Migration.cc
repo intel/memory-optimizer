@@ -39,7 +39,7 @@ void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
 }
 
 Migration::Migration(pid_t n)
-  : ProcIdlePages(n)
+  : EPTScan(n)
 {
   migrate_target_node.resize(PMD_ACCESSED + 1);
   migrate_target_node[PTE_IDLE]      = Option::PMEM_NUMA_NODE;

@@ -133,15 +133,15 @@ void GlobalScan::walk_multi()
 
 void GlobalScan::count_refs()
 {
-  ProcIdlePages::reset_sys_refs_count(nr_walks);
+  EPTScan::reset_sys_refs_count(nr_walks);
 
   for (auto& m: idle_ranges)
     m->count_refs();
 
-  ProcIdlePages::save_counts(option.output_file);
+  EPTScan::save_counts(option.output_file);
 }
 
-// similar to ProcIdlePages::should_stop()
+// similar to EPTScan::should_stop()
 bool GlobalScan::should_stop_walk()
 {
   // page_refs.get_top_bytes() is 0 when nr_walks == 1

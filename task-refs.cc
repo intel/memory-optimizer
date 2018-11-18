@@ -11,6 +11,7 @@
 #include "Option.h"
 #include "ProcMaps.h"
 #include "ProcIdlePages.h"
+#include "EPTScan.h"
 #include "Migration.h"
 #include "lib/debug.h"
 #include "version.h"
@@ -122,7 +123,7 @@ int account_refs(Migration& migration)
   if (err)
     return err;
 
-  ProcIdlePages::reset_sys_refs_count(migration.get_nr_walks());
+  EPTScan::reset_sys_refs_count(migration.get_nr_walks());
   migration.count_refs();
 
   err = migration.save_counts(option.output_file);

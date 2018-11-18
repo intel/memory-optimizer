@@ -12,6 +12,7 @@
 #include "MovePages.h"
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
+#include "EPTScan.h"
 
 struct MigrateStats: public MoveStats
 {
@@ -21,7 +22,7 @@ struct MigrateStats: public MoveStats
     void show(Formatter& fmt, MigrateWhat mwhat);
 };
 
-class Migration : public ProcIdlePages
+class Migration : public EPTScan
 {
   public:
     // functions
