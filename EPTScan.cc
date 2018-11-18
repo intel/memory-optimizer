@@ -6,11 +6,6 @@
 
 extern Option option;
 
-EPTScan::EPTScan(pid_t pid) :
-	ProcIdlePages(pid)
-{
-}
-
 bool EPTScan::should_stop()
 {
   if (!option.dram_percent)

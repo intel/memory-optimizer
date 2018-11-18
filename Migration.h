@@ -25,17 +25,12 @@ struct MigrateStats: public MoveStats
 class Migration : public EPTScan
 {
   public:
-    // functions
-    Migration(pid_t n);
-    ~Migration() {};
+    Migration();
 
-    // migrate pages to nodes
     int migrate();
     int migrate(ProcIdlePageType type);
 
  private:
-    // functions
-
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
 
     // select max counted pages in page_refs_4k and page_refs_2m

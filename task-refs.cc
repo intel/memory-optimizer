@@ -150,7 +150,9 @@ int main(int argc, char *argv[])
 
   parse_cmdline(argc, argv);
 
-  Migration migration(option.pid);
+  Migration migration;
+
+  migration.set_pid(option.pid);
 
   err = account_refs(migration);
   if (err) {

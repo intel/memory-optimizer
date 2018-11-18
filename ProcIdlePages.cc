@@ -71,8 +71,7 @@ const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
   [PGDIR_HOLE]   = "512G_hole",
 };
 
-ProcIdlePages::ProcIdlePages(pid_t n)
-  : pid(n)
+ProcIdlePages::ProcIdlePages()
 {
   va_start = 0;
   va_end = TASK_SIZE_MAX;

@@ -38,8 +38,7 @@ void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
   fmt.print("need to migrate: %'15lu %3d%% of %4s pages\n", move_kb, percent(move_kb, to_move_kb), type);
 }
 
-Migration::Migration(pid_t n)
-  : EPTScan(n)
+Migration::Migration()
 {
   migrate_target_node.resize(PMD_ACCESSED + 1);
   migrate_target_node[PTE_IDLE]      = Option::PMEM_NUMA_NODE;

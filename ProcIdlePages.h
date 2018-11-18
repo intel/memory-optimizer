@@ -72,8 +72,7 @@ struct ProcIdleRefs
 class ProcIdlePages
 {
   public:
-    ProcIdlePages(pid_t n);
-    ~ProcIdlePages() {};
+    ProcIdlePages();
 
     void set_pid(pid_t i) { pid = i; }
     pid_t get_pid() { return pid; }

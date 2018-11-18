@@ -8,11 +8,6 @@
 class EPTScan: public ProcIdlePages
 {
   public:
-    EPTScan(pid_t n);
-    ~EPTScan() {};
-
-  public:
-
     void prepare_walks(int max_walks);
     int walk_multi(int nr, float interval);
     void gather_walk_stats(unsigned long& young_bytes,

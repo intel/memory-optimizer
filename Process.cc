@@ -16,7 +16,8 @@ void Process::add_range(unsigned long start, unsigned long end)
 {
   std::shared_ptr<Migration> p;
 
-  p = std::make_shared<Migration>(pid);
+  p = std::make_shared<Migration>();
+  p->set_pid(pid);
   p->set_va_range(start, end);
   idle_ranges.push_back(p);
 
