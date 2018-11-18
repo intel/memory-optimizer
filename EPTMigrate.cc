@@ -10,7 +10,7 @@
 #include <numa.h>
 #include <numaif.h>
 #include "Option.h"
-#include "Migration.h"
+#include "EPTMigrate.h"
 #include "lib/debug.h"
 #include "lib/stats.h"
 #include "AddrSequence.h"
@@ -38,7 +38,7 @@ void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
   fmt.print("need to migrate: %'15lu %3d%% of %4s pages\n", move_kb, percent(move_kb, to_move_kb), type);
 }
 
-Migration::Migration()
+EPTMigrate::EPTMigrate()
 {
   migrate_target_node.resize(PMD_ACCESSED + 1);
   migrate_target_node[PTE_IDLE]      = Option::PMEM_NUMA_NODE;
@@ -53,8 +53,8 @@ Migration::Migration()
 }
 
 
-size_t Migration::get_threshold_refs(ProcIdlePageType type,
-                                     int& min_refs, int& max_refs)
+size_t EPTMigrate::get_threshold_refs(ProcIdlePageType type,
+                                      int& min_refs, int& max_refs)
 {
   int nr_walks = get_nr_walks();
 
@@ -121,7 +121,7 @@ size_t Migration::get_threshold_refs(ProcIdlePageType type,
   return portion;
 }
 
-int Migration::select_top_pages(ProcIdlePageType type)
+int EPTMigrate::select_top_pages(ProcIdlePageType type)
 {
   AddrSequence& page_refs = get_pagetype_refs(type).page_refs;
   int min_refs;
@@ -168,7 +168,7 @@ int Migration::select_top_pages(ProcIdlePageType type)
   return 0;
 }
 
-int Migration::migrate()
+int EPTMigrate::migrate()
 {
   int err = 0;
 
@@ -212,7 +212,7 @@ out:
   return err;
 }
 
-int Migration::migrate(ProcIdlePageType type)
+int EPTMigrate::migrate(ProcIdlePageType type)
 {
   int ret;
 
@@ -224,7 +224,7 @@ int Migration::migrate(ProcIdlePageType type)
   return ret;
 }
 
-long Migration::do_move_pages(ProcIdlePageType type)
+long EPTMigrate::do_move_pages(ProcIdlePageType type)
 {
   auto& addrs = pages_addr[type];
   long ret;

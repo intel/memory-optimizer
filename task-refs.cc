@@ -12,7 +12,7 @@
 #include "ProcMaps.h"
 #include "ProcIdlePages.h"
 #include "EPTScan.h"
-#include "Migration.h"
+#include "EPTMigrate.h"
 #include "lib/debug.h"
 #include "version.h"
 
@@ -115,7 +115,7 @@ static void parse_cmdline(int argc, char *argv[])
     option.output_file = "refs-count-" + std::to_string(option.pid);
 }
 
-int account_refs(Migration& migration)
+int account_refs(EPTMigrate& migration)
 {
   int err;
 
@@ -133,7 +133,7 @@ int account_refs(Migration& migration)
   return 0;
 }
 
-int migrate(Migration& migration)
+int migrate(EPTMigrate& migration)
 {
   int err = 0;
 
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 
   parse_cmdline(argc, argv);
 
-  Migration migration;
+  EPTMigrate migration;
 
   migration.set_pid(option.pid);
 

@@ -10,8 +10,8 @@
 #include "ProcStatus.h"
 #include "Option.h"
 
-class Migration;
-typedef std::vector<std::shared_ptr<Migration>> IdleRanges;
+class EPTMigrate;
+typedef std::vector<std::shared_ptr<EPTMigrate>> IdleRanges;
 
 class Process
 {

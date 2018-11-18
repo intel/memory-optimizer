@@ -2,7 +2,7 @@
 #include "Process.h"
 #include "ProcMaps.h"
 #include "ProcStatus.h"
-#include "Migration.h"
+#include "EPTMigrate.h"
 
 extern Option option;
 
@@ -14,9 +14,9 @@ int Process::load(pid_t n)
 
 void Process::add_range(unsigned long start, unsigned long end)
 {
-  std::shared_ptr<Migration> p;
+  std::shared_ptr<EPTMigrate> p;
 
-  p = std::make_shared<Migration>();
+  p = std::make_shared<EPTMigrate>();
   p->set_pid(pid);
   p->set_va_range(start, end);
   idle_ranges.push_back(p);

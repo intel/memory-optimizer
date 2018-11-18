@@ -22,10 +22,10 @@ struct MigrateStats: public MoveStats
     void show(Formatter& fmt, MigrateWhat mwhat);
 };
 
-class Migration : public EPTScan
+class EPTMigrate : public EPTScan
 {
   public:
-    Migration();
+    EPTMigrate();
 
     int migrate();
     int migrate(ProcIdlePageType type);

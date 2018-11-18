@@ -15,7 +15,7 @@
 #include "ProcMaps.h"
 #include "ProcIdlePages.h"
 #include "EPTScan.h"
-#include "Migration.h"
+#include "EPTMigrate.h"
 #include "GlobalScan.h"
 #include "version.h"
 #include "OptionParser.h"

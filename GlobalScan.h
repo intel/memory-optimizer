@@ -6,7 +6,7 @@
 
 #include "Queue.h"
 #include "Process.h"
-#include "Migration.h"
+#include "EPTMigrate.h"
 
 enum JobIntent
 {
@@ -15,11 +15,11 @@ enum JobIntent
   JOB_QUIT,
 };
 
-typedef std::shared_ptr<Migration> MigrationPtr;
+typedef std::shared_ptr<EPTMigrate> EPTMigratePtr;
 
 struct Job
 {
-  MigrationPtr migration;
+  EPTMigratePtr migration;
   JobIntent intent;
 };
 
@@ -61,7 +61,7 @@ class GlobalScan
     unsigned long dram_free_anon_bytes;
 
     ProcessCollection process_collection;
-    std::vector<std::shared_ptr<Migration>> idle_ranges;
+    std::vector<std::shared_ptr<EPTMigrate>> idle_ranges;
     std::vector<std::thread> worker_threads;
     Queue<Job> work_queue;
     Queue<Job> done_queue;

@@ -5,7 +5,7 @@ DEBUG_FLAGS = -g -O3
 CFLAGS = $(DEBUG_FLAGS) -Wall
 CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++14
 LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
-TASK_REFS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc Migration.cc AddrSequence.cc \
+TASK_REFS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc EPTMigrate.cc AddrSequence.cc \
 			 MovePages.cc VMAInspect.cc EPTScan.cc \
 			 lib/debug.c lib/stats.h Formatter.h
 TASK_REFS_HEADER_FILES = $(TASK_REFS_SOURCE_FILES:.cc=.h)
