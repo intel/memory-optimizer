@@ -17,9 +17,13 @@ MovePages::MovePages() :
 
 long MovePages::move_pages(std::vector<void *>& addrs)
 {
+  return move_pages(&addrs[0], addrs.size());
+}
+
+long MovePages::move_pages(void **addrs, unsigned long count)
+{
   std::vector<int> nodes;
   const int *pnodes;
-  unsigned long count = addrs.size();
   long ret = 0;
 
   if (target_node >= 0) {
@@ -32,7 +36,7 @@ long MovePages::move_pages(std::vector<void *>& addrs)
 
   status.resize(count);
 
-  ret = ::move_pages(pid, count, &addrs[0], pnodes, &status[0], flags);
+  ret = ::move_pages(pid, count, addrs, pnodes, &status[0], flags);
   if (ret)
     perror("move_pages");
 

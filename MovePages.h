@@ -24,6 +24,7 @@ class MovePages
     void set_flags(int f)                     { flags = f; }
 
     long move_pages(std::vector<void *>& addrs);
+    long move_pages(void **addrs, unsigned long count);
 
     std::vector<int>& get_status()            { return status; }
     MovePagesStatusCount& get_status_count()  { return status_count; }
