@@ -40,9 +40,6 @@ long MovePages::move_pages(void **addrs, unsigned long count)
   if (ret)
     perror("move_pages");
 
-  if (!ret)
-    calc_status_count();
-
   return ret;
 }
 

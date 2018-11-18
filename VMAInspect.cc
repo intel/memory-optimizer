@@ -64,6 +64,7 @@ int VMAInspect::dump_vma_nodes(proc_maps_entry& vma)
       return err;
     }
 
+    locator.calc_status_count();
     dump_node_percent(i);
     locator.add_status_count(status_sum);
   }
