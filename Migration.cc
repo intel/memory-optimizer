@@ -21,12 +21,10 @@
 extern Option option;
 using namespace std;
 
-void MigrateStats::init()
+void MigrateStats::clear()
 {
-    anon_kb = 0;
-    to_move_kb = 0;
-    skip_kb = 0;
-    move_kb = 0;
+  MoveStats::clear();
+  anon_kb = 0;
 }
 
 void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
@@ -184,7 +182,7 @@ int Migration::migrate()
   fmt.reserve(1<<10);
 
   if (policy.migrate_what & MIGRATE_COLD) {
-    migrate_stats.init();
+    migrate_stats.clear();
     err = migrate(PTE_IDLE);
     if (err)
       goto out;
@@ -195,7 +193,7 @@ int Migration::migrate()
   }
 
   if (policy.migrate_what & MIGRATE_HOT) {
-    migrate_stats.init();
+    migrate_stats.clear();
     err = migrate(PTE_ACCESSED);
     if (err)
       goto out;
@@ -227,74 +225,17 @@ int Migration::migrate(ProcIdlePageType type)
   return ret;
 }
 
-long Migration::__locate_pages(ProcIdlePageType type, pid_t pid,
-                               unsigned long size, void **addrs,
-                               int *status, int node)
-{
-  unsigned long pages_to_skip = 0;
-  unsigned long pages_to_move = 0;
-  long ret = 0;
-
-  // get current page location
-  ret = move_pages(pid, size, addrs, NULL, status, MPOL_MF_MOVE);
-  if (ret) {
-    perror("locate pages");
-    return ret;
-  }
-
-  for (int *p = status; p < status + size; ++p) {
-    if (*p == node)
-      ++pages_to_skip;
-    else if (*p >= 0)
-      ++pages_to_move;
-  }
-
-  int shift = pagetype_shift[type] - 10;
-  migrate_stats.to_move_kb += size << shift;
-  migrate_stats.skip_kb += pages_to_skip << shift;
-  migrate_stats.move_kb += pages_to_move << shift;
-
-  return 0;
-}
-
-long Migration::__move_pages(ProcIdlePageType type, pid_t pid,
-                             unsigned long nr_pages, void **addrs, int node)
-{
-  std::vector<int> nodes;
-  long ret = 0;
-
-  migrate_status.resize(nr_pages);
-
-  unsigned long batch_size = 1 << 12;
-  for (unsigned long i = 0; i < nr_pages; i += batch_size) {
-    unsigned long size = min(batch_size, nr_pages - i);
-
-    ret = __locate_pages(type, pid, size, addrs + i, &migrate_status[i], node);
-    if (ret)
-    break;
-
-    nodes.resize(size, node);
-    ret = move_pages(pid,
-                     size,
-                     addrs + i,
-                     &nodes[0],
-                     &migrate_status[i], MPOL_MF_MOVE | MPOL_MF_SW_YOUNG);
-    if (ret) {
-      perror("move_pages");
-      break;
-    }
-  }
-
-  return ret;
-}
-
 long Migration::do_move_pages(ProcIdlePageType type)
 {
   auto& addrs = pages_addr[type];
-  long nr_pages = addrs.size();
   long ret;
 
-  ret = __move_pages(type, pid, nr_pages, &addrs[0], migrate_target_node[type]);
+  migrator.set_pid(pid);
+  migrator.set_page_shift(pagetype_shift[type]);
+  migrator.set_batch_size(1024);
+  migrator.set_target_node(migrate_target_node[type]);
+
+  ret = migrator.locate_move_pages(addrs, &migrate_stats);
 
   return ret;
 }

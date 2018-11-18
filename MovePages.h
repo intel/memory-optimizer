@@ -11,6 +11,16 @@ class Formatter;
 
 typedef std::unordered_map<int, int> MovePagesStatusCount;
 
+struct MoveStats
+{
+    unsigned long to_move_kb;
+    unsigned long skip_kb;
+    unsigned long move_kb;
+
+    void clear();
+    void account(MovePagesStatusCount& status_count, int page_shift, int target_node);
+};
+
 class MovePages
 {
   public:
@@ -25,6 +35,7 @@ class MovePages
 
     long move_pages(std::vector<void *>& addrs);
     long move_pages(void **addrs, unsigned long count);
+    long locate_move_pages(std::vector<void *>& addrs, MoveStats *stats);
 
     std::vector<int>& get_status()            { return status; }
     MovePagesStatusCount& get_status_count()  { return status_count; }
@@ -33,6 +44,7 @@ class MovePages
     void add_status_count(MovePagesStatusCount& status_sum);
     void show_status_count(Formatter* fmt);
     void show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum);
+    void account_stats(MoveStats *stats);
 
   private:
     pid_t pid;
@@ -40,7 +52,7 @@ class MovePages
     int target_node;
 
     unsigned long page_shift;
-    unsigned long batch_size; // ignored: no need to implement for now
+    unsigned long batch_size; // used by locate_move_pages()
 
     // Get the status after migration
     std::vector<int> status;

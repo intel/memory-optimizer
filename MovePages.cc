@@ -7,6 +7,13 @@
 #include "MovePages.h"
 #include "Formatter.h"
 
+void MoveStats::clear()
+{
+  to_move_kb = 0;
+  skip_kb = 0;
+  move_kb = 0;
+}
+
 MovePages::MovePages() :
   flags(MPOL_MF_MOVE | MPOL_MF_SW_YOUNG),
   target_node(-1),
@@ -41,6 +48,57 @@ long MovePages::move_pages(void **addrs, unsigned long count)
     perror("move_pages");
 
   return ret;
+}
+
+long MovePages::locate_move_pages(std::vector<void *>& addrs, MoveStats *stats)
+{
+  unsigned long nr_pages = addrs.size();
+  long ret = 0;
+  MovePagesStatusCount status_sum;
+
+  for (unsigned long i = 0; i < nr_pages; i += batch_size) {
+    unsigned long size = std::min(batch_size, nr_pages - i);
+
+    status.resize(nr_pages);
+
+    int nid = target_node;
+    target_node = -1; // cheat move_pages() to locate pages
+    ret = move_pages(&addrs[i], size);
+    target_node = nid;
+    if (ret)
+      break;
+
+    clear_status_count();
+    calc_status_count();
+    account_stats(stats);
+    add_status_count(status_sum);
+
+    ret = move_pages(&addrs[i], size);
+    if (ret)
+      break;
+  }
+
+  return ret;
+}
+
+void MovePages::account_stats(MoveStats *stats)
+{
+  unsigned long skip_kb = 0;
+  unsigned long move_kb = 0;
+  int shift = page_shift - 10;
+
+  for (auto &kv : status_count) {
+    if (kv.first == target_node)
+      skip_kb += kv.second << shift;
+    else if (kv.first >= 0)
+      move_kb += kv.second << shift;
+  }
+
+  stats->to_move_kb += status.size() << shift;
+  stats->skip_kb += skip_kb;
+  stats->move_kb += move_kb;
+
+  // TODO: bandwidth limit on move_kb
 }
 
 void MovePages::calc_status_count()

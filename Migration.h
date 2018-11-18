@@ -13,14 +13,11 @@
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
 
-struct MigrateStats
+struct MigrateStats: public MoveStats
 {
     unsigned long anon_kb;
-    unsigned long to_move_kb;
-    unsigned long skip_kb;
-    unsigned long move_kb;
 
-    void init();
+    void clear();
     void show(Formatter& fmt, MigrateWhat mwhat);
 };
 
@@ -43,8 +40,6 @@ class Migration : public ProcIdlePages
     // select max counted pages in page_refs_4k and page_refs_2m
     int select_top_pages(ProcIdlePageType type);
 
-    long __move_pages(ProcIdlePageType type, pid_t pid, unsigned long nr_pages, void **addrs, int node);
-    long __locate_pages(ProcIdlePageType type, pid_t pid, unsigned long size, void **addrs, int *status, int node);
     long do_move_pages(ProcIdlePageType type);
 
     // status => count
@@ -62,8 +57,6 @@ class Migration : public ProcIdlePages
     std::vector<int> migrate_status;
 
     MigrateStats migrate_stats;
-
-    MovePages locator;
     MovePages migrator;
 
     Formatter fmt;
