@@ -69,6 +69,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
         continue;
       }
 
+      // parse_common_policy(iter, default_policy);
     }
 
     return 0;

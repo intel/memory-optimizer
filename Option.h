@@ -121,6 +121,11 @@ public:
   std::string output_file;
   std::string config_file;
 
+  // Not used for now, so current sys-refs behavior is to ignore all processes
+  // w/o a policy defined. In future, may consider applying this to all
+  // processes in ProcessCollection::collect().
+  // Policy default_policy;
+
 private:
   PolicySet  policies;
 };
