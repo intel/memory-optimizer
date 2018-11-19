@@ -1,0 +1,37 @@
+# Overview on split of data and functionalities
+# . prefix means member object
+# otherwise means sub-class
+
+ProcIdlePages:
+  .ProcIdleRefs:
+  .ProcMaps:
+  .Policy:
+  EPTScan:
+    EPTMigrate:
+      .Formatter:
+      .MovePages:
+      .MigrateStats:
+
+ProcessCollection:
+  .ProcPid:
+  .ProcessHash:
+  Process:
+    .ProcMaps:
+    .ProcStatus:
+    .IdleRanges:
+
+GlobalScan:
+  .ProcessCollection:
+  .EPTMigrate:
+  .thread:
+  .Queue:
+
+Option:
+  .PolicySet:
+    .Policy:
+  OptionParser:
+
+VMAInspect:
+  .MovePages:
+
+# vim:set ts=2 sw=2 et:
