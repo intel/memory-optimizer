@@ -23,6 +23,7 @@ class OptionParser: public Option
     int parse_option(YAML::Node &&option_node);
     int parse_policies(YAML::Node &&policies_node);
     void parse_one_policy(YAML::Node &&policy_node);
+    void parse_common_policy(const YAML::const_iterator& iter, Policy& policy);
 
     template<typename Tval>
     int get_value(const YAML::const_iterator  &iter,

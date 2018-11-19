@@ -92,10 +92,30 @@ int OptionParser::parse_policies(YAML::Node &&policies_node)
     return 0;
 }
 
+void OptionParser::parse_common_policy(const YAML::const_iterator& iter, Policy& policy)
+{
+  std::string str_val;
+
+  if (get_value(iter, "migration", str_val)) {
+    policy.migrate_what
+      = Option::parse_migrate_name(str_val);
+    return;
+  }
+
+  if (get_value(iter, "placement", str_val)) {
+    Option::parse_name_map(placement_name_map, str_val, policy.placement, PLACEMENT_END);
+    return;
+  }
+
+  if (get_value(iter, "dump_distribution", str_val)) {
+    Option::parse_name_map(bool_name_map, str_val, policy.dump_distribution, 2);
+    return;
+  }
+}
+
 void OptionParser::parse_one_policy(YAML::Node &&policy_node)
 {
     struct Policy new_policy;
-    std::string str_val;
 
     for (auto iter = policy_node.begin();
          iter != policy_node.end();
@@ -105,22 +125,7 @@ void OptionParser::parse_one_policy(YAML::Node &&policy_node)
       if (get_value(iter, "name", new_policy.name))
         continue;
 
-      if (get_value(iter, "migration", str_val)) {
-          new_policy.migrate_what
-              = Option::parse_migrate_name(str_val);
-          continue;
-      }
-
-      if (get_value(iter, "placement", str_val)) {
-        Option::parse_name_map(placement_name_map, str_val, new_policy.placement, PLACEMENT_END);
-        continue;
-      }
-
-      if (get_value(iter, "dump_distribution", str_val)) {
-        Option::parse_name_map(bool_name_map, str_val, new_policy.dump_distribution, 2);
-        continue;
-      }
-
+      parse_common_policy(iter, new_policy);
     }
 
     add_policy(new_policy);
