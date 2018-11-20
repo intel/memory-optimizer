@@ -6,6 +6,7 @@
 #include <sys/time.h>
 
 #include "lib/debug.h"
+#include "lib/stats.h"
 #include "GlobalScan.h"
 #include "OptionParser.h"
 
@@ -88,11 +89,6 @@ void GlobalScan::stop_threads()
     th.join();
 }
 
-static inline float tv_secs(struct timeval& t1, struct timeval& t2)
-{
-  return  (t2.tv_sec  - t1.tv_sec) +
-          (t2.tv_usec - t1.tv_usec) * 0.000001;
-}
 
 void GlobalScan::walk_multi()
 {
