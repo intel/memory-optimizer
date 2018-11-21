@@ -13,8 +13,8 @@ class BandwidthLimit
 
   private:
     float bwlimit_mbps = -1.0;
-    std::atomic_ulong bytes;
     timeval last_time = {0,0};
+    std::atomic_long allow_bytes;
 
     std::mutex mlock;
 };
