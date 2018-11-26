@@ -63,9 +63,10 @@ int GlobalScan::collect()
     return err;
 
   for (auto &kv: process_collection.get_proccesses())
-    for (auto &m: kv.second->get_ranges())
+    for (auto &m: kv.second->get_ranges()) {
+      m->set_throttler(&throttler);
       idle_ranges.push_back(m);
-
+    }
   return 0;
 }
 

@@ -7,6 +7,7 @@
 #include "Queue.h"
 #include "Process.h"
 #include "EPTMigrate.h"
+#include "BandwidthLimit.h"
 
 enum JobIntent
 {
@@ -67,6 +68,8 @@ class GlobalScan
     Queue<Job> done_queue;
 
     std::atomic_int conf_reload_flag;
+
+    BandwidthLimit throttler;
 };
 
 #endif
