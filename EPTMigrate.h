@@ -13,7 +13,6 @@
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
 #include "EPTScan.h"
-#include "BandwidthLimit.h"
 
 class BandwidthLimit;
 
