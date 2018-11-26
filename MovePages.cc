@@ -6,6 +6,7 @@
 #include "lib/stats.h"
 #include "MovePages.h"
 #include "Formatter.h"
+#include "BandwidthLimit.h"
 
 void MoveStats::clear()
 {
@@ -18,7 +19,8 @@ MovePages::MovePages() :
   flags(MPOL_MF_MOVE | MPOL_MF_SW_YOUNG),
   target_node(-1),
   page_shift(PAGE_SHIFT),
-  batch_size(ULONG_MAX)
+  batch_size(ULONG_MAX),
+  throttler(NULL)
 {
 }
 
@@ -99,6 +101,8 @@ void MovePages::account_stats(MoveStats *stats)
   stats->move_kb += move_kb;
 
   // TODO: bandwidth limit on move_kb
+  if (throttler)
+    throttler->add_and_sleep(move_kb * 1024);
 }
 
 void MovePages::calc_status_count()

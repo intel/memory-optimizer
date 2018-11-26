@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+class BandwidthLimit;
 class Formatter;
 
 #define MPOL_MF_SW_YOUNG (1<<7)
@@ -32,6 +33,7 @@ class MovePages
     void set_page_shift(int t)                { page_shift = t; }
     void set_batch_size(unsigned long npages) { batch_size = npages; }
     void set_flags(int f)                     { flags = f; }
+    void set_throttler(BandwidthLimit* new_throttler) {throttler = new_throttler;}
 
     long move_pages(std::vector<void *>& addrs);
     long move_pages(void **addrs, unsigned long count);
@@ -58,6 +60,8 @@ class MovePages
     std::vector<int> status;
 
     MovePagesStatusCount status_count;
+
+    BandwidthLimit* throttler;
 };
 
 #endif

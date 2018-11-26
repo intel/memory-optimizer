@@ -13,6 +13,9 @@
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
 #include "EPTScan.h"
+#include "BandwidthLimit.h"
+
+class BandwidthLimit;
 
 struct MigrateStats: public MoveStats
 {
@@ -29,6 +32,8 @@ class EPTMigrate : public EPTScan
 
     int migrate();
     int migrate(ProcIdlePageType type);
+    void set_throttler(BandwidthLimit* new_throttler)
+    { migrator.set_throttler(new_throttler); }
 
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
