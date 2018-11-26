@@ -8,13 +8,16 @@
 class BandwidthLimit
 {
   public:
-    void set_bwlimit_mbps(unsigned long mbps) { bwlimit_mbps = mbps/8.0; }
+    void set_bwlimit_mbps(float mbps)
+    { bwlimit_byteps = (mbps * 1024 * 1024) / 8; }
+
     void add_and_sleep(unsigned long bytes);
 
   private:
-    float bwlimit_mbps = -1.0;
+    unsigned long bwlimit_byteps = 0;
+    long allow_bytes = 0;
+
     timeval last_time = {0,0};
-    std::atomic_long allow_bytes;
 
     std::mutex mlock;
 };
