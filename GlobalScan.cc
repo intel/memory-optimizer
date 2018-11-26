@@ -283,5 +283,11 @@ void GlobalScan::reload_conf()
   if (flag) {
     printf("start to reload conf file.\n");
     option.reparse();
+    apply_option();
   }
+}
+
+void GlobalScan::apply_option()
+{
+  throttler.set_bwlimit_mbps(option.bandwidth_mbps);
 }

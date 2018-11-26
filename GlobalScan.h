@@ -39,6 +39,7 @@ class GlobalScan
     void count_refs();
     void update_interval(bool finished);
     void request_reload_conf();
+    void apply_option();
 
   private:
     void consumer_loop();

@@ -129,6 +129,7 @@ int main(int argc, char *argv[])
   parse_cmdline(argc, argv);
   register_signal_handler();
 
+  gscan.apply_option();
   gscan.main_loop();
 
   return 0;
