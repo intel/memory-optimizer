@@ -7,6 +7,7 @@
 #include "BandwidthLimit.h"
 #include "lib/stats.h"
 
+const float BandwidthLimit::MAX_TIME_HISTORY = 3;
 
 void BandwidthLimit::add_and_sleep(unsigned long bytes)
 {
@@ -26,6 +27,9 @@ void BandwidthLimit::add_and_sleep(unsigned long bytes)
 
     gettimeofday(&cur_time, NULL);
     time_delta = tv_secs(last_time, cur_time);
+    if (time_delta > MAX_TIME_HISTORY)
+        time_delta = MAX_TIME_HISTORY;
+
     last_time = cur_time;
 
     allow_bytes += time_delta * bwlimit_byteps;

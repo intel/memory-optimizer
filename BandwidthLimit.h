@@ -20,6 +20,9 @@ class BandwidthLimit
     timeval last_time = {0,0};
 
     std::mutex mlock;
+
+    // second unit
+    static const float MAX_TIME_HISTORY;
 };
 
 #endif
