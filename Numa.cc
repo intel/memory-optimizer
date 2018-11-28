@@ -16,8 +16,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "Common.h"
-#include "hmd-config.h"
 #include "Numa.h"
 
 void NumaNodeCollection::init_cpu_map(void)
@@ -43,7 +41,21 @@ void NumaNodeCollection::init_cpu_map(void)
   numa_free_cpumask(cpumask);
 }
 
-void NumaNodeCollection::collect(void)
+void NumaNodeCollection::collect(NumaConfig* numa_option)
+{
+  if (numa_option) {
+    if (numa_option->numa_dram_mask.size()
+      || numa_option->numa_pmem_mask.size()
+      || numa_option->pmem_dram_map.size()) {
+      collect_by_config(numa_option);
+      return;
+    }
+  }
+
+  collect_by_sysfs();
+}
+
+void NumaNodeCollection::collect_by_config(NumaConfig* numa_option)
 {
   int i, pmem_node, dram_node;
   struct bitmask *dram_mask, *pmem_mask;
@@ -55,8 +67,8 @@ void NumaNodeCollection::collect(void)
    * after it is available.
    */
   max_node = numa_max_node();
-  dram_mask = numa_parse_nodestring(hmd_config.numa_dram_mask);
-  pmem_mask = numa_parse_nodestring(hmd_config.numa_pmem_mask);
+  dram_mask = numa_parse_nodestring(numa_option->numa_dram_mask.c_str());
+  pmem_mask = numa_parse_nodestring(numa_option->numa_pmem_mask.c_str());
 
   all_mask = numa_allocate_nodemask();
   numa_bitmask_clearall(all_mask);
@@ -84,14 +96,14 @@ void NumaNodeCollection::collect(void)
   for (node = dram_begin(); node != dram_end(); node++)
     node->promote_target = &*node;
 
-  p = hmd_config.pmem_dram_map - 1;
+  p = numa_option->pmem_dram_map.c_str() - 1;
   do {
     p++;
     if (sscanf(p, "%d->%d", &pmem_node, &dram_node) != 2 ||
         pmem_node > max_node ||
         dram_node > max_node) {
       fprintf(stderr, "Invalid pmem to dram map: %s\n",
-        hmd_config.pmem_dram_map);
+              numa_option->pmem_dram_map.c_str());
       exit(1);
     }
     get_node(pmem_node)->promote_target = get_node(dram_node);
@@ -101,6 +113,11 @@ void NumaNodeCollection::collect(void)
 
   numa_free_nodemask(dram_mask);
   numa_free_nodemask(pmem_mask);
+}
+
+void NumaNodeCollection::collect_by_sysfs(void)
+{
+
 }
 
 void NumaNodeCollection::collect_dram_nodes_meminfo(void)

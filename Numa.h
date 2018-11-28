@@ -21,7 +21,8 @@
 #include <numa.h>
 #include <numaif.h>
 
-#include "Common.h"
+#include "common.h"
+#include "Option.h"
 
 /*
  * BaseIterator is iterator for container with element type "T *", so
@@ -122,7 +123,7 @@ public:
 
   struct bitmask *all_mask;
 
-  void collect(void);
+  void collect(NumaConfig* numa_option = NULL);
   void collect_dram_nodes_meminfo(void);
   void check_dram_nodes_watermark(int watermark_percent);
   int get_node_lowest_cpu(int node);
@@ -187,6 +188,11 @@ public:
   {
     return nid >= 0 && nid <= max_node && nodes[nid];
   }
+
+private:
+    void collect_by_config(NumaConfig* numa_option);
+    void collect_by_sysfs(void);
+
 };
 
 #endif /* __NUMA__HH__ */
