@@ -27,6 +27,7 @@ Option::Option()
   nr_loops = 0;
   nr_walks = 0; // auto stop when nr_top_pages can fit in half DRAM size
   interval = 0; // auto adjust
+  initial_interval = 0.1;
   sleep_secs = 1;
   migrate_what = MIGRATE_HOT;
   hot_min_refs = -1;
@@ -55,7 +56,8 @@ void Option::dump()
   printf("option dump begin:\n");
   printf("debug_level = %d\n", debug_level);
   printf("pid = %d\n", pid);
-  printf("inteval = %f\n", interval);
+  printf("initial_interval = %f\n", initial_interval);
+  printf("interval = %f\n", interval);
   printf("sleep_secs = %f\n", sleep_secs);
   printf("nr_walks = %d\n", nr_walks);
   printf("nr_loops = %d\n", nr_loops);

@@ -52,7 +52,6 @@ class GlobalScan
     static const int MAX_WALKS = 20;
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;
-    static const float INITIAL_INTERVAL;
     int nr_walks;
     float interval;
     float real_interval;

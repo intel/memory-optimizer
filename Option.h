@@ -100,6 +100,7 @@ public:
 
   pid_t pid;
 
+  float initial_interval;
   float interval;
   float sleep_secs;
   int nr_walks;

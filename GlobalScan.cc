@@ -14,7 +14,6 @@ extern OptionParser option;
 
 const float GlobalScan::MIN_INTERVAL = 0.001;
 const float GlobalScan::MAX_INTERVAL = 10;
-const float GlobalScan::INITIAL_INTERVAL = 0.1;
 
 GlobalScan::GlobalScan() : conf_reload_flag(0)
 {
@@ -27,7 +26,7 @@ void GlobalScan::main_loop()
   if (option.interval)
     interval = option.interval;
   else
-    interval = INITIAL_INTERVAL;
+    interval = option.initial_interval;
 
   create_threads();
   for (; !option.nr_loops || nloop-- > 0;)

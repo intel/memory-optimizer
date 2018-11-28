@@ -54,6 +54,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
          ++iter) {
 #define OP_GET_VALUE(name, member) if (get_value(iter, name, member)) continue;
       OP_GET_VALUE("interval",        interval);
+      OP_GET_VALUE("initial_interval", initial_interval);
       OP_GET_VALUE("sleep",           sleep_secs);
       OP_GET_VALUE("loop",            nr_loops);
       OP_GET_VALUE("max_threads",     max_threads);
