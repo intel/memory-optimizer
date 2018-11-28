@@ -21,6 +21,13 @@
 
 #include "Numa.h"
 
+
+static std::unordered_map<std::string, numa_node_type> numa_type_map = {
+  {"ram", NUMA_NODE_DRAM},
+  {"pmem", NUMA_NODE_PMEM},
+};
+
+
 void NumaNodeCollection::init_cpu_map(void)
 {
   int cpu, nr_cpu;
@@ -96,8 +103,7 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
   }
 
   /* node maps to itself by default */
-  for (node = dram_begin(); node != dram_end(); node++)
-    node->promote_target = &*node;
+  set_default_peer_node();
 
   p = numa_option->pmem_dram_map.c_str() - 1;
   do {
@@ -123,11 +129,17 @@ void NumaNodeCollection::collect_by_sysfs(void)
   int max_node = numa_max_node();
   int err;
 
+  nodes.resize(max_node + 1);
+  peer_map.clear();
+
   for (int i = 0; i <= max_node; ++i) {
     err = parse_sysfs_per_node(i);
     if (err < 0)
       return;
   }
+
+  setup_node_pair();
+
 }
 
 int NumaNodeCollection::parse_sysfs_per_node(int node_id)
@@ -135,6 +147,9 @@ int NumaNodeCollection::parse_sysfs_per_node(int node_id)
   const char *node_path = "/sys/devices/system/node/node%d/%s";
   char path[PATH_MAX];
   int err;
+
+  int peer_node_id;
+  numa_node_type node_type;
 
   std::map<const char*, std::string> items;
 
@@ -150,14 +165,10 @@ int NumaNodeCollection::parse_sysfs_per_node(int node_id)
       return err;
   }
 
-  printf("node %d type: %s peer_node: %s\n",
-         node_id,
-         items["type"].c_str(),
-         items["peer_node"].c_str());
+  node_type = get_numa_type(items["type"]);
+  peer_node_id = atoi(items["peer_node"].c_str());
 
-  // parse node type to ENUM type and add into vector
-
-  return 0;
+  return save_node(node_id, node_type, peer_node_id);
 }
 
 int NumaNodeCollection::parse_field(const char *field_name,
@@ -190,6 +201,61 @@ int NumaNodeCollection::parse_field(const char *field_name,
   return 0;
 }
 
+numa_node_type NumaNodeCollection::get_numa_type(std::string &type_str)
+{
+  auto iter = numa_type_map.find(type_str);
+
+  if (iter == numa_type_map.end())
+    return NUMA_NODE_END;
+
+  return iter->second;
+}
+
+int NumaNodeCollection::save_node(int node_id, numa_node_type type,
+                                   int peer_node)
+{
+  if(type >= NUMA_NODE_END)
+    return -2;
+
+  NumaNode *new_node;
+  new_node = new NumaNode(node_id, type);
+
+  switch(type) {
+    case NUMA_NODE_DRAM:
+      dram_nodes.push_back(new_node);
+      break;
+    case NUMA_NODE_PMEM:
+      pmem_nodes.push_back(new_node);
+      break;
+    default:
+      break;
+  }
+
+  nodes[node_id] = new_node;
+  peer_map[node_id] = peer_node;
+
+  return 0;
+}
+
+void NumaNodeCollection::set_default_peer_node()
+{
+  iterator node;
+
+  /* node maps to itself by default */
+  for (node = dram_begin(); node != dram_end(); node++)
+    node->promote_target = &*node;
+
+  for (node = pmem_begin(); node != pmem_end(); node++)
+    node->demote_target = &*node;
+}
+
+void NumaNodeCollection::setup_node_pair()
+{
+  set_default_peer_node();
+  for (auto& iter : peer_map)
+    nodes[iter.first]->set_peer_node(nodes[iter.second]);
+}
+
 void NumaNodeCollection::collect_dram_nodes_meminfo(void)
 {
   for (iterator node = dram_begin(); node != dram_end(); node++)
@@ -211,3 +277,42 @@ int NumaNodeCollection::get_node_lowest_cpu(int node)
 
   return -1;
 }
+
+void NumaNodeCollection::dump()
+{
+  NumaNode* peer_node;
+
+  printf("Node map:\n");
+  for (auto& iter : peer_map)
+    printf("%d -> %d\n", iter.first, iter.second);
+
+  printf("All nodes:\n");
+  for (auto& numa_obj : nodes) {
+    peer_node = numa_obj->get_peer_node();
+
+    if (peer_node) {
+      printf("Node %d type:%d peer_id:%d peer_type:%d\n",
+             numa_obj->id(),
+             numa_obj->type(),
+             peer_node->id(),
+             peer_node->type());
+    } else {
+      printf("Node %d type:%d no peer node\n",
+             numa_obj->id(),
+             numa_obj->type());
+    }
+  }
+
+  printf("DRAM nodes:\n");
+  for (auto& numa_obj : dram_nodes)
+    printf("Node %d type:%d\n",
+           numa_obj->id(),
+           numa_obj->type());
+
+  printf("PMEM nodes:\n");
+  for (auto& numa_obj : pmem_nodes)
+    printf("Node %d type:%d\n",
+           numa_obj->id(),
+           numa_obj->type());
+}
+

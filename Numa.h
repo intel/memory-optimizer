@@ -72,6 +72,7 @@ public:
 enum numa_node_type {
   NUMA_NODE_DRAM,
   NUMA_NODE_PMEM,
+  NUMA_NODE_END,
 };
 
 class NumaNode {
@@ -82,10 +83,15 @@ class NumaNode {
 
 public:
   bool mem_watermark_ok;
+
+  // possible to a union here?
   NumaNode *promote_target;
+  NumaNode *demote_target;
 
   NumaNode(int nid, enum numa_node_type node_type) :
-    id_(nid), type_(node_type) {}
+    id_(nid), type_(node_type),
+    promote_target(NULL), demote_target(NULL) {}
+
   int id(void) { return id_; }
   enum numa_node_type type(void) { return type_; }
   bool is_pmem(void) { return type_ == NUMA_NODE_PMEM; }
@@ -102,6 +108,33 @@ public:
     mem_watermark_ok = mem_free >
       mem_total * watermark_percent / 100;
   }
+
+  void set_peer_node(NumaNode* peer_node)
+  {
+    switch (type_) {
+      case NUMA_NODE_DRAM:
+        demote_target = peer_node;
+        break;
+      case NUMA_NODE_PMEM:
+        promote_target = peer_node;
+        break;
+      default:
+        break;
+    }
+  }
+
+  NumaNode* get_peer_node()
+  {
+    switch (type_) {
+      case NUMA_NODE_DRAM:
+        return demote_target;
+      case NUMA_NODE_PMEM:
+        return promote_target;
+      default:
+        return NULL;
+    }
+  }
+
 };
 
 class NumaNodeCollection
@@ -115,6 +148,7 @@ class NumaNodeCollection
   std::vector<NumaNode *> nodes;
   std::vector<NumaNode *> dram_nodes;
   std::vector<NumaNode *> pmem_nodes;
+  std::map<int, int> peer_map;
 
   void init_cpu_map(void);
 
@@ -189,11 +223,22 @@ public:
     return nid >= 0 && nid <= max_node && nodes[nid];
   }
 
+  void dump();
+
 private:
     void collect_by_config(NumaHWConfig *numa_option);
     void collect_by_sysfs(void);
     int parse_sysfs_per_node(int node_id);
     int parse_field(const char* field_name, std::string &value);
+
+    numa_node_type get_numa_type(std::string &type_str);
+
+    int  save_node(int node_id, numa_node_type type,
+                   int peer_node);
+
+    void set_default_peer_node();
+
+    void setup_node_pair();
 };
 
 #endif /* __NUMA__HH__ */
