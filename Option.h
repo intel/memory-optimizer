@@ -42,9 +42,9 @@ struct Policy
 typedef std::vector<Policy> PolicySet;
 
 
-struct NumaConfig{
-  std::string numa_dram_mask;
-  std::string numa_pmem_mask;
+struct NumaHWConfig{
+  std::string numa_dram_list;
+  std::string numa_pmem_list;
   std::string pmem_dram_map;
 };
 

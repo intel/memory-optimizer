@@ -44,21 +44,21 @@ void NumaNodeCollection::init_cpu_map(void)
   numa_free_cpumask(cpumask);
 }
 
-void NumaNodeCollection::collect(NumaConfig *numa_option)
+void NumaNodeCollection::collect(NumaHWConfig *numa_option)
 {
-  if (numa_option) {
-    if (numa_option->numa_dram_mask.size()
-      || numa_option->numa_pmem_mask.size()
-      || numa_option->pmem_dram_map.size()) {
-      collect_by_config(numa_option);
-      return;
-    }
-  }
+  bool is_opt_avail;
 
   collect_by_sysfs();
+
+  is_opt_avail = numa_option &&
+                 (numa_option->numa_dram_list.size()
+                  || numa_option->numa_pmem_list.size()
+                  || numa_option->pmem_dram_map.size());
+  if (is_opt_avail)
+    collect_by_config(numa_option);
 }
 
-void NumaNodeCollection::collect_by_config(NumaConfig *numa_option)
+void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
 {
   int i, pmem_node, dram_node;
   struct bitmask *dram_mask, *pmem_mask;
@@ -70,8 +70,8 @@ void NumaNodeCollection::collect_by_config(NumaConfig *numa_option)
    * after it is available.
    */
   max_node = numa_max_node();
-  dram_mask = numa_parse_nodestring(numa_option->numa_dram_mask.c_str());
-  pmem_mask = numa_parse_nodestring(numa_option->numa_pmem_mask.c_str());
+  dram_mask = numa_parse_nodestring(numa_option->numa_dram_list.c_str());
+  pmem_mask = numa_parse_nodestring(numa_option->numa_pmem_list.c_str());
 
   all_mask = numa_allocate_nodemask();
   numa_bitmask_clearall(all_mask);
