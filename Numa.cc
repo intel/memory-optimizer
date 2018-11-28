@@ -15,6 +15,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <linux/limits.h>
+
+#include <map>
 
 #include "Numa.h"
 
@@ -41,7 +44,7 @@ void NumaNodeCollection::init_cpu_map(void)
   numa_free_cpumask(cpumask);
 }
 
-void NumaNodeCollection::collect(NumaConfig* numa_option)
+void NumaNodeCollection::collect(NumaConfig *numa_option)
 {
   if (numa_option) {
     if (numa_option->numa_dram_mask.size()
@@ -55,7 +58,7 @@ void NumaNodeCollection::collect(NumaConfig* numa_option)
   collect_by_sysfs();
 }
 
-void NumaNodeCollection::collect_by_config(NumaConfig* numa_option)
+void NumaNodeCollection::collect_by_config(NumaConfig *numa_option)
 {
   int i, pmem_node, dram_node;
   struct bitmask *dram_mask, *pmem_mask;
@@ -117,7 +120,74 @@ void NumaNodeCollection::collect_by_config(NumaConfig* numa_option)
 
 void NumaNodeCollection::collect_by_sysfs(void)
 {
+  int max_node = numa_max_node();
+  int err;
 
+  for (int i = 0; i <= max_node; ++i) {
+    err = parse_sysfs_per_node(i);
+    if (err < 0)
+      return;
+  }
+}
+
+int NumaNodeCollection::parse_sysfs_per_node(int node_id)
+{
+  const char *node_path = "/sys/devices/system/node/node%d/%s";
+  char path[PATH_MAX];
+  int err;
+
+  std::map<const char*, std::string> items;
+
+  items["type"] = "";
+  items["peer_node"] = "";
+
+  for (auto &i : items) {
+    snprintf(path, sizeof(path),
+             node_path,
+             node_id, i.first);
+    err = parse_field(path, i.second);
+    if (err < 0)
+      return err;
+  }
+
+  printf("node %d type: %s peer_node: %s\n",
+         node_id,
+         items["type"].c_str(),
+         items["peer_node"].c_str());
+
+  // parse node type to ENUM type and add into vector
+
+  return 0;
+}
+
+int NumaNodeCollection::parse_field(const char *field_name,
+                                    std::string &value)
+{
+  FILE *file;
+  char read_buf[32];
+
+  file = fopen(field_name, "r");
+  if (!file) {
+    fprintf(stderr, "open %s failed, err = %d\n",
+            field_name, -errno);
+    return -errno;
+  }
+
+  do {
+
+    if (!fgets(read_buf, sizeof(read_buf), file)) {
+      fprintf(stderr, "read %s failed\n",
+              field_name);
+      break;
+    }
+
+    value = read_buf;
+    value.pop_back(); // trim trailing '\n'
+
+  }while(0);
+
+  fclose(file);
+  return 0;
 }
 
 void NumaNodeCollection::collect_dram_nodes_meminfo(void)

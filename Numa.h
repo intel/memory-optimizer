@@ -123,7 +123,7 @@ public:
 
   struct bitmask *all_mask;
 
-  void collect(NumaConfig* numa_option = NULL);
+  void collect(NumaConfig *numa_option = NULL);
   void collect_dram_nodes_meminfo(void);
   void check_dram_nodes_watermark(int watermark_percent);
   int get_node_lowest_cpu(int node);
@@ -190,9 +190,10 @@ public:
   }
 
 private:
-    void collect_by_config(NumaConfig* numa_option);
+    void collect_by_config(NumaConfig *numa_option);
     void collect_by_sysfs(void);
-
+    int parse_sysfs_per_node(int node_id);
+    int parse_field(const char* field_name, std::string &value);
 };
 
 #endif /* __NUMA__HH__ */
