@@ -5,12 +5,18 @@
 #include <string>
 #include <vector>
 
+#include "ProcIdlePages.h"
+
 class BandwidthLimit;
 class Formatter;
+class NumaNodeCollection;
+class NumaNode;
 
 #define MPOL_MF_SW_YOUNG (1<<7)
 
 typedef std::unordered_map<int, int> MovePagesStatusCount;
+class NumaNodeCollection;
+
 
 struct MoveStats
 {
@@ -29,15 +35,16 @@ class MovePages
     ~MovePages() {};
 
     void set_pid(pid_t i)                     { pid = i; }
-    void set_target_node(int nid)             { target_node = nid; }
     void set_page_shift(int t)                { page_shift = t; }
     void set_batch_size(unsigned long npages) { batch_size = npages; }
     void set_flags(int f)                     { flags = f; }
-    void set_throttler(BandwidthLimit* new_throttler) {throttler = new_throttler;}
-
-    long move_pages(std::vector<void *>& addrs);
-    long move_pages(void **addrs, unsigned long count);
-    long locate_move_pages(std::vector<void *>& addrs, MoveStats *stats);
+    void set_throttler(BandwidthLimit* new_throttler) { throttler = new_throttler; }
+    void set_migration_type(ProcIdlePageType new_type) { type = new_type; }
+    long move_pages(std::vector<void *>& addrs, bool is_locate);
+    long move_pages(void **addrs, unsigned long count, bool is_locate);
+    long locate_move_pages(std::vector<void *>& addrs,
+                           NumaNodeCollection* numa_collection,
+                           MoveStats *stats);
 
     std::vector<int>& get_status()            { return status; }
     MovePagesStatusCount& get_status_count()  { return status_count; }
@@ -47,6 +54,8 @@ class MovePages
     void show_status_count(Formatter* fmt);
     void show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum);
     void account_stats(MoveStats *stats);
+    void calc_target_nodes(NumaNodeCollection* numa_collection);
+    int get_target_node(NumaNode* node_obj);
 
   private:
     pid_t pid;
@@ -59,9 +68,13 @@ class MovePages
     // Get the status after migration
     std::vector<int> status;
 
+    std::vector<int> target_nodes;
+
     MovePagesStatusCount status_count;
 
     BandwidthLimit* throttler;
+
+    ProcIdlePageType type;
 };
 
 #endif

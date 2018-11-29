@@ -7,6 +7,7 @@
 #include "MovePages.h"
 #include "Formatter.h"
 #include "BandwidthLimit.h"
+#include "Numa.h"
 
 void MoveStats::clear()
 {
@@ -24,21 +25,20 @@ MovePages::MovePages() :
 {
 }
 
-long MovePages::move_pages(std::vector<void *>& addrs)
+long MovePages::move_pages(std::vector<void *>& addrs, bool is_locate)
 {
-  return move_pages(&addrs[0], addrs.size());
+  return move_pages(&addrs[0], addrs.size(), false);
 }
 
-long MovePages::move_pages(void **addrs, unsigned long count)
+long MovePages::move_pages(void **addrs, unsigned long count, bool is_locate)
 {
   std::vector<int> nodes;
   const int *pnodes;
   long ret = 0;
 
-  if (target_node >= 0) {
+  if (!is_locate) {
     // move pages
-    nodes.resize(count, target_node);
-    pnodes = &nodes[0];
+    pnodes = &target_nodes[0];
   } else
     // locate pages
     pnodes = NULL;
@@ -52,7 +52,9 @@ long MovePages::move_pages(void **addrs, unsigned long count)
   return ret;
 }
 
-long MovePages::locate_move_pages(std::vector<void *>& addrs, MoveStats *stats)
+long MovePages::locate_move_pages(std::vector<void *>& addrs,
+                                  NumaNodeCollection* numa_collection,
+                                  MoveStats *stats)
 {
   unsigned long nr_pages = addrs.size();
   long ret = 0;
@@ -63,19 +65,18 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs, MoveStats *stats)
 
     status.resize(nr_pages);
 
-    int nid = target_node;
-    target_node = -1; // cheat move_pages() to locate pages
-    ret = move_pages(&addrs[i], size);
-    target_node = nid;
+    // cheat move_pages() to locate pages
+    ret = move_pages(&addrs[i], size, true);
     if (ret)
       break;
 
+    calc_target_nodes(numa_collection);
     clear_status_count();
     calc_status_count();
     account_stats(stats);
     add_status_count(status_sum);
 
-    ret = move_pages(&addrs[i], size);
+    ret = move_pages(&addrs[i], size, false);
     if (ret)
       break;
   }
@@ -140,4 +141,42 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
     else
       fmt->print("%'15lu  %2d%%  %s\n", kb, percent(kb, total_kb), strerror(-nid));
   }
+}
+
+void MovePages::calc_target_nodes(NumaNodeCollection* numa_collection)
+{
+  NumaNode* numa_obj;
+
+  target_nodes.resize(status.size());
+
+  for (size_t i = 0; i < status.size(); ++i) {
+    numa_obj = numa_collection->get_node(status[i]);
+    target_nodes[i] = get_target_node(numa_obj);
+  }
+}
+
+int MovePages::get_target_node(NumaNode* node_obj)
+{
+  NumaNode* peer_node;
+  bool is_dram_to_dram, is_pmem_to_pmem;
+
+  if (!node_obj) {
+    fprintf(stderr, "get_target_node() node_obj = NULL\n");
+    return -1;
+  }
+
+  is_dram_to_dram = (type & PAGE_ACCESSED_MASK)
+                    && !node_obj->is_pmem();
+  is_pmem_to_pmem = (!(type & PAGE_ACCESSED_MASK))
+                    && node_obj->is_pmem();
+
+  if (is_dram_to_dram || is_pmem_to_pmem)
+    return node_obj->id();
+
+  peer_node = node_obj->get_peer_node();
+  if (peer_node)
+    return peer_node->id();
+
+  fprintf(stderr, "get_target_node() failed\n");
+  return -2;
 }
