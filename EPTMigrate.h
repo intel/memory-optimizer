@@ -15,6 +15,8 @@
 #include "EPTScan.h"
 
 class BandwidthLimit;
+class NumaNodeCollection;
+class ProcVmstat;
 
 struct MigrateStats: public MoveStats
 {
@@ -31,8 +33,12 @@ class EPTMigrate : public EPTScan
 
     int migrate();
     int migrate(ProcIdlePageType type);
+
     void set_throttler(BandwidthLimit* new_throttler)
     { migrator.set_throttler(new_throttler); }
+
+    void set_numacollection(NumaNodeCollection* new_numa_collection)
+    { numa_collection = new_numa_collection; }
 
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
@@ -45,19 +51,20 @@ class EPTMigrate : public EPTScan
     // status => count
     std::unordered_map<int, int> calc_migrate_stats();
 
+    unsigned long calc_numa_anon_capacity(ProcIdlePageType type, ProcVmstat& proc_vmstat);
+
   private:
     // The Virtual Address of hot/cold pages.
     // [0...n] = [VA0...VAn]
     //std::vector<unsigned long> hot_pages;
     std::vector<void *> pages_addr[PMD_ACCESSED + 1];
 
-    std::vector<int> migrate_target_node;
-
     // Get the status after migration
     std::vector<int> migrate_status;
 
     MigrateStats migrate_stats;
     MovePages migrator;
+    NumaNodeCollection* numa_collection;
 
     Formatter fmt;
 };

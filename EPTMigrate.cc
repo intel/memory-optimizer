@@ -15,6 +15,7 @@
 #include "lib/stats.h"
 #include "AddrSequence.h"
 #include "VMAInspect.h"
+#include "Numa.h"
 
 #define MPOL_MF_SW_YOUNG (1<<7)
 
@@ -38,15 +39,8 @@ void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
   fmt.print("need to migrate: %'15lu %3d%% of %4s pages\n", move_kb, percent(move_kb, to_move_kb), type);
 }
 
-EPTMigrate::EPTMigrate()
+EPTMigrate::EPTMigrate() : numa_collection(NULL)
 {
-  migrate_target_node.resize(PMD_ACCESSED + 1);
-  migrate_target_node[PTE_IDLE]      = Option::PMEM_NUMA_NODE;
-  migrate_target_node[PTE_ACCESSED]  = Option::DRAM_NUMA_NODE;
-
-  migrate_target_node[PMD_IDLE]      = Option::PMEM_NUMA_NODE;
-  migrate_target_node[PMD_ACCESSED]  = Option::DRAM_NUMA_NODE;
-
   // inherit from global settings
   policy.migrate_what = option.migrate_what;
   policy.dump_distribution = false;
@@ -80,13 +74,14 @@ size_t EPTMigrate::get_threshold_refs(ProcIdlePageType type,
   double ratio;
 
   if (option.dram_percent) {
-    if (migrate_target_node[type] == Option::DRAM_NUMA_NODE)
+    if (type & PAGE_ACCESSED_MASK)
       ratio = option.dram_percent / 100.0;
     else
       ratio = (100.0 - option.dram_percent) / 100.0;
   } else {
     ProcVmstat proc_vmstat;
-    ratio = (double) proc_vmstat.anon_capacity(migrate_target_node[type]) / proc_vmstat.anon_capacity();
+    ratio = (double) calc_numa_anon_capacity(type, proc_vmstat)
+                     / proc_vmstat.anon_capacity();
   }
 
   // XXX: this assumes all processes have same hot/cold distribution
@@ -232,9 +227,35 @@ long EPTMigrate::do_move_pages(ProcIdlePageType type)
   migrator.set_pid(pid);
   migrator.set_page_shift(pagetype_shift[type]);
   migrator.set_batch_size(1024);
-  migrator.set_target_node(migrate_target_node[type]);
+
+  // migrator.set_target_node(migrate_target_node[type]);
+  // change to set numa_collection into migrator;
 
   ret = migrator.locate_move_pages(addrs, &migrate_stats);
 
   return ret;
+}
+
+unsigned long EPTMigrate::calc_numa_anon_capacity(ProcIdlePageType type,
+                                                  ProcVmstat& proc_vmstat)
+{
+  unsigned long sum;
+  NumaNodeCollection::iterator iter, iter_end;
+
+  if (!numa_collection)
+    return 0;
+
+  if (type & PAGE_ACCESSED_MASK) {
+    iter = numa_collection->dram_begin();
+    iter_end = numa_collection->dram_end();
+  } else {
+    iter = numa_collection->pmem_begin();
+    iter_end = numa_collection->pmem_end();
+  }
+
+  for(; iter != iter_end; ++iter) {
+    sum += proc_vmstat.anon_capacity(iter->id());
+  }
+
+  return sum;
 }
