@@ -37,8 +37,10 @@ class EPTMigrate : public EPTScan
     void set_throttler(BandwidthLimit* new_throttler)
     { migrator.set_throttler(new_throttler); }
 
-    void set_numacollection(NumaNodeCollection* new_numa_collection)
-    { numa_collection = new_numa_collection; }
+    void set_numacollection(NumaNodeCollection* new_numa_collection) {
+      numa_collection = new_numa_collection;
+      migrator.set_numacollection(new_numa_collection);
+    }
 
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);

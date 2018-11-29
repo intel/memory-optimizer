@@ -230,7 +230,6 @@ long EPTMigrate::do_move_pages(ProcIdlePageType type)
   migrator.set_migration_type(type);
 
   ret = migrator.locate_move_pages(addrs,
-                                   numa_collection,
                                    &migrate_stats);
 
   return ret;
