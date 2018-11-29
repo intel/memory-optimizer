@@ -98,6 +98,16 @@ unsigned long ProcVmstat::anon_capacity(int nid)
   return sum;
 }
 
+unsigned long ProcVmstat::vmstat(std::vector<int>& nid)
+{
+  unsigned long sum = 0;
+
+  for (auto& i : nid)
+    sum += anon_capacity(i);
+
+  return sum;
+}
+
 void ProcVmstat::show_numa_stats()
 {
   load_vmstat();
