@@ -26,7 +26,7 @@ MovePages::MovePages() :
 
 long MovePages::move_pages(std::vector<void *>& addrs, bool is_locate)
 {
-  return move_pages(&addrs[0], addrs.size(), false);
+  return move_pages(&addrs[0], addrs.size(), is_locate);
 }
 
 long MovePages::move_pages(void **addrs, unsigned long count, bool is_locate)
