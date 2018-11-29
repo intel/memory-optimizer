@@ -288,6 +288,11 @@ void NumaNodeCollection::dump()
 
   printf("All nodes:\n");
   for (auto& numa_obj : nodes) {
+
+    // fix segment fault
+    if (!numa_obj)
+      continue;
+
     peer_node = numa_obj->get_peer_node();
 
     if (peer_node) {
@@ -315,4 +320,3 @@ void NumaNodeCollection::dump()
            numa_obj->id(),
            numa_obj->type());
 }
-
