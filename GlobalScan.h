@@ -8,6 +8,7 @@
 #include "Process.h"
 #include "EPTMigrate.h"
 #include "BandwidthLimit.h"
+#include "Numa.h"
 
 enum JobIntent
 {
@@ -70,6 +71,7 @@ class GlobalScan
     std::atomic_int conf_reload_flag;
 
     BandwidthLimit throttler;
+    NumaNodeCollection numa_collection;
 };
 
 #endif

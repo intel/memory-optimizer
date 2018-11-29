@@ -1,4 +1,3 @@
-
 #include <thread>
 #include <atomic>
 #include <iostream>
@@ -64,6 +63,7 @@ int GlobalScan::collect()
   for (auto &kv: process_collection.get_proccesses())
     for (auto &m: kv.second->get_ranges()) {
       m->set_throttler(&throttler);
+      m->set_numacollection(&numa_collection);
       idle_ranges.push_back(m);
     }
   return 0;
@@ -289,4 +289,5 @@ void GlobalScan::reload_conf()
 void GlobalScan::apply_option()
 {
   throttler.set_bwlimit_mbps(option.bandwidth_mbps);
+  numa_collection.collect();
 }
