@@ -2,6 +2,7 @@
 #include <numaif.h>
 #include <limits.h>
 #include <sys/user.h>
+#include <utility>
 
 #include "lib/stats.h"
 #include "MovePages.h"
@@ -68,7 +69,7 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
     if (ret)
       break;
 
-    calc_target_nodes();
+    calc_target_nodes(addrs, size);
     clear_status_count();
     calc_status_count();
     account_stats(stats);
@@ -89,7 +90,7 @@ void MovePages::account_stats(MoveStats *stats)
   int shift = page_shift - 10;
 
   for (auto &kv : status_count) {
-    if (is_node_in_target_set(kv.first))
+    if (kv.first < 0 || is_node_in_target_set(kv.first))
       skip_kb += kv.second << shift;
     else if (kv.first >= 0)
       move_kb += kv.second << shift;
@@ -141,15 +142,32 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
   }
 }
 
-void MovePages::calc_target_nodes(void)
+void MovePages::calc_target_nodes(std::vector<void *>& addrs, long size)
 {
   NumaNode* numa_obj;
+  int last_good_index;
 
-  target_nodes.resize(status.size());
+  target_nodes.resize(size);
 
-  for (size_t i = 0; i < status.size(); ++i) {
-    numa_obj = numa_collection->get_node(status[i]);
-    target_nodes[i] = get_target_node(numa_obj);
+  /*
+    in status:
+    0, -14, 0, -2, -2 => 0, 0, -14, -2, -2
+
+    also changed the corresponding value in addrs
+   */
+  for (int i = 0; i < size; ++i) {
+    if (status[i] >= 0) {
+      numa_obj = numa_collection->get_node(status[i]);
+      target_nodes[i] = get_target_node(numa_obj);
+    } else {
+      last_good_index = find_last_good(status, i);
+      if (last_good_index == i)
+        break;
+
+      std::swap(addrs[i], addrs[last_good_index]);
+      std::swap(status[i], status[last_good_index]);
+      --i;
+    }
   }
 }
 
@@ -200,4 +218,13 @@ bool MovePages::is_node_in_target_set(int node_id)
     return !numa_obj->is_pmem();
   else
     return numa_obj->is_pmem();
+}
+
+long MovePages::find_last_good(std::vector<int>& status, long end_pos)
+{
+  for (long i = status.size() - 1; i > end_pos; --i) {
+    if (status[i] >= 0)
+      return i;
+  }
+  return end_pos;
 }
