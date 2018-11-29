@@ -227,11 +227,11 @@ long EPTMigrate::do_move_pages(ProcIdlePageType type)
   migrator.set_pid(pid);
   migrator.set_page_shift(pagetype_shift[type]);
   migrator.set_batch_size(1024);
+  migrator.set_migration_type(type);
 
-  // migrator.set_target_node(migrate_target_node[type]);
-  // change to set numa_collection into migrator;
-
-  ret = migrator.locate_move_pages(addrs, &migrate_stats);
+  ret = migrator.locate_move_pages(addrs,
+                                   numa_collection,
+                                   &migrate_stats);
 
   return ret;
 }
