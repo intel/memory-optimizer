@@ -58,7 +58,7 @@ int VMAInspect::dump_vma_nodes(proc_maps_entry& vma)
     fill_addrs(addrs, vma.start + i * addrs.size() * PAGE_SIZE);
 
     locator.clear_status_count();
-    err = locator.move_pages(addrs);
+    err = locator.move_pages(addrs, true);
     if (err) {
       perror("move_pages");
       return err;
