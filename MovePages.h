@@ -43,8 +43,9 @@ class MovePages
     long move_pages(std::vector<void *>& addrs, bool is_locate);
     long move_pages(void **addrs, unsigned long count, bool is_locate);
     long locate_move_pages(std::vector<void *>& addrs,
-                           NumaNodeCollection* numa_collection,
                            MoveStats *stats);
+    void set_numacollection(NumaNodeCollection* new_collection)
+    { numa_collection = new_collection; }
 
     std::vector<int>& get_status()            { return status; }
     MovePagesStatusCount& get_status_count()  { return status_count; }
@@ -54,13 +55,13 @@ class MovePages
     void show_status_count(Formatter* fmt);
     void show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum);
     void account_stats(MoveStats *stats);
-    void calc_target_nodes(NumaNodeCollection* numa_collection);
+    void calc_target_nodes(void);
     int get_target_node(NumaNode* node_obj);
+    bool is_node_in_target_set(int node_id);
 
   private:
     pid_t pid;
     int flags;
-    int target_node;
 
     unsigned long page_shift;
     unsigned long batch_size; // used by locate_move_pages()
@@ -75,6 +76,8 @@ class MovePages
     BandwidthLimit* throttler;
 
     ProcIdlePageType type;
+
+    NumaNodeCollection* numa_collection;
 };
 
 #endif

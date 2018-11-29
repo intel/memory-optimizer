@@ -18,7 +18,6 @@ void MoveStats::clear()
 
 MovePages::MovePages() :
   flags(MPOL_MF_MOVE | MPOL_MF_SW_YOUNG),
-  target_node(-1),
   page_shift(PAGE_SHIFT),
   batch_size(ULONG_MAX),
   throttler(NULL)
@@ -53,7 +52,6 @@ long MovePages::move_pages(void **addrs, unsigned long count, bool is_locate)
 }
 
 long MovePages::locate_move_pages(std::vector<void *>& addrs,
-                                  NumaNodeCollection* numa_collection,
                                   MoveStats *stats)
 {
   unsigned long nr_pages = addrs.size();
@@ -70,7 +68,7 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
     if (ret)
       break;
 
-    calc_target_nodes(numa_collection);
+    calc_target_nodes();
     clear_status_count();
     calc_status_count();
     account_stats(stats);
@@ -91,7 +89,7 @@ void MovePages::account_stats(MoveStats *stats)
   int shift = page_shift - 10;
 
   for (auto &kv : status_count) {
-    if (kv.first == target_node)
+    if (is_node_in_target_set(kv.first))
       skip_kb += kv.second << shift;
     else if (kv.first >= 0)
       move_kb += kv.second << shift;
@@ -143,7 +141,7 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
   }
 }
 
-void MovePages::calc_target_nodes(NumaNodeCollection* numa_collection)
+void MovePages::calc_target_nodes(void)
 {
   NumaNode* numa_obj;
 
@@ -179,4 +177,27 @@ int MovePages::get_target_node(NumaNode* node_obj)
 
   fprintf(stderr, "get_target_node() failed\n");
   return -2;
+}
+
+bool MovePages::is_node_in_target_set(int node_id)
+{
+  NumaNode* numa_obj;
+
+  if (node_id < 0) {
+    fprintf(stderr, "is_node_in_target_set(): unexpected  node_id %d \n",
+            node_id);
+    return false;
+  }
+
+  numa_obj = numa_collection->get_node(node_id);
+  if (!numa_obj) {
+    fprintf(stderr, "is_node_in_target_set(): non-exist node_id %d \n",
+            node_id);
+    return false;
+  }
+
+  if (type & PAGE_ACCESSED_MASK)
+    return !numa_obj->is_pmem();
+  else
+    return numa_obj->is_pmem();
 }
