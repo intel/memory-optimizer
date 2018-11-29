@@ -27,6 +27,8 @@ typedef long long s64;
 #define NS_PER_MSEC	1000000ULL
 #define PAGE_SHIFT	12
 #define PAGE_SIZE	(1UL << PAGE_SHIFT)
-#define PAGE_MASK	(PAGE_SIZE - 1)
+
+// remove because duplicated with /usr/include/x86_64-linux-gnu/sys/user.h:174:0:
+// #define PAGE_MASK	(PAGE_SIZE - 1)
 
 #endif /* __COMMON__HH__ */
