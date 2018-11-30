@@ -23,7 +23,8 @@
 
 
 static std::unordered_map<std::string, numa_node_type> numa_type_map = {
-  {"ram", NUMA_NODE_DRAM},
+  {"ram", NUMA_NODE_DRAM}, // keep for a while to work with legacy kernel
+  {"dram", NUMA_NODE_DRAM},
   {"pmem", NUMA_NODE_PMEM},
 };
 
