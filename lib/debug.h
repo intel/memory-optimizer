@@ -3,6 +3,7 @@
 
 #define printd(fmt, args...)	verbose_printf(1, fmt, ##args)
 #define printdd(fmt, args...)	verbose_printf(2, fmt, ##args)
+#define err(x) perror(x), exit(1)
 
 extern int debug_level(void);
 extern int verbose_printf(int level, const char *format, ...);

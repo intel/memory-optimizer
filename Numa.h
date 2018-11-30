@@ -21,8 +21,8 @@
 #include <numa.h>
 #include <numaif.h>
 
-#include "common.h"
 #include "Option.h"
+#include "lib/debug.h"
 
 /*
  * BaseIterator is iterator for container with element type "T *", so
