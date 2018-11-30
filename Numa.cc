@@ -138,8 +138,8 @@ void NumaNodeCollection::collect_by_sysfs(void)
       return;
   }
 
+  set_default_peer_node();
   setup_node_pair();
-
 }
 
 int NumaNodeCollection::parse_sysfs_per_node(int node_id)
@@ -251,7 +251,6 @@ void NumaNodeCollection::set_default_peer_node()
 
 void NumaNodeCollection::setup_node_pair()
 {
-  set_default_peer_node();
   for (auto& iter : peer_map)
     nodes[iter.first]->set_peer_node(nodes[iter.second]);
 }
