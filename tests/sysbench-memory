@@ -6,16 +6,36 @@ project_dir=$(dirname $tests_dir)
 cd "$tests_dir" || exit
 
 # task-refs params on thp=never
-setup_migration_thp_never()
+setup_migration_thp_never_hot()
 {
-	loop=10
-	interval=$(echo "0.1 * $mem_gb" | bc)
+	loop=15
+	#interval=$(echo "0.5 * $mem_gb" | bc)
+	interval=0.01
 }
 
-setup_migration_thp_always()
+setup_migration_thp_never_cold()
+{
+	loop=10
+	interval=$(echo "0.5 * $mem_gb" | bc)
+	interval=0.5
+}
+
+setup_migration_thp_always_hot()
+{
+	loop=20
+	#interval=$(echo "0.01 * $mem_gb" | bc)
+	interval=1
+	interval=0.1
+	interval=0.01
+	interval=3
+	interval=0.00001
+}
+
+setup_migration_thp_always_cold()
 {
 	loop=20
 	interval=$(echo "0.01 * $mem_gb" | bc)
+	interval=0.5
 }
 
 setup_sys()
@@ -31,24 +51,62 @@ run_migrations()
 	local what=$1
 	local i
 
-	for i in $(seq 30)
+	setup_migration_thp_${thp}_${what}
+	hot_min_refs=6
+	hot_min_refs=$((loop-1))
+	hot_min_refs=$((loop))
+
+	for i in $(seq 300)
 	do
 		sleep 1
 		grep -q "Threads started" $log_file && break
 	done
 
+	#numactl -a $sysbench_pid
+
+	sys_refs_cmd=(
+		#strace
+		#schedtool -R -p 20
+		nice -n-20
+		stdbuf -oL
+		$project_dir/sys-refs
+		#-vv
+		-l 6
+		-s 10
+		#-i $interval
+		-d $dram_percent
+		-m $what
+		-c $tests_dir/sysbench-memory.yaml
+		#-p $sysbench_pid
+	)
+
         task_refs_cmd=(
+		#strace
                 $project_dir/task-refs
+		#-vv
                 -i $interval
                 -d $dram_percent
                 -m $what
+		#-m none
                 -p $sysbench_pid
         )
+
+	#cat /proc/$sysbench_pid/smaps
+
+	if ((1)); then
+		#echo sysbench_pid: $sysbench_pid
+		echo "${sys_refs_cmd[@]}"
+		/usr/bin/time -v "${sys_refs_cmd[@]}"
+		#| stdbuf -i0 -oL grcat $project_dir/tests/grc-conf.sys-refs
+		return
+	fi
 
 	for i in 2 1 1
 	do
 		sleep $i
 		echo
+		#echo $project_dir/task-refs -l $loop -i $interval -m $what -H $hot_min_refs -p $sysbench_pid
+		#time $project_dir/task-refs -l $loop -i $interval -m $what -H $hot_min_refs -p $sysbench_pid
 		echo "${task_refs_cmd[@]}"
 		/usr/bin/time -v "${task_refs_cmd[@]}"
 		cat refs-count-$sysbench_pid
@@ -68,22 +126,29 @@ run_test()
 		# -e dTLB-load-misses,iTLB-load-misses
 		# --
 
+		#/usr/bin/time -v
+
 		sysbench
+		#/usr/local/bin/sysbench-stats
 		--time=$time
 		memory
 		--memory-block-size=$memory_block_size
-		--memory-total-size=1T
+		--memory-total-size=1024T
+		--memory-scope=$memory_scope
 		--memory-oper=$memory_oper
 		--memory-access-mode=rnd
 		--rand-type=$rand_type
+		--rand-pareto-h=0.1
+		--threads=$threads
 		run
 	)
 
-	log_file=$log_dir/$memory_oper-$rand_type-$thp.$suffix
+	log_file=$log_dir/$memory_oper-$rand_type-$threads-$thp.$suffix
 	exec > $log_file 2>&1
 
-	echo numactl $mempolicy "${sysbench_cmd[@]}"
-	numactl $mempolicy "${sysbench_cmd[@]}" &
+	echo numactl $mempolicy -- "${sysbench_cmd[@]}"
+	time numactl $mempolicy -- "${sysbench_cmd[@]}" &
+	#| stdbuf -i0 -oL grcat $project_dir/tests/grc-conf.sys-refs &
 
 	local sysbench_pid=$!
 
@@ -107,34 +172,62 @@ run_test()
 run_tests()
 {
 	setup_sys
-	setup_migration_thp_$thp
 
+	run_test h "--preferred=1"
+	#run_test h "-m1"
 	run_test 0 "-m0"
 	run_test 1 "-m1"
 	# run_test i "-i all"
-	run_test h "-m1"
-	# run_test c "-m0"
+	#run_test c "-m0"
 }
 
 log_dir=$(basename $0)-$(date +'%Y%m%d_%H%M%S')
 mkdir -p $tests_dir/$log_dir
 cp -a $script_path $tests_dir/$log_dir/
-echo vimdiff $tests_dir/$log_dir/*.?
+echo "less    $tests_dir/$log_dir/*.?"
+echo "tail -f $tests_dir/$log_dir/*.h | grcat $project_dir/tests/grc-conf.sys-refs"
 
-thp=never
 thp=always
-mem_gb=2
+thp=never
+mem=2G
+mem=64M
+mem=256M
+mem=1G
+if ((1)); then
+	memory_scope=global
+	mem=128G
+	mem=64G
+	mem=1G
+	mem=16G
+	mem=32G
+	mem=8G
+else
+	mem=256M
+	mem=1G
+	memory_scope=local
+fi
 dram_percent=25
+dram_percent=45
+dram_percent=55
+dram_percent=99
 
 # sysbench params
-time=10
+time=1800
+time=600
 rand_type=pareto
+rand_type=gaussian
 memory_oper=read
-memory_block_size=${mem_gb}G
+memory_block_size=$mem
+threads=1
+threads=8
+threads=16
+threads=32
+threads=64
+threads=1
 
 run_tests
-# memory_oper=write
-# run_tests
+memory_oper=write
+run_tests
 # this requires adjusting interval
 # thp=always
 # run_tests

@@ -1,0 +1,9 @@
+options:
+  dump_options: false
+
+policies:
+  - name: usemem
+    placement: dram
+  - name: sysbench
+    migration: hot
+    dump_distribution: true
