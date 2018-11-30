@@ -43,6 +43,11 @@ typedef std::vector<Policy> PolicySet;
 
 
 struct NumaHWConfig{
+  bool is_valid() {
+    return numa_dram_list.size()
+           || numa_pmem_list.size()
+           || pmem_dram_map.size();
+  }
   std::string numa_dram_list;
   std::string numa_pmem_list;
   std::string pmem_dram_map;

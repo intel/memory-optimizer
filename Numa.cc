@@ -53,15 +53,9 @@ void NumaNodeCollection::init_cpu_map(void)
 
 void NumaNodeCollection::collect(NumaHWConfig *numa_option)
 {
-  bool is_opt_avail;
-
   collect_by_sysfs();
 
-  is_opt_avail = numa_option &&
-                 (numa_option->numa_dram_list.size()
-                  || numa_option->numa_pmem_list.size()
-                  || numa_option->pmem_dram_map.size());
-  if (is_opt_avail)
+  if (numa_option && numa_option->is_valid())
     collect_by_config(numa_option);
 }
 
