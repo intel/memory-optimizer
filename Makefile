@@ -3,7 +3,7 @@ CXX = g++
 DEBUG_FLAGS = -g -fsanitize=address
 DEBUG_FLAGS = -g -O3
 CFLAGS = $(DEBUG_FLAGS) -Wall
-CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++14
+CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++11
 LIB_SOURCE_FILES = lib/memparse.c lib/iomem_parse.c lib/page-types.c
 TASK_REFS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc EPTMigrate.cc AddrSequence.cc \
 			 MovePages.cc VMAInspect.cc EPTScan.cc BandwidthLimit.cc Numa.cc \

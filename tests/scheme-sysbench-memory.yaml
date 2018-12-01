@@ -1,0 +1,28 @@
+dram_nodes:
+- 0
+#  - 1
+pmem_nodes:
+#  - 0
+- 1
+#  - 2
+#  - 3
+ratios: # PMEM:DRAM
+- 0     # pure DRAM
+- 1
+#  - 2     # 2:1 PMEM:DRAM
+#  - 4
+- 999   # pure PMEM
+single_dram_node: true
+workload_script: run-sysbench-memory.sh
+workload_params:
+- &params
+  time: 60
+  threads: 1
+  memory_block_size: 1G
+  memory_scope: local
+  rand_type: gaussian
+  memory_oper: read
+- <<: *params
+  memory_oper: write
+migrate_cmd: sys-refs
+migrate_config: tests/test-sysbench/sysbench-memory.yaml

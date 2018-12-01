@@ -7,3 +7,5 @@ policies:
   - name: sysbench
     migration: hot
     dump_distribution: true
+  - name: qemu-system-x86_64
+    migration: hot
