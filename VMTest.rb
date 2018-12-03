@@ -4,6 +4,20 @@ require 'yaml'
 require_relative "ProcVmstat"
 require_relative "ProcStatus"
 
+# Basic test scheme:
+#
+# baseline run:
+#         - run qemu on interleaved DRAM+PMEM nodes
+#         - run workload in qemu
+#
+# migrate run:
+#         - run qemu on interleaved DRAM+PMEM nodes
+#         - run workload in qemu
+#         - run usemem to consume DRAM pages
+#         - run sys-refs to migrate hot pages to DRAM, creating LRU pressure so
+#           that kernel will migrate cold pages to AEP.  sys-refs will auto
+#           exit when all hot pages are roughly in DRAM with this patch.
+
 class VMTest
 
   attr_accessor :transparent_hugepage
@@ -105,6 +119,7 @@ class VMTest
 
   def read_qemu_rss
     # only necessary if start on pmem nodes, then migrate to dram nodes
+    # or if qemu RSS will keep growing after wait_workload_startup()
     return
     proc_status = ProcStatus.new
     proc_status.load(@qemu_pid)
