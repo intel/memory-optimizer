@@ -148,8 +148,10 @@ int ProcessCollection::filter_by_policy(std::shared_ptr<Process> process,
   }
 
   if (!policy.name.empty()) {
-    if (!policy.name.compare(process->proc_status.get_name()))
+    if (!policy.name.compare(process->proc_status.get_name())) {
+      printd("find policy for %s\n", policy.name.c_str());
       return true;
+    }
   }
 
   return false;
