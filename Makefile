@@ -1,5 +1,6 @@
 CC = gcc
 CXX = g++
+RM = rm
 DEBUG_FLAGS = -g -fsanitize=address
 DEBUG_FLAGS = -g -O3
 CFLAGS = $(DEBUG_FLAGS) -Wall
@@ -13,7 +14,8 @@ SYS_REFS_SOURCE_FILES = $(TASK_REFS_SOURCE_FILES) ProcPid.cc ProcStatus.cc Proce
 						  OptionParser.cc
 SYS_REFS_HEADER_FILES = $(SYS_REFS_SOURCE_FILES:.cc=.h)
 
-all: sys-refs page-refs task-maps show-vmstat addr-seq task-refs pid-list
+OBJS = sys-refs page-refs task-maps show-vmstat addr-seq task-refs pid-list
+all: $(OBJS)
 	[ -x ./update ] && ./update || true
 
 sys-refs: sys-refs.cc $(SYS_REFS_SOURCE_FILES) $(SYS_REFS_HEADER_FILES)
@@ -38,3 +40,6 @@ addr-seq: AddrSequence.cc AddrSequence.h
 
 pid-list: ProcPid.cc ProcPid.h ProcStatus.cc ProcStatus.h
 	$(CXX) ProcPid.cc ProcStatus.cc -o $@ $(CXXFLAGS) -DPID_LIST_SELF_TEST
+
+clean:
+	$(RM) $(OBJS)
