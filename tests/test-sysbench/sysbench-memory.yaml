@@ -1,5 +1,6 @@
 options:
   dump_options: false
+  exit_on_stabilized: 1
 
 policies:
   - name: usemem
