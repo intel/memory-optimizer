@@ -35,12 +35,30 @@ void GlobalScan::main_loop()
     walk_multi();
     count_refs();
     migrate();
+    count_migrate_stats();
+    exit_on_stabilized();
 
     double sleep_time = std::max(option.sleep_secs, interval);
     printf("\nSleeping for %.2f seconds\n", sleep_time);
     usleep(sleep_time * 1000000);
   }
   stop_threads();
+}
+
+// auto exit for stable benchmarks
+void GlobalScan::exit_on_stabilized()
+{
+    if (!option.exit_on_stabilized)
+      return;
+
+    if (EPTMigrate::sys_migrate_stats.move_kb    * 100 >
+        EPTMigrate::sys_migrate_stats.to_move_kb * option.exit_on_stabilized)
+      return;
+
+    printf("exit_on_stabilized: move=%'luM << to_move=%'luM\n",
+           EPTMigrate::sys_migrate_stats.move_kb    >> 10,
+           EPTMigrate::sys_migrate_stats.to_move_kb >> 10);
+    exit(0);
 }
 
 int GlobalScan::collect()
@@ -135,6 +153,14 @@ void GlobalScan::count_refs()
     m->count_refs();
 
   EPTScan::save_counts(option.output_file);
+}
+
+void GlobalScan::count_migrate_stats()
+{
+  EPTMigrate::reset_sys_migrate_stats();
+
+  for (auto& m: idle_ranges)
+    m->count_migrate_stats();
 }
 
 // similar to EPTScan::should_stop()

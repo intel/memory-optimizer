@@ -24,7 +24,9 @@ struct MoveStats
     unsigned long skip_kb;
     unsigned long move_kb;
 
+    MoveStats() { clear(); }
     void clear();
+    void add(MoveStats *s);
     void account(MovePagesStatusCount& status_count, int page_shift, int target_node);
 };
 

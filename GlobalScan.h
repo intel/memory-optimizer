@@ -38,6 +38,7 @@ class GlobalScan
     void walk_multi();
     void migrate();
     void count_refs();
+    void count_migrate_stats();
     void update_interval(bool finished);
     void request_reload_conf();
     void apply_option();
@@ -48,6 +49,7 @@ class GlobalScan
     bool should_stop_walk();
     void update_dram_free_anon_bytes();
     void reload_conf();
+    void exit_on_stabilized();
 
   private:
     static const int MAX_WALKS = 20;

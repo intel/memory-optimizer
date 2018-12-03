@@ -22,10 +22,18 @@
 extern Option option;
 using namespace std;
 
+MigrateStats EPTMigrate::sys_migrate_stats;
+
 void MigrateStats::clear()
 {
   MoveStats::clear();
   anon_kb = 0;
+}
+
+void MigrateStats::add(MigrateStats* s)
+{
+  MoveStats::add(s);
+  anon_kb += s->anon_kb;
 }
 
 void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
@@ -37,6 +45,16 @@ void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
   fmt.print("find %4s pages: %'15lu %3d%% of anon pages\n", type, to_move_kb, percent(to_move_kb, anon_kb));
   fmt.print("already in %4s: %'15lu %3d%% of %4s pages\n", node, skip_kb, percent(skip_kb, to_move_kb), type);
   fmt.print("need to migrate: %'15lu %3d%% of %4s pages\n", move_kb, percent(move_kb, to_move_kb), type);
+}
+
+void EPTMigrate::reset_sys_migrate_stats()
+{
+  sys_migrate_stats.clear();
+}
+
+void EPTMigrate::count_migrate_stats()
+{
+  sys_migrate_stats.add(&migrate_stats);
 }
 
 EPTMigrate::EPTMigrate() : numa_collection(NULL)

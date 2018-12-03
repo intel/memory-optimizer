@@ -17,6 +17,13 @@ void MoveStats::clear()
   move_kb = 0;
 }
 
+void MoveStats::add(MoveStats* s)
+{
+  to_move_kb += s->to_move_kb;
+  skip_kb += s->skip_kb;
+  move_kb += s->move_kb;
+}
+
 MovePages::MovePages() :
   flags(MPOL_MF_MOVE | MPOL_MF_SW_YOUNG),
   page_shift(PAGE_SHIFT),

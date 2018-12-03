@@ -23,6 +23,7 @@ struct MigrateStats: public MoveStats
     unsigned long anon_kb;
 
     void clear();
+    void add(MigrateStats *s);
     void show(Formatter& fmt, MigrateWhat mwhat);
 };
 
@@ -42,6 +43,9 @@ class EPTMigrate : public EPTScan
       migrator.set_numacollection(new_numa_collection);
     }
 
+    static void reset_sys_migrate_stats();
+    void count_migrate_stats();
+
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
 
@@ -54,6 +58,9 @@ class EPTMigrate : public EPTScan
     std::unordered_map<int, int> calc_migrate_stats();
 
     unsigned long calc_numa_anon_capacity(ProcIdlePageType type, ProcVmstat& proc_vmstat);
+
+  public:
+    static MigrateStats sys_migrate_stats;
 
   private:
     // The Virtual Address of hot/cold pages.
