@@ -54,10 +54,15 @@ void NumaNodeCollection::init_cpu_map(void)
 
 void NumaNodeCollection::collect(NumaHWConfig *numa_option)
 {
-  collect_by_sysfs();
-
-  if (numa_option && numa_option->is_valid())
+  // numa_option has higher priority
+  // FIXME: need sync collect_by_config() with new added fields (demote_node and so on)
+  //        before enable overwrite logic
+  if (numa_option && numa_option->is_valid()) {
     collect_by_config(numa_option);
+    return;
+  }
+
+  collect_by_sysfs();
 }
 
 void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
