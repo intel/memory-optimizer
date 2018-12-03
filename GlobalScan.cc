@@ -36,7 +36,8 @@ void GlobalScan::main_loop()
     count_refs();
     migrate();
     count_migrate_stats();
-    exit_on_stabilized();
+    if (exit_on_stabilized())
+      break;
 
     double sleep_time = std::max(option.sleep_secs, interval);
     printf("\nSleeping for %.2f seconds\n", sleep_time);
@@ -46,19 +47,19 @@ void GlobalScan::main_loop()
 }
 
 // auto exit for stable benchmarks
-void GlobalScan::exit_on_stabilized()
+bool GlobalScan::exit_on_stabilized()
 {
     if (!option.exit_on_stabilized)
-      return;
+      return false;
 
     if (EPTMigrate::sys_migrate_stats.move_kb    * 100 >
         EPTMigrate::sys_migrate_stats.to_move_kb * option.exit_on_stabilized)
-      return;
+      return false;
 
     printf("exit_on_stabilized: move=%'luM << to_move=%'luM\n",
            EPTMigrate::sys_migrate_stats.move_kb    >> 10,
            EPTMigrate::sys_migrate_stats.to_move_kb >> 10);
-    exit(0);
+    return true;
 }
 
 int GlobalScan::collect()

@@ -49,7 +49,7 @@ class GlobalScan
     bool should_stop_walk();
     void update_dram_free_anon_bytes();
     void reload_conf();
-    void exit_on_stabilized();
+    bool exit_on_stabilized();
 
   private:
     static const int MAX_WALKS = 20;
