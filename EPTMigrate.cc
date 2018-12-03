@@ -38,6 +38,9 @@ void MigrateStats::add(MigrateStats* s)
 
 void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
 {
+  if (!to_move_kb)
+    return;
+
   const char *type = (mwhat == MIGRATE_HOT ? "hot" : "cold");
   const char *node = (mwhat == MIGRATE_HOT ? "DRAM" : "PMEM");
 

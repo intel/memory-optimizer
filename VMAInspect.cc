@@ -37,32 +37,33 @@ void VMAInspect::dump_node_percent(int slot)
   fmt->print("\n");
 }
 
-int VMAInspect::dump_vma_nodes(proc_maps_entry& vma)
+int VMAInspect::dump_vma_nodes(proc_maps_entry& vma, MovePagesStatusCount& status_sum)
 {
   unsigned long nr_pages;
   int err = 0;
 
-  if (vma.end - vma.start < 1<<30)
+  nr_pages = (vma.end - vma.start) >> PAGE_SHIFT;
+  if (!nr_pages)
     return 0;
 
-  nr_pages = (vma.end - vma.start) >> PAGE_SHIFT;
-
   unsigned long total_mb = (vma.end - vma.start) >> 20;
-  fmt->print("\nDRAM page distribution across 10 VMA slots: ");
-  fmt->print("(pid=%d vma_mb=%'lu)\n", pid, total_mb);
+  int nr_slots = 1;
+  unsigned long slot_pages = nr_pages;
 
-  const int nr_slots = 10;
-  unsigned long slot_pages = nr_pages / nr_slots;
+  if (total_mb >= (1<<10)) {
+    fmt->print("\nDRAM page distribution across 10 VMA slots: ");
+    fmt->print("(pid=%d vma_mb=%'lu)\n", pid, total_mb);
+
+    nr_slots = 10;
+    slot_pages = nr_pages / nr_slots;
+  }
 
   locator.set_pid(pid);
 
   std::vector<void *> addrs;
   addrs.resize(slot_pages);
 
-  MovePagesStatusCount status_sum;
-
-  for (int i = 0; i < nr_slots; ++i)
-  {
+  for (int i = 0; i < nr_slots; ++i) {
     fill_addrs(addrs, vma.start + i * addrs.size() * PAGE_SIZE);
 
     locator.clear_status_count();
@@ -73,12 +74,12 @@ int VMAInspect::dump_vma_nodes(proc_maps_entry& vma)
     }
 
     locator.calc_status_count();
-    dump_node_percent(i);
+    // only show when it's bigger than 1G
+    if (nr_slots != 1)
+      dump_node_percent(i);
+
     locator.add_status_count(status_sum);
   }
-
-  if (!err && debug_level())
-    locator.show_status_count(fmt, status_sum);
 
   return err;
 }
@@ -93,10 +94,16 @@ int VMAInspect::dump_task_nodes(pid_t i, Formatter* m)
 
   auto maps = proc_maps.load(pid);
 
+  MovePagesStatusCount status_sum;
   for (auto &vma: maps) {
-    err = dump_vma_nodes(vma);
+    err = dump_vma_nodes(vma, status_sum);
     if (err)
       break;
+  }
+
+  if (!err) {
+    fmt->print("\nAnonymous page distribution across NUMA nodes in pid %d:\n", pid);
+    locator.show_status_count(fmt, status_sum);
   }
 
   return err;

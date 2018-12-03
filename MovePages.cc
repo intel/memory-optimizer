@@ -100,13 +100,18 @@ void MovePages::account_stats(MoveStats *stats)
   int shift = page_shift - 10;
 
   for (auto &kv : status_count) {
-    if (kv.first < 0 || is_node_in_target_set(kv.first))
+    // Don't calculate invalid pages.
+    // The status includes "Bad address or No such file" which return by move_pages.
+    // Maybe these pages have no corresponding physical memory.
+    if (kv.first < 0)
+      continue;
+    if (is_node_in_target_set(kv.first))
       skip_kb += kv.second << shift;
     else if (kv.first >= 0)
       move_kb += kv.second << shift;
   }
 
-  stats->to_move_kb += status.size() << shift;
+  stats->to_move_kb += skip_kb + move_kb;
   stats->skip_kb += skip_kb;
   stats->move_kb += move_kb;
 
@@ -137,7 +142,9 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
   unsigned long total_kb = 0;
 
   for (auto &kv : status_sum)
-    total_kb += kv.second;
+    // skip invalid pages
+    if (kv.first >= 0)
+      total_kb += kv.second;
   total_kb <<= page_shift - 10;
 
   for (auto &kv : status_sum)
@@ -147,7 +154,7 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
 
     if (nid >= 0)
       fmt->print("%'15lu  %2d%%  node %d\n", kb, percent(kb, total_kb), nid);
-    else
+    else if (debug_level())
       fmt->print("%'15lu  %2d%%  %s\n", kb, percent(kb, total_kb), strerror(-nid));
   }
 }

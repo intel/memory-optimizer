@@ -15,7 +15,7 @@ class VMAInspect
     ~VMAInspect() {};
 
     int dump_task_nodes(pid_t i, Formatter* m);
-    int dump_vma_nodes(proc_maps_entry& vma);
+    int dump_vma_nodes(proc_maps_entry& vma, MovePagesStatusCount& status_sum);
     void set_numa_collection(NumaNodeCollection* new_numa_collection)
     { numa_collection = new_numa_collection; }
 
