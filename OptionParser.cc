@@ -62,6 +62,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("bandwidth_mbps",  bandwidth_mbps);
       OP_GET_VALUE("dram_percent",    dram_percent);
       OP_GET_VALUE("output",          output_file);
+      OP_GET_VALUE("exit_on_stabilized", exit_on_stabilized);
 #undef OP_GET_VALUE
 
       std::string str_val;

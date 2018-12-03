@@ -37,6 +37,7 @@ Option::Option()
   max_threads = 1;
   split_rss_size = 0; // no split task address space
 
+  exit_on_stabilized = 0; // percent moved
   dump_options = false;
 }
 
@@ -62,6 +63,7 @@ void Option::dump()
   printf("nr_walks = %d\n", nr_walks);
   printf("nr_loops = %d\n", nr_loops);
   printf("dram_percent = %d\n", dram_percent);
+  printf("exit_on_stabilized = %d\n", exit_on_stabilized);
   printf("dump_options = %d\n", (int)dump_options);
   printf("hot_min_refs = %d\n", hot_min_refs);
   printf("cold_max_refs = %d\n", cold_max_refs);
