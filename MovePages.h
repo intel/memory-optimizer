@@ -61,7 +61,7 @@ class MovePages
     int  get_target_node(NumaNode* node_obj);
     bool is_node_in_target_set(int node_id);
     long find_last_good(std::vector<int>& status, long end_pos);
-
+    void dump_target_nodes(void);
   private:
     pid_t pid;
     int flags;

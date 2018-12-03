@@ -82,6 +82,9 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
     account_stats(stats);
     add_status_count(status_sum);
 
+    if (debug_level())
+      dump_target_nodes();
+
     ret = move_pages(&addrs[i], size, false);
     if (ret)
       break;
@@ -153,6 +156,7 @@ void MovePages::calc_target_nodes(std::vector<void *>& addrs, long size)
 {
   NumaNode* numa_obj;
   int last_good_index;
+  int i = 0;
 
   target_nodes.resize(size);
 
@@ -162,10 +166,11 @@ void MovePages::calc_target_nodes(std::vector<void *>& addrs, long size)
 
     also changed the corresponding value in addrs
    */
-  for (int i = 0; i < size; ++i) {
+  while(i < size) {
     if (status[i] >= 0) {
       numa_obj = numa_collection->get_node(status[i]);
       target_nodes[i] = get_target_node(numa_obj);
+      ++i;
     } else {
       last_good_index = find_last_good(status, i);
       if (last_good_index == i)
@@ -173,7 +178,6 @@ void MovePages::calc_target_nodes(std::vector<void *>& addrs, long size)
 
       std::swap(addrs[i], addrs[last_good_index]);
       std::swap(status[i], status[last_good_index]);
-      --i;
     }
   }
 }
@@ -234,4 +238,13 @@ long MovePages::find_last_good(std::vector<int>& status, long end_pos)
       return i;
   }
   return end_pos;
+}
+
+void MovePages::dump_target_nodes(void)
+{
+  size_t end = std::min(target_nodes.size(), status.size());
+
+  for (size_t i = 0; i < end; ++i) {
+    printf("%d -> %d\n", status[i], target_nodes[i]);
+  }
 }
