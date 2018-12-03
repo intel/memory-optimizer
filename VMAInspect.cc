@@ -5,6 +5,7 @@
 #include "ProcMaps.h"
 #include "Formatter.h"
 #include "VMAInspect.h"
+#include "Numa.h"
 
 void VMAInspect::fill_addrs(std::vector<void *>& addrs, unsigned long start)
 {
@@ -20,9 +21,16 @@ void VMAInspect::fill_addrs(std::vector<void *>& addrs, unsigned long start)
 void VMAInspect::dump_node_percent(int slot)
 {
   auto status_count = locator.get_status_count();
-  size_t nr_node0 = (size_t)status_count[0];
+  size_t dram_nodes_size = 0;
 
-  int pct = percent(nr_node0, locator.get_status().size());
+  if (numa_collection) {
+    for (auto iter = numa_collection->dram_begin();
+         iter != numa_collection->dram_end(); ++iter) {
+      dram_nodes_size += (size_t)status_count[iter->id()];
+    }
+  }
+
+  int pct = percent(dram_nodes_size, locator.get_status().size());
   fmt->print("%2d %3d%% |", slot, pct);
   for (int i = 0; i < pct; ++i)
     fmt->print("#");
@@ -93,4 +101,3 @@ int VMAInspect::dump_task_nodes(pid_t i, Formatter* m)
 
   return err;
 }
-

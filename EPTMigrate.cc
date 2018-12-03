@@ -215,6 +215,7 @@ int EPTMigrate::migrate()
 
   if (policy.dump_distribution) {
     VMAInspect vma_inspector;
+    vma_inspector.set_numa_collection(numa_collection);
     vma_inspector.dump_task_nodes(pid, &fmt);
   }
 

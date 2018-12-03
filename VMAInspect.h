@@ -6,6 +6,7 @@
 
 struct proc_maps_entry;
 class Formatter;
+class NumaNodeCollection;
 
 class VMAInspect
 {
@@ -15,6 +16,8 @@ class VMAInspect
 
     int dump_task_nodes(pid_t i, Formatter* m);
     int dump_vma_nodes(proc_maps_entry& vma);
+    void set_numa_collection(NumaNodeCollection* new_numa_collection)
+    { numa_collection = new_numa_collection; }
 
   private:
     void fill_addrs(std::vector<void *>& addrs, unsigned long start);
@@ -24,6 +27,7 @@ class VMAInspect
     pid_t pid;
     Formatter* fmt;
     MovePages locator;
+    NumaNodeCollection* numa_collection;
 };
 
 #endif
