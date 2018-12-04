@@ -277,6 +277,7 @@ class VMTest
     @scheme = YAML.load_file(config_file)
     @workload_script = @scheme["workload_script"]
     @migrate_script = @scheme["migrate_cmd"].partition(' ')[0]
+    @qemu_script = @scheme["qemu_script"] if @scheme["qemu_script"]
     @time_dir = Time.now.strftime("%F.%T")
     @scheme["ratios"].each do |ratio|
       @ratio = ratio
