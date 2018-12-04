@@ -200,6 +200,8 @@ class VMTest
       wait_workload_startup
       eat_mem
       spawn_migrate
+    elsif @dram_nodes.size * @ratio > @pmem_nodes.size # if cannot rely on interleaving in baseline test
+      eat_mem
     end
 
     Process.wait @workload_pid
