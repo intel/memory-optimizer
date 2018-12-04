@@ -210,7 +210,7 @@ class VMTest
       p = d * ratio   # pure DRAM if (ratio == 0)
     end
 
-    # performance can more comparable for
+    # When there are no enough NUMA nodes, performance can more comparable for
     #   d p ratio
     #   1 1 1
     #   1 2 2
@@ -219,6 +219,8 @@ class VMTest
     #   2 2 1
     #   2 4 2
     #   1 4 4
+    # No longer necessary when numa=fake can create enough nodes, or when
+    # usemem can help squeeze memory distribution.
     if @scheme["single_dram_node"]
       # d, p, ratio: 2, 2, 1 => 1, 1, 1
       if d > 1
