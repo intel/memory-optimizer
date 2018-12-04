@@ -81,6 +81,7 @@ class VMTest
     # no enough NUMA nodes to interleave), we can arrange an initial run on
     # pure DRAM or PMEM, which requires no memory adjustment.
     read_qemu_rss
+    show_qemu_placement
 
     # QEMU may not exit on halt
     system("ssh", "-p", @qemu_ssh, "root@localhost", "/sbin/reboot")
@@ -129,6 +130,16 @@ class VMTest
     proc_status.load(@qemu_pid)
     @qemu_rss_kb = proc_status["VmRSS"].to_i
     puts "QEMU RSS: #{@qemu_rss_kb >> 10}M"
+  end
+
+  def show_qemu_placement
+    proc_numa_maps = ProcNumaMaps.new
+    proc_numa_maps.load(@qemu_pid)
+    @dram_nodes.each do |nid|
+      qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
+      percent = 100 * qemu_anon_kb / (@qemu_rss_kb + 1)
+      puts "Node #{nid}: #{qemu_anon_kb >> 10}M  #{percent}%"
+    end
   end
 
   def eat_mem
