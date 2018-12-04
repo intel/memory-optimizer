@@ -63,6 +63,9 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("dram_percent",    dram_percent);
       OP_GET_VALUE("output",          output_file);
       OP_GET_VALUE("exit_on_stabilized", exit_on_stabilized);
+      OP_GET_VALUE("numa_dram_nodes", numa_hw_config.numa_dram_list);
+      OP_GET_VALUE("numa_pmem_nodes", numa_hw_config.numa_pmem_list);
+      OP_GET_VALUE("numa_peer_nodes", numa_hw_config.pmem_dram_map);
 #undef OP_GET_VALUE
 
       std::string str_val;

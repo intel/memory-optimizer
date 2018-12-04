@@ -136,6 +136,8 @@ public:
   std::string output_file;
   std::string config_file;
 
+  NumaHWConfig numa_hw_config;
+
   // Not used for now, so current sys-refs behavior is to ignore all processes
   // w/o a policy defined. In future, may consider applying this to all
   // processes in ProcessCollection::collect().
