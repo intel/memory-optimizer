@@ -180,7 +180,14 @@ void GlobalScan::update_dram_free_anon_bytes()
     dram_free_anon_bytes = option.dram_percent * all_bytes;
   } else {
     ProcVmstat proc_vmstat;
-    dram_free_anon_bytes = proc_vmstat.anon_capacity();
+    unsigned long dram_anon_capacity = 0;
+
+    for(auto iter = numa_collection.dram_begin();
+      iter != numa_collection.dram_end(); ++iter) {
+      dram_anon_capacity += proc_vmstat.anon_capacity(iter->id());
+    }
+
+    dram_free_anon_bytes = dram_anon_capacity;
   }
 }
 
