@@ -323,5 +323,5 @@ void GlobalScan::reload_conf()
 void GlobalScan::apply_option()
 {
   throttler.set_bwlimit_mbps(option.bandwidth_mbps);
-  numa_collection.collect();
+  numa_collection.collect(&option.numa_hw_config);
 }
