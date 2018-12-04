@@ -57,17 +57,18 @@ void NumaNodeCollection::collect(NumaHWConfig *numa_option)
   // numa_option has higher priority
   // FIXME: need sync collect_by_config() with new added fields (demote_node and so on)
   //        before enable overwrite logic
-  if (numa_option && numa_option->is_valid()) {
+  if (numa_option && numa_option->is_valid())
     collect_by_config(numa_option);
-    return;
-  }
+  else
+    collect_by_sysfs();
 
-  collect_by_sysfs();
+  dump();
+
 }
 
 void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
 {
-  int i, pmem_node, dram_node;
+  int i, from, to;
   struct bitmask *dram_mask, *pmem_mask;
   iterator node;
   const char *p;
@@ -79,6 +80,12 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
   max_node = numa_max_node();
   dram_mask = numa_parse_nodestring(numa_option->numa_dram_list.c_str());
   pmem_mask = numa_parse_nodestring(numa_option->numa_pmem_list.c_str());
+  if (!dram_mask || !pmem_mask) {
+    fprintf(stderr, "Invalid nodemask: dram_mask=%p(%s), pmem_mask=%p(%s)\n",
+            dram_mask, numa_option->numa_dram_list.c_str(),
+            pmem_mask, numa_option->numa_pmem_list.c_str());
+    exit(1);
+  }
 
   all_mask = numa_allocate_nodemask();
   numa_bitmask_clearall(all_mask);
@@ -108,14 +115,16 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
   p = numa_option->pmem_dram_map.c_str() - 1;
   do {
     p++;
-    if (sscanf(p, "%d->%d", &pmem_node, &dram_node) != 2 ||
-        pmem_node > max_node ||
-        dram_node > max_node) {
+    if (sscanf(p, "%d->%d", &from, &to) != 2 ||
+        from > max_node ||
+        to > max_node) {
       fprintf(stderr, "Invalid pmem to dram map: %s\n",
               numa_option->pmem_dram_map.c_str());
       exit(1);
     }
-    get_node(pmem_node)->promote_target = get_node(dram_node);
+    //get_node(pmem_node)->promote_target = get_node(dram_node);
+    get_node(from)->set_peer_node(get_node(to));
+    peer_map[from] = to;
   } while ((p = strstr(p, ",")) != NULL);
 
   init_cpu_map();
