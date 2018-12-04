@@ -3,6 +3,7 @@
 require 'yaml'
 require_relative "ProcVmstat"
 require_relative "ProcStatus"
+require_relative "ProcNumaMaps"
 
 # Basic test scheme:
 #
@@ -75,6 +76,10 @@ class VMTest
 
   def stop_qemu
     # record rss in baseline run to guide eat_mem() in next migration run
+    #
+    # If a baseline run will need memory adjustment by calling usemem (due to
+    # no enough NUMA nodes to interleave), we can arrange an initial run on
+    # pure DRAM or PMEM, which requires no memory adjustment.
     read_qemu_rss
 
     # QEMU may not exit on halt
@@ -102,7 +107,9 @@ class VMTest
   def wait_workload_startup
     if @workload_script =~ /sysbench/
       wait_log_message(@workload_log, "Threads started")
-      # sysbench has allocated all memory at this point, so RSS here can be immediately used by eat_mem()
+      # sysbench has allocated all memory at this point, so RSS here can be
+      # immediately used by eat_mem(). This avoids dependency on some previous
+      # run to tell qemu RSS.
       read_qemu_rss
     else
       sleep 5
@@ -118,9 +125,6 @@ class VMTest
   end
 
   def read_qemu_rss
-    # only necessary if start on pmem nodes, then migrate to dram nodes
-    # or if qemu RSS will keep growing after wait_workload_startup()
-    return
     proc_status = ProcStatus.new
     proc_status.load(@qemu_pid)
     @qemu_rss_kb = proc_status["VmRSS"].to_i
@@ -128,22 +132,24 @@ class VMTest
   end
 
   def eat_mem
-    # rss_per_node = @qemu_rss_kb / @dram_nodes.size
+    rss_per_node = @qemu_rss_kb / (1 + @ratio) / @dram_nodes.size
     proc_vmstat = ProcVmstat.new
+    proc_numa_maps = ProcNumaMaps.new
+    proc_numa_maps.load(@qemu_pid)
     @usemem_pids = []
     @dram_nodes.each do |nid|
       numa_vmstat = proc_vmstat.numa_vmstat[nid]
       free_kb = numa_vmstat['nr_free_pages'] + numa_vmstat['nr_inactive_file']
       free_kb *= ProcVmstat::PAGE_SIZE >> 10
-      puts "Node #{nid}: free #{free_kb >> 10}M"
-      spawn_usemem(nid, free_kb)
-      # spawn_usemem(nid, free_kb - rss_per_node)
+      qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
+      puts "Node #{nid}: free #{free_kb >> 10}M  qemu #{qemu_anon_kb >> 10}M => #{rss_per_node >> 10}M"
+      spawn_usemem(nid, free_kb + qemu_anon_kb - rss_per_node)
     end
   end
 
   def spawn_usemem(nid, kb)
     if kb < 0
-      puts "WARNING: negative kb = #{kb}"
+      puts "WARNING: not starting usemem due to negative kb = #{kb}" if kb < -(1000<<10)
       return
     end
     cmd = "numactl --membind #{nid} usemem --sleep -1 --step 2m --mlock --prefault #{kb >> 10}m"
@@ -203,6 +209,16 @@ class VMTest
     # d, p, ratio: 2, 4, 4 => 1, 4, 4
     if d * ratio > p
       d = p / ratio   # pure PMEM if (ratio > p)
+    end
+
+    # In 2 socket system w/o fake NUMA, there will be 2 DRAM nodes and 2 PMEM nodes.
+    # To use all DRAM DIMM bandwidth in 1:2 and 1:4 ratios, interleave mempolicy won't
+    # help us get the target DRAM:PMEM ratio. However can still set min_dram_nodes=2
+    # and let usemem to adjust memory distribution to the specified ratio.
+    if @scheme["min_dram_nodes"]
+      if d < @scheme["min_dram_nodes"]
+         d = @scheme["min_dram_nodes"]
+      end
     end
 
     # d, p, ratio: 2, 4, 1 => 2, 2, 1
