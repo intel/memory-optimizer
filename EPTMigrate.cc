@@ -260,7 +260,7 @@ long EPTMigrate::do_move_pages(ProcIdlePageType type)
 unsigned long EPTMigrate::calc_numa_anon_capacity(ProcIdlePageType type,
                                                   ProcVmstat& proc_vmstat)
 {
-  unsigned long sum;
+  unsigned long sum = 0;
   NumaNodeCollection::iterator iter, iter_end;
 
   if (!numa_collection)
