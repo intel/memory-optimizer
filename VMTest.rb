@@ -49,6 +49,12 @@ class VMTest
     system("modprobe kvm_ept_idle")
   end
 
+  def kill_wait(pid)
+      Process.kill 'KILL', pid
+      sleep 1
+      Process.wait pid, Process::WNOHANG
+  end
+
   def spawn_qemu
     env = {
       "interleave" => @all_nodes.join(','),
@@ -84,10 +90,12 @@ class VMTest
     show_qemu_placement
 
     # QEMU may not exit on halt
-    system("ssh", "-p", @qemu_ssh, "root@localhost", "/sbin/reboot")
-    # sleep 5
-    # Process.kill 'KILL', @qemu_pid
-    Process.wait @qemu_pid
+    if system("ssh", "-p", @qemu_ssh, "root@localhost", "/sbin/reboot")
+      Process.wait @qemu_pid
+    else
+      sleep 4
+      kill_wait @qemu_pid
+    end
   end
 
   def rsync_workload
@@ -207,8 +215,8 @@ class VMTest
     Process.wait @workload_pid
 
     if should_migrate
-      Process.kill 'KILL', @migrate_pid
-      @usemem_pids.each do |pid| Process.kill 'KILL', pid end
+      kill_wait @migrate_pid
+      @usemem_pids.each do |pid| kill_wait pid end
     end
 
     stop_qemu
