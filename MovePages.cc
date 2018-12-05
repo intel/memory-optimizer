@@ -71,7 +71,7 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
 
     status.resize(nr_pages);
 
-    // cheat move_pages() to locate pages
+    // locate pages
     ret = move_pages(&addrs[i], size, true);
     if (ret)
       break;
@@ -115,7 +115,6 @@ void MovePages::account_stats(MoveStats *stats)
   stats->skip_kb += skip_kb;
   stats->move_kb += move_kb;
 
-  // TODO: bandwidth limit on move_kb
   if (throttler)
     throttler->add_and_sleep(move_kb * 1024);
 }
