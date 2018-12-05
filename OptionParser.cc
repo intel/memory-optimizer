@@ -44,6 +44,20 @@ int OptionParser::reparse()
   return ret_val;
 }
 
+template<typename Tval>
+int OptionParser::get_value(const YAML::const_iterator  &iter,
+                            const char* key_name, Tval &value)
+{
+  std::string key = iter->first.as<std::string>();
+  if (!key.compare(key_name))
+  {
+    value = iter->second.as<Tval>();
+    return 1;
+  }
+
+  return 0;
+}
+
 int OptionParser::parse_option(YAML::Node &&option_node)
 {
     if (!option_node)

@@ -27,17 +27,7 @@ class OptionParser: public Option
 
     template<typename Tval>
     int get_value(const YAML::const_iterator  &iter,
-                  const char* key_name, Tval &value)
-    {
-      std::string key = iter->first.as<std::string>();
-      if (!key.compare(key_name))
-      {
-        value = iter->second.as<Tval>();
-        return 1;
-      }
-
-      return 0;
-    }
+                  const char* key_name, Tval &value);
 };
 
 #endif
