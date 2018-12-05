@@ -187,7 +187,7 @@ void GlobalScan::update_dram_free_anon_bytes()
       dram_anon_capacity += proc_vmstat.anon_capacity(iter->id());
     }
 
-    dram_free_anon_bytes = dram_anon_capacity;
+    dram_free_anon_bytes = dram_anon_capacity << PAGE_SHIFT;
   }
 }
 
