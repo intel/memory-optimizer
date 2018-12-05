@@ -171,13 +171,13 @@ bool GlobalScan::should_stop_walk()
   if (nr_walks <= 2)
     return false;
 
-  return 2 * 100 * top_bytes < dram_free_anon_bytes;
+  return top_bytes < dram_free_anon_bytes / 2;
 }
 
 void GlobalScan::update_dram_free_anon_bytes()
 {
   if (option.dram_percent) {
-    dram_free_anon_bytes = option.dram_percent * all_bytes;
+    dram_free_anon_bytes = option.dram_percent * all_bytes / 100;
   } else {
     ProcVmstat proc_vmstat;
     unsigned long dram_anon_capacity = 0;
@@ -282,7 +282,7 @@ void GlobalScan::update_interval(bool finished)
 
   const int div = 66; // the smaller than 100, the more real nr_walks will be
                       // in order to bring top_bytes down to dram_percent/2
-  float ratio = dram_free_anon_bytes / (div * young_bytes + 1.0);
+  float ratio = dram_free_anon_bytes / ((young_bytes * div / 100) + 1.0);
   if (ratio > 10)
     ratio = 10;
   else if (ratio < 0.2)
