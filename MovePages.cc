@@ -82,7 +82,7 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
     account_stats(stats);
     add_status_count(status_sum);
 
-    if (debug_level())
+    if (debug_level() >= 3)
       dump_target_nodes();
 
     ret = move_pages(&addrs[i], size, false);
