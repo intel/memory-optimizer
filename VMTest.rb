@@ -53,7 +53,7 @@ class VMTest
   def kill_wait(pid)
       Process.kill 'KILL', pid
       sleep 1
-      Process.wait pid, Process::WNOHANG
+      Process.wait pid
   end
 
   def spawn_qemu
