@@ -26,8 +26,10 @@ int OptionParser::reparse()
     YAML::Node config = YAML::LoadFile(config_file);
 
     ret_val = parse_option(config["options"]);
-    if (ret_val < 0)
+    if (ret_val < 0) {
+      printf("ERROR: failed to parse options\n");
       return ret_val;
+    }
 
     ret_val = parse_policies(config["policies"]);
 
@@ -36,6 +38,7 @@ int OptionParser::reparse()
 
   } catch (...) {
     ret_val = -1;
+    printf("ERROR: exception on parsing options/policies\n");
   }
 
   return ret_val;
