@@ -177,7 +177,7 @@ class VMTest
   end
 
   def spawn_migrate
-    cmd = "#{@project_dir}/#{@scheme['migrate_cmd']} -c #{@project_dir}/#{@scheme['migrate_config']}"
+    cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} -c #{@project_dir}/#{@scheme['migrate_config']}"
     puts cmd + " > " + @migrate_log
     @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
   end
