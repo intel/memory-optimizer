@@ -178,7 +178,7 @@ class VMTest
       puts "WARNING: not starting usemem due to negative kb = #{kb}" if kb < -(1000<<10)
       return
     end
-    cmd = "numactl --membind #{nid} usemem --sleep -1 --step 2m --mlock --prefault #{kb >> 10}m"
+    cmd = "numactl --preferred #{nid} usemem --sleep -1 --step 2m --mlock --prefault #{kb >> 10}m"
     puts cmd
     @usemem_pids << Process.spawn(cmd)
   end
