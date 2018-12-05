@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
 
 require 'yaml'
+require 'open3'
 require_relative "ProcVmstat"
 require_relative "ProcStatus"
 require_relative "ProcNumaMaps"
@@ -73,7 +74,13 @@ class VMTest
     9.downto(1) do |i|
       sleep(i)
       # mkdir on guest rootfs
-      system("ssh", "-p", @qemu_ssh, "root@localhost", "mkdir -p #{@guest_workspace}") && return
+      output, status = Open3.capture2e("ssh", "-p", @qemu_ssh, "root@localhost", "mkdir -p #{@guest_workspace}")
+      return if status.success?
+      # show only unexpected error
+      output.each_line do |line|
+        next if line == "ssh_exchange_identification: read: Connection reset by peer\n"
+        puts line
+      end
     end
     puts "failed to ssh VM"
     Process.kill 'KILL', @qemu_pid
