@@ -20,10 +20,16 @@ int OptionParser::parse_file(std::string filename)
 int OptionParser::reparse()
 {
   int ret_val;
+  YAML::Node config;
 
   try {
+    config = YAML::LoadFile(config_file);
+  } catch (...) {
+    printf("ERROR: exception on loading YAML file %s\n", config_file.c_str());
+    return -1;
+  }
 
-    YAML::Node config = YAML::LoadFile(config_file);
+  try {
 
     ret_val = parse_option(config["options"]);
     if (ret_val < 0) {
