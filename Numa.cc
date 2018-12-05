@@ -28,6 +28,9 @@ static std::unordered_map<std::string, numa_node_type> numa_type_map = {
   {"pmem", NUMA_NODE_PMEM},
 };
 
+static const char* str_type      = "type";
+static const char* str_peer_node = "peer_node";
+
 
 void NumaNodeCollection::init_cpu_map(void)
 {
@@ -110,7 +113,7 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
   }
 
   /* node maps to itself by default */
-  set_default_peer_node();
+  set_default_target_node();
 
   p = numa_option->pmem_dram_map.c_str() - 1;
   do {
@@ -124,7 +127,6 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
     }
     //get_node(pmem_node)->promote_target = get_node(dram_node);
     get_node(from)->set_peer_node(get_node(to));
-    peer_map[from] = to;
   } while ((p = strstr(p, ",")) != NULL);
 
   init_cpu_map();
@@ -135,37 +137,42 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
 
 void NumaNodeCollection::collect_by_sysfs(void)
 {
-  int max_node = numa_max_node();
   int err;
+  int max_node_id = numa_max_node();
+  int max_node_count = max_node_id + 1;
 
-  nodes.resize(max_node + 1);
-  peer_map.clear();
+  NumaInfo numa_info;
 
-  for (int i = 0; i <= max_node; ++i) {
-    err = parse_sysfs_per_node(i);
-    if (err < 0)
-      return;
+  err = load_numa_info(numa_info, max_node_count);
+  if (err < 0) {
+    fprintf(stderr, "failed to load_numa_info(), err = %d\n", err);
+    return;
   }
 
-  set_default_peer_node();
-  setup_node_pair();
+  nodes.resize(max_node_count);
+  err = create_node_objects(numa_info);
+  if (err < 0) {
+    fprintf(stderr, "failed to create_node_objects, err = %d\n", err);
+    return;
+  }
+
+  set_default_target_node();
+  setup_node_relationship(numa_info, false);
+
+  init_cpu_map();
 }
 
-int NumaNodeCollection::parse_sysfs_per_node(int node_id)
+int NumaNodeCollection::parse_sysfs_per_node(int node_id,
+                                             NodeInfo& node_info)
 {
   const char *node_path = "/sys/devices/system/node/node%d/%s";
   char path[PATH_MAX];
   int err;
 
-  int peer_node_id;
-  numa_node_type node_type;
+  node_info[str_type] = "";
+  node_info[str_peer_node] = "";
 
-  std::map<const char*, std::string> items;
-
-  items["type"] = "";
-  items["peer_node"] = "";
-
-  for (auto &i : items) {
+  for (auto &i : node_info) {
     snprintf(path, sizeof(path),
              node_path,
              node_id, i.first);
@@ -174,10 +181,7 @@ int NumaNodeCollection::parse_sysfs_per_node(int node_id)
       return err;
   }
 
-  node_type = get_numa_type(items["type"]);
-  peer_node_id = atoi(items["peer_node"].c_str());
-
-  return save_node(node_id, node_type, peer_node_id);
+  return 0;
 }
 
 int NumaNodeCollection::parse_field(const char *field_name,
@@ -220,8 +224,7 @@ numa_node_type NumaNodeCollection::get_numa_type(std::string &type_str)
   return iter->second;
 }
 
-int NumaNodeCollection::save_node(int node_id, numa_node_type type,
-                                   int peer_node)
+int NumaNodeCollection::create_node(int node_id, numa_node_type type)
 {
   if(type >= NUMA_NODE_END)
     return -2;
@@ -241,12 +244,11 @@ int NumaNodeCollection::save_node(int node_id, numa_node_type type,
   }
 
   nodes[node_id] = new_node;
-  peer_map[node_id] = peer_node;
 
   return 0;
 }
 
-void NumaNodeCollection::set_default_peer_node()
+void NumaNodeCollection::set_default_target_node()
 {
   iterator node;
 
@@ -258,10 +260,62 @@ void NumaNodeCollection::set_default_peer_node()
     node->demote_target = &*node;
 }
 
-void NumaNodeCollection::setup_node_pair()
+void NumaNodeCollection::setup_node_relationship(NumaInfo& numa_info, bool is_bidir)
 {
-  for (auto& iter : peer_map)
-    nodes[iter.first]->set_peer_node(nodes[iter.second]);
+  int peer_node_id;
+
+  for (size_t i = 0; i < numa_info.size(); ++i) {
+    peer_node_id = atoi(numa_info[i][str_peer_node].c_str());
+    set_target_node(i, peer_node_id, is_bidir);
+  }
+}
+
+void NumaNodeCollection::set_target_node(int node_id, int target_node_id, bool is_bidir)
+{
+  int max_id = std::max(0, (int)(nodes.size() - 1));
+
+  if (node_id > max_id
+      || target_node_id > max_id) {
+    fprintf(stderr, "wrong node id: node_id = %d target_node_id = %d max id = %d\n",
+            node_id, target_node_id, max_id);
+    return;
+  }
+
+  nodes[node_id]->set_peer_node(nodes[target_node_id]);
+  if (is_bidir)
+    nodes[target_node_id]->set_peer_node(nodes[node_id]);
+}
+
+int NumaNodeCollection::load_numa_info(NumaInfo& numa_info, int node_count)
+{
+  int err;
+  NodeInfo node_info;
+
+  numa_info.resize(node_count);
+
+  for (int i = 0; i < node_count; ++i) {
+    node_info.clear();
+    err = parse_sysfs_per_node(i, node_info);
+    if (err >= 0)
+      numa_info[i] = node_info;
+  }
+
+  return 0;
+}
+
+int NumaNodeCollection::create_node_objects(NumaInfo& numa_info)
+{
+  numa_node_type node_type;
+  int err;
+
+  for (size_t i = 0; i < numa_info.size(); ++i) {
+    node_type = get_numa_type(numa_info[i][str_type]);
+    err = create_node(i, node_type);
+    if (err < 0)
+      return err;
+  }
+
+  return 0;
 }
 
 void NumaNodeCollection::collect_dram_nodes_meminfo(void)
@@ -290,10 +344,6 @@ void NumaNodeCollection::dump()
 {
   NumaNode* peer_node;
 
-  printf("Node map:\n");
-  for (auto& iter : peer_map)
-    printf("%d -> %d\n", iter.first, iter.second);
-
   printf("All nodes:\n");
   for (auto& numa_obj : nodes) {
 
@@ -302,18 +352,16 @@ void NumaNodeCollection::dump()
       continue;
 
     peer_node = numa_obj->get_peer_node();
-
-    if (peer_node) {
+    if (peer_node)
       printf("Node %d type:%d peer_id:%d peer_type:%d\n",
              numa_obj->id(),
              numa_obj->type(),
              peer_node->id(),
              peer_node->type());
-    } else {
+    else
       printf("Node %d type:%d no peer node\n",
              numa_obj->id(),
              numa_obj->type());
-    }
   }
 
   printf("DRAM nodes:\n");

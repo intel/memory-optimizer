@@ -24,6 +24,9 @@
 #include "Option.h"
 #include "lib/debug.h"
 
+typedef std::map<const char*, std::string> NodeInfo;
+typedef std::vector<NodeInfo> NumaInfo;
+
 /*
  * BaseIterator is iterator for container with element type "T *", so
  * acts like "T **".  And container elements may be NULL.
@@ -148,7 +151,6 @@ class NumaNodeCollection
   std::vector<NumaNode *> nodes;
   std::vector<NumaNode *> dram_nodes;
   std::vector<NumaNode *> pmem_nodes;
-  std::map<int, int> peer_map;
 
   void init_cpu_map(void);
 
@@ -228,17 +230,18 @@ public:
 private:
     void collect_by_config(NumaHWConfig *numa_option);
     void collect_by_sysfs(void);
-    int parse_sysfs_per_node(int node_id);
+
+    int parse_sysfs_per_node(int node_id, NodeInfo& node_info);
     int parse_field(const char* field_name, std::string &value);
 
     numa_node_type get_numa_type(std::string &type_str);
 
-    int  save_node(int node_id, numa_node_type type,
-                   int peer_node);
-
-    void set_default_peer_node();
-
-    void setup_node_pair();
+    int load_numa_info(NumaInfo& numa_info, int node_count);
+    int create_node_objects(NumaInfo& numa_info);
+    int create_node(int node_id, numa_node_type type);
+    void setup_node_relationship(NumaInfo& numa_info, bool is_bidir);
+    void set_target_node(int node_id, int target_node_id, bool is_bidir);
+    void set_default_target_node();
 };
 
 #endif /* __NUMA__HH__ */
