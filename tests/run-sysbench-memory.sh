@@ -4,6 +4,7 @@
 
 sysbench_cmd=(
 	$numactl
+	stdbuf -oL
 	sysbench
 	--time=$time
 	memory

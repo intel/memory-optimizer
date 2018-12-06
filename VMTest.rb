@@ -120,6 +120,7 @@ class VMTest
   def spawn_workload
     cmd = %W[ssh -p #{@qemu_ssh} root@localhost env]
     cmd += @workload_params.map do |k,v| "#{k}=#{v}" end
+    cmd += %w[stdbuf -oL]
     cmd << File.join(@guest_workspace, @workload_script)
     puts cmd.join(' ') + " > " + @workload_log
     return Process.spawn(*cmd, [:out, :err]=>[@workload_log, 'w'])
