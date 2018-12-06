@@ -42,4 +42,20 @@ class ProcNumaMaps
     numa_kb
   end
 
+  def show_numa_placement
+    sum = 0
+    numa_kb.each do |k, v|
+      next unless k =~ /^N\d+$/
+      sum += v;
+    end
+
+    return unless sum > 0
+
+    numa_kb.each do |k, v|
+      next unless k =~ /^N\d+$/
+      percent = 100 * v / sum
+      puts "#{k}  #{v >> 10}M  #{percent}%"
+    end
+  end
+
 end

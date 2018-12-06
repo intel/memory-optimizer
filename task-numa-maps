@@ -1,0 +1,8 @@
+#!/usr/bin/ruby
+
+require_relative "ProcNumaMaps"
+
+proc_numa_maps = ProcNumaMaps.new
+proc_numa_maps.load(ARGV[0])
+
+proc_numa_maps.show_numa_placement
