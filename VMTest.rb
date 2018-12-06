@@ -117,7 +117,7 @@ class VMTest
     cmd += @workload_params.map do |k,v| "#{k}=#{v}" end
     cmd << File.join(@guest_workspace, @workload_script)
     puts cmd.join(' ') + " > " + @workload_log
-    @workload_pid = Process.spawn(*cmd, [:out, :err]=>[@workload_log, 'w'])
+    return Process.spawn(*cmd, [:out, :err]=>[@workload_log, 'w'])
   end
 
   def wait_workload_startup
@@ -187,7 +187,7 @@ class VMTest
     dram_percent = 100 / (@ratio + 1)
     cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@project_dir}/#{@scheme['migrate_config']}"
     puts cmd + " > " + @migrate_log
-    @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
+    return Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
   end
 
   def run_one(should_migrate = false)
@@ -210,20 +210,20 @@ class VMTest
     wait_vm
 
     rsync_workload
-    spawn_workload
+    workload_pid = spawn_workload
 
     if should_migrate
       wait_workload_startup
       eat_mem
-      spawn_migrate
+      migrate_pid = spawn_migrate
     elsif @dram_nodes.size * @ratio > @pmem_nodes.size # if cannot rely on interleaving in baseline test
       eat_mem
     end
 
-    Process.wait @workload_pid
+    Process.wait workload_pid
 
     if should_migrate
-      kill_wait @migrate_pid
+      kill_wait migrate_pid
       @usemem_pids.each do |pid| kill_wait pid end
     end
 
