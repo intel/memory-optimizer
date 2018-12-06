@@ -83,7 +83,9 @@ class VMTest
       return if status.success?
       # show only unexpected error
       output.each_line do |line|
-        next if line == "ssh_exchange_identification: read: Connection reset by peer\n"
+        # ssh_exchange_identification: read: Connection reset by peer
+        # ssh_exchange_identification: Connection closed by remote host
+        next if line =~ /^ssh_exchange_identification: /
         puts line
       end
     end
