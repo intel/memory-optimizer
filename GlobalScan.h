@@ -51,6 +51,7 @@ class GlobalScan
     void reload_conf();
     bool exit_on_stabilized();
 
+    unsigned long accept_hot_bytes()   { return dram_free_anon_bytes * 3 / 4; }
     unsigned long target_young_bytes() { return dram_free_anon_bytes * 2 / 3; }
     unsigned long target_hot_bytes()   { return dram_free_anon_bytes / 2; }
 
@@ -59,6 +60,7 @@ class GlobalScan
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;
     int nr_walks;
+    int nr_acceptable_scans;
     float interval;
     float real_interval;
     struct timeval last_scan_start;

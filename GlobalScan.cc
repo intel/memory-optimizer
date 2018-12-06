@@ -114,6 +114,8 @@ void GlobalScan::walk_multi()
   struct timeval ts1, ts2;
   float elapsed;
 
+  nr_acceptable_scans = 0;
+
   for (auto& m: idle_ranges)
     m->prepare_walks(MAX_WALKS);
 
@@ -171,7 +173,16 @@ bool GlobalScan::should_stop_walk()
   if (nr_walks <= 2)
     return false;
 
-  return top_bytes < target_top_bytes();
+  if (top_bytes < target_hot_bytes())
+    return true;
+
+  if (top_bytes < accept_hot_bytes()) {
+    if (++nr_acceptable_scans >= 3)
+      return true;
+  } else
+    nr_acceptable_scans = 0;
+
+  return false;
 }
 
 void GlobalScan::update_dram_free_anon_bytes()
