@@ -171,7 +171,7 @@ bool GlobalScan::should_stop_walk()
   if (nr_walks <= 2)
     return false;
 
-  return top_bytes < dram_free_anon_bytes / 2;
+  return top_bytes < target_top_bytes();
 }
 
 void GlobalScan::update_dram_free_anon_bytes()
@@ -280,9 +280,7 @@ void GlobalScan::update_interval(bool finished)
   if (nr_walks <= 1)
     return;
 
-  const int div = 66; // the smaller than 100, the more real nr_walks will be
-                      // in order to bring top_bytes down to dram_percent/2
-  float ratio = dram_free_anon_bytes / ((young_bytes * div / 100) + 1.0);
+  float ratio = target_young_bytes() / (young_bytes + 1.0);
   if (ratio > 10)
     ratio = 10;
   else if (ratio < 0.2)

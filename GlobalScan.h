@@ -51,6 +51,9 @@ class GlobalScan
     void reload_conf();
     bool exit_on_stabilized();
 
+    unsigned long target_young_bytes() { return dram_free_anon_bytes * 2 / 3; }
+    unsigned long target_hot_bytes()   { return dram_free_anon_bytes / 2; }
+
   private:
     static const int MAX_WALKS = 20;
     static const float MIN_INTERVAL;
