@@ -113,8 +113,10 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
 
     // locate pages
     ret = move_pages(&addrs[i], size, true);
-    if (ret)
+    if (ret) {
+      perror("locate pages failed");
       break;
+    }
 
     calc_target_nodes(addrs, size);
     clear_status_count();
@@ -127,7 +129,7 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
 
     ret = move_pages(&addrs[i], size, false);
     if (ret) {
-      fprintf(stderr, "move_pages() failed!\n");
+      perror("move pages failed");
       break;
     }
     stats->save_move_states(status, target_nodes, status_after_move);
