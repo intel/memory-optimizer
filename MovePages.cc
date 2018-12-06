@@ -97,7 +97,7 @@ void MovePages::account_stats(MoveStats *stats)
 {
   unsigned long skip_kb = 0;
   unsigned long move_kb = 0;
-  int shift = page_shift - 10;
+  const int shift = page_shift - 10;
 
   for (auto &kv : status_count) {
     // Don't calculate invalid pages.
