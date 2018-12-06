@@ -193,18 +193,18 @@ class VMTest
   def run_one(should_migrate = false)
     path_params = @workload_params.map { |k,v| "#{k}=#{v}" }.join('#')
     path_params += '.' + @migrate_script if should_migrate
-    log_dir = File.join(@host_workspace, @time_dir, "ratio=#{@ratio}", path_params)
-    @workload_log = File.join(log_dir, @workload_script + ".log")
-    @migrate_log  = File.join(log_dir, @migrate_script  + ".log")
-    @qemu_log     = File.join(log_dir, @qemu_script     + ".log")
+    @log_dir = File.join(@host_workspace, @time_dir, "ratio=#{@ratio}", path_params)
+    @workload_log = File.join(@log_dir, @workload_script + ".log")
+    @migrate_log  = File.join(@log_dir, @migrate_script  + ".log")
+    @qemu_log     = File.join(@log_dir, @qemu_script     + ".log")
 
     puts '-' * 80
     puts "#{Time.now}  Running test with params #{@workload_params} should_migrate=#{should_migrate}"
 
     # Avoid this dependency in old RHEL
     #   require "FileUtils"
-    #   FileUtils.mkdir_p(log_dir)
-    system('mkdir', '-p', log_dir) # on host rootfs
+    #   FileUtils.mkdir_p(@log_dir)
+    system('mkdir', '-p', @log_dir) # on host rootfs
 
     spawn_qemu
     wait_vm
