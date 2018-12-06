@@ -38,10 +38,15 @@ class VMTest
     @project_dir = __dir__
     @tests_dir = File.join @project_dir, 'tests'
     @transparent_hugepage = 0
-    @qemu_script = "kvm.sh"
     @guest_workspace = "~/test"
     @host_workspace = File.join(@tests_dir, "log")
-    @qemu_ssh = "2222"
+  end
+
+  def setup_qemu_params
+    @qemu_script = @scheme["qemu_script"]   || "kvm.sh"
+    @qemu_smp    = @scheme["qemu_smp"].to_s || "32"
+    @qemu_mem    = @scheme["qemu_mem"]      || "128G"
+    @qemu_ssh    = @scheme["qemu_ssh"].to_s || "2222"
   end
 
   def setup_sys
@@ -297,7 +302,7 @@ class VMTest
     @scheme = YAML.load_file(config_file)
     @workload_script = @scheme["workload_script"]
     @migrate_script = @scheme["migrate_cmd"].partition(' ')[0]
-    @qemu_script = @scheme["qemu_script"] if @scheme["qemu_script"]
+    setup_qemu_params
     @time_dir = Time.now.strftime("%F.%T")
     @scheme["ratios"].each do |ratio|
       @ratio = ratio

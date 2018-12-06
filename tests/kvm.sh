@@ -6,7 +6,7 @@
 )
 
 [[ $qemu_smp ]] || qemu_smp='cpus=32'
-[[ $qemu_mem ]] || qemu_mem='256G'
+[[ $qemu_mem ]] || qemu_mem='128G'
 [[ $qemu_ssh ]] || qemu_ssh='2222'
 [[ $qemu_log ]] && qemu_log=file:$qemu_log
 [[ $qemu_log ]] || qemu_log=stdio
