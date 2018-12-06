@@ -24,10 +24,19 @@ struct MoveStats
     unsigned long skip_kb;
     unsigned long move_kb;
 
+    const unsigned int from_shift = 0;
+    const unsigned int to_shift = 8;
+    const unsigned int result_shift = 16;
+    MovePagesStatusCount move_page_status;
+
     MoveStats() { clear(); }
     void clear();
     void add(MoveStats *s);
     void account(MovePagesStatusCount& status_count, int page_shift, int target_node);
+    void save_move_states(std::vector<int>& status,
+                          std::vector<int>& target_nodes,
+                          std::vector<int>& status_after_move);
+    void show_move_state(Formatter& fmt);
 };
 
 class MovePages
@@ -62,6 +71,7 @@ class MovePages
     bool is_node_in_target_set(int node_id);
     long find_last_good(std::vector<int>& status, long end_pos);
     void dump_target_nodes(void);
+
   private:
     pid_t pid;
     int flags;
@@ -71,7 +81,7 @@ class MovePages
 
     // Get the status after migration
     std::vector<int> status;
-
+    std::vector<int> status_after_move;
     std::vector<int> target_nodes;
 
     MovePagesStatusCount status_count;

@@ -15,6 +15,7 @@ void MoveStats::clear()
   to_move_kb = 0;
   skip_kb = 0;
   move_kb = 0;
+  move_page_status.clear();
 }
 
 void MoveStats::add(MoveStats* s)
@@ -23,6 +24,43 @@ void MoveStats::add(MoveStats* s)
   skip_kb += s->skip_kb;
   move_kb += s->move_kb;
 }
+
+void MoveStats::save_move_states(std::vector<int>& status,
+                                 std::vector<int>& target_nodes,
+                                 std::vector<int>& status_after_move)
+{
+  int key;
+
+  for (size_t i = 0; i < status.size(); ++i) {
+
+    // let's what will return if negative value in
+    //if (status[i] < 0)
+    //  continue;
+    key = (status[i] << from_shift)
+      + (target_nodes[i] << to_shift)
+      + (status_after_move[i] << result_shift);
+    add_count(move_page_status, key, 1);
+  }
+
+  return;
+}
+
+void MoveStats::show_move_state(Formatter& fmt)
+{
+  signed char from, to, result;
+  int key;
+
+  for (auto& i : move_page_status) {
+    key = i.first;
+    from = (key >> from_shift) & 0xff;
+    to = (key >> to_shift) & 0xff;
+    result = (key >> result_shift) & 0xff;
+
+    fmt.print("from node %d to node %d: %d pages with result %d\n",
+              (int)from, (int)to, i.second, (int)result);
+  }
+}
+
 
 MovePages::MovePages() :
   flags(MPOL_MF_MOVE | MPOL_MF_SW_YOUNG),
@@ -46,13 +84,15 @@ long MovePages::move_pages(void **addrs, unsigned long count, bool is_locate)
   if (!is_locate) {
     // move pages
     pnodes = &target_nodes[0];
-  } else
+    status_after_move.resize(count);
+    ret = ::move_pages(pid, count, addrs, pnodes, &status_after_move[0], flags);
+  } else {
     // locate pages
     pnodes = NULL;
+    status.resize(count);
+    ret = ::move_pages(pid, count, addrs, pnodes, &status[0], flags);
+  }
 
-  status.resize(count);
-
-  ret = ::move_pages(pid, count, addrs, pnodes, &status[0], flags);
   if (ret)
     perror("move_pages");
 
@@ -86,8 +126,11 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
       dump_target_nodes();
 
     ret = move_pages(&addrs[i], size, false);
-    if (ret)
+    if (ret) {
+      fprintf(stderr, "move_pages() failed!\n");
       break;
+    }
+    stats->save_move_states(status, target_nodes, status_after_move);
   }
 
   return ret;

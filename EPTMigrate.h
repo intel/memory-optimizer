@@ -25,6 +25,7 @@ struct MigrateStats: public MoveStats
     void clear();
     void add(MigrateStats *s);
     void show(Formatter& fmt, MigrateWhat mwhat);
+    void show_move_result_state(Formatter& fmt);
 };
 
 class EPTMigrate : public EPTScan
