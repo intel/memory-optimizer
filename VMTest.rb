@@ -37,7 +37,7 @@ class VMTest
   def initialize
     @project_dir = __dir__
     @tests_dir = File.join @project_dir, 'tests'
-    @transparent_hugepage = 0
+    @transparent_hugepage = "never"
     @guest_workspace = "~/test"
     @host_workspace = File.join(@tests_dir, "log")
   end
@@ -51,7 +51,7 @@ class VMTest
 
   def setup_sys
     File.write("/sys/kernel/mm/transparent_hugepage/enabled", @transparent_hugepage)
-    File.write("/proc/sys/kernel/numa_balancing", @numa_balancing)
+    File.write("/proc/sys/kernel/numa_balancing", "0")
     system("modprobe kvm_ept_idle")
   end
 
@@ -305,6 +305,7 @@ class VMTest
     @scheme = YAML.load_file(config_file)
     @workload_script = @scheme["workload_script"]
     @migrate_script = @scheme["migrate_cmd"].partition(' ')[0]
+    setup_sys
     setup_qemu_params
     @time_dir = Time.now.strftime("%F.%T")
     @scheme["ratios"].each do |ratio|
