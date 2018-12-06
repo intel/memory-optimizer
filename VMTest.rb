@@ -180,7 +180,7 @@ class VMTest
     end
     cmd = "numactl --preferred #{nid} usemem --sleep -1 --step 2m --mlock --prefault #{kb >> 10}m"
     puts cmd
-    @usemem_pids << Process.spawn(cmd)
+    @usemem_pids << Process.spawn(*cmd.split)
   end
 
   def spawn_migrate
