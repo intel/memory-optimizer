@@ -162,7 +162,6 @@ class VMTest
     proc_vmstat = ProcVmstat.new
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
-    @usemem_pids = []
     @dram_nodes.each do |nid|
       numa_vmstat = proc_vmstat.numa_vmstat[nid]
       free_kb = numa_vmstat['nr_free_pages'] + numa_vmstat['nr_inactive_file']
@@ -178,9 +177,9 @@ class VMTest
       puts "WARNING: not starting usemem due to negative kb = #{kb}" if kb < -(1000<<10)
       return
     end
-    cmd = "numactl --preferred #{nid} usemem --sleep -1 --step 2m --mlock --prefault #{kb >> 10}m"
+    cmd = "numactl --preferred #{nid} usemem --detach --pid-file #{@usemem_pid_file} --sleep -1 --step 2m --mlock --prefault #{kb >> 10}m"
     puts cmd
-    @usemem_pids << Process.spawn(*cmd.split)
+    Process.spawn(*cmd.split)
   end
 
   def spawn_migrate
@@ -197,6 +196,7 @@ class VMTest
     @workload_log = File.join(@log_dir, @workload_script + ".log")
     @migrate_log  = File.join(@log_dir, @migrate_script  + ".log")
     @qemu_log     = File.join(@log_dir, @qemu_script     + ".log")
+    @usemem_pid_file = File.join(@log_dir, "usemem.pid")
 
     puts '-' * 80
     puts "#{Time.now}  Running test with params #{@workload_params} should_migrate=#{should_migrate}"
@@ -212,6 +212,8 @@ class VMTest
     rsync_workload
     workload_pid = spawn_workload
 
+    system("rm", "-f", @usemem_pid_file)
+
     if should_migrate
       wait_workload_startup
       eat_mem
@@ -224,8 +226,10 @@ class VMTest
 
     if should_migrate
       kill_wait migrate_pid
-      @usemem_pids.each do |pid| kill_wait pid end
     end
+
+    usemem_pids = File.read(@usemem_pid_file).split rescue []
+    usemem_pids.each do |pid| Process.kill 'KILL', pid.to_i end
 
     stop_qemu
   end
