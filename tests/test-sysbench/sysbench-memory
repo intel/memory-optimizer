@@ -44,7 +44,10 @@ setup_sys()
 	echo $thp > /sys/kernel/mm/transparent_hugepage/enabled
 	echo 0 > /proc/sys/kernel/numa_balancing
 
-	lsmod | grep -q kvm_ept_idle || insmod $tests_dir/kvm-ept-idle.ko
+	lsmod | grep -q kvm_ept_idle || {
+		modprobe kvm
+		insmod $tests_dir/kvm-ept-idle.ko
+	}
 }
 
 run_migrations()
