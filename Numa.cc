@@ -275,7 +275,8 @@ void NumaNodeCollection::set_target_node(int node_id, int target_node_id, bool i
   int max_id = std::max(0, (int)(nodes.size() - 1));
 
   if (node_id > max_id
-      || target_node_id > max_id) {
+      || target_node_id > max_id
+      || target_node_id < 0) {
     fprintf(stderr, "wrong node id: node_id = %d target_node_id = %d max id = %d\n",
             node_id, target_node_id, max_id);
     return;
