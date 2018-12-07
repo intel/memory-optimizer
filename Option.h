@@ -125,6 +125,7 @@ public:
   int cold_max_refs;
 
   int exit_on_stabilized;
+  bool exit_on_exceeded;
   bool dump_options;
 
   int max_threads;
