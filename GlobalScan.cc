@@ -185,11 +185,8 @@ bool GlobalScan::should_stop_walk()
   return false;
 }
 
-void GlobalScan::update_dram_free_anon_bytes()
+unsigned long GlobalScan::get_dram_free_anon_bytes()
 {
-  if (option.dram_percent) {
-    dram_free_anon_bytes = option.dram_percent * all_bytes / 100;
-  } else {
     ProcVmstat proc_vmstat;
     unsigned long dram_anon_capacity = 0;
 
@@ -198,7 +195,15 @@ void GlobalScan::update_dram_free_anon_bytes()
       dram_anon_capacity += proc_vmstat.anon_capacity(iter->id());
     }
 
-    dram_free_anon_bytes = dram_anon_capacity << PAGE_SHIFT;
+    return dram_anon_capacity << PAGE_SHIFT;
+}
+
+void GlobalScan::update_dram_free_anon_bytes()
+{
+  if (option.dram_percent) {
+    dram_free_anon_bytes = option.dram_percent * all_bytes / 100;
+  } else {
+    dram_free_anon_bytes = get_dram_free_anon_bytes();
   }
 }
 

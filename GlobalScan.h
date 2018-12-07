@@ -55,6 +55,8 @@ class GlobalScan
     unsigned long target_young_bytes() { return dram_free_anon_bytes * 2 / 3; }
     unsigned long target_hot_bytes()   { return dram_free_anon_bytes / 2; }
 
+    unsigned long get_dram_free_anon_bytes();
+
   private:
     static const int MAX_WALKS = 20;
     static const float MIN_INTERVAL;
