@@ -24,4 +24,4 @@ workload_params:
 - <<: *params
   memory_oper: write
 migrate_cmd: sys-refs
-migrate_config: tests/test-sysbench/sysbench-memory.yaml
+migrate_config: test-sysbench/sysbench-memory.yaml

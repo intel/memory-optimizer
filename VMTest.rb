@@ -196,7 +196,7 @@ class VMTest
 
   def spawn_migrate
     dram_percent = 100 / (@ratio + 1)
-    cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@project_dir}/#{@scheme['migrate_config']}"
+    cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@tests_dir}/#{@scheme['migrate_config']}"
     puts cmd + " > " + @migrate_log
     return Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
   end
