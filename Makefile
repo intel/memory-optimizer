@@ -16,7 +16,7 @@ SYS_REFS_HEADER_FILES = $(SYS_REFS_SOURCE_FILES:.cc=.h)
 
 OBJS = sys-refs page-refs task-maps show-vmstat addr-seq task-refs pid-list
 all: $(OBJS)
-	[ -f ../Makefile ] && RP2D=t make -C ..
+	[ ! -f ../Makefile ] || RP2D=t make -C ..
 	[ -x ./update ] && ./update || true
 
 sys-refs: sys-refs.cc $(SYS_REFS_SOURCE_FILES) $(SYS_REFS_HEADER_FILES)
