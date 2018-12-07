@@ -1,7 +1,8 @@
 #!/bin/bash
 
 script_path=$(realpath $0)
-tests_dir=$(dirname $script_path)
+script_dir=$(dirname $script_path)
+tests_dir=$(dirname $script_dir)
 project_dir=$(dirname $tests_dir)
 cd "$tests_dir" || exit
 
@@ -76,7 +77,7 @@ run_migrations()
 		#-i $interval
 		-d $dram_percent
 		-m $what
-		-c $tests_dir/sysbench-memory.yaml
+		-c $script_dir/sysbench-memory.yaml
 		#-p $sysbench_pid
 	)
 
@@ -182,10 +183,10 @@ run_tests()
 }
 
 log_dir=$(basename $0)-$(date +'%Y%m%d_%H%M%S')
-mkdir -p $tests_dir/$log_dir
-cp -a $script_path $tests_dir/$log_dir/
-echo "less    $tests_dir/$log_dir/*.?"
-echo "tail -f $tests_dir/$log_dir/*.h | grcat $project_dir/tests/grc-conf.sys-refs"
+mkdir -p $script_dir/$log_dir
+cp -a $script_path $script_dir/$log_dir/
+echo "less    $script_dir/$log_dir/*.?"
+echo "tail -f $script_dir/$log_dir/*.h | grcat $project_dir/tests/grc-conf.sys-refs"
 
 thp=always
 thp=never
