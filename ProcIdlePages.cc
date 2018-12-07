@@ -173,7 +173,7 @@ int ProcIdlePages::walk()
   }
 
   std::vector<proc_maps_entry> address_map = proc_maps.load(pid);
-  int err;
+  int err = -1;
 
   if (address_map.empty()) {
     io_error = -ESRCH;
