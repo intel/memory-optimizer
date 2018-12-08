@@ -241,7 +241,7 @@ class VMTest
     end
 
     usemem_pids = File.read(@usemem_pid_file).split rescue []
-    usemem_pids.each do |pid| Process.kill 'KILL', pid.to_i end
+    usemem_pids.each do |pid| Process.kill 'KILL', pid.to_i rescue puts "WARNING: failed to kill usemem" end
 
     stop_qemu
   end
