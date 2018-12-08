@@ -14,6 +14,7 @@ class ProcVmstat
   public:
     int load_vmstat();
     int load_numa_vmstat();
+    void clear() { proc_vmstat.clear(); numa_vmstat.clear(); };
 
     unsigned long vmstat(std::string name);
     unsigned long vmstat(int nid, std::string name);

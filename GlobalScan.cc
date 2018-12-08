@@ -166,6 +166,20 @@ void GlobalScan::count_migrate_stats()
     m->count_migrate_stats();
 }
 
+unsigned long GlobalScan::get_dram_anon_bytes()
+{
+    unsigned long dram_anon = 0;
+
+    for(auto iter = numa_collection.dram_begin();
+      iter != numa_collection.dram_end(); ++iter) {
+      int nid = iter->id();
+      dram_anon += proc_vmstat.vmstat(nid, "nr_active_anon");
+      dram_anon += proc_vmstat.vmstat(nid, "nr_inactive_anon");
+    }
+
+    return dram_anon << PAGE_SHIFT;
+}
+
 // similar to EPTScan::should_stop()
 bool GlobalScan::should_stop_walk()
 {
@@ -182,12 +196,21 @@ bool GlobalScan::should_stop_walk()
   } else
     nr_acceptable_scans = 0;
 
+  // use scheme:
+  //   migration: hot
+  //   dram_percent: xx
+  //   initial placement: all in PMEM nodes
+  //   final placement: dram_percent hot pages moved to DRAM nodes
+  if (option.exit_on_exceeded) {
+    if (get_dram_anon_bytes() >= dram_free_anon_bytes)
+      return true;
+  }
+
   return false;
 }
 
 unsigned long GlobalScan::get_dram_free_anon_bytes()
 {
-    ProcVmstat proc_vmstat;
     unsigned long dram_anon_capacity = 0;
 
     for(auto iter = numa_collection.dram_begin();
@@ -200,6 +223,8 @@ unsigned long GlobalScan::get_dram_free_anon_bytes()
 
 void GlobalScan::update_dram_free_anon_bytes()
 {
+  proc_vmstat.clear();
+
   if (option.dram_percent) {
     dram_free_anon_bytes = option.dram_percent * all_bytes / 100;
   } else {
@@ -284,7 +309,6 @@ void GlobalScan::migrate()
     job = done_queue.pop();
   }
 
-  ProcVmstat proc_vmstat;
   proc_vmstat.show_numa_stats();
 }
 
