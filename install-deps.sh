@@ -22,12 +22,12 @@ debian_install()
 rhel_install()
 {
 	pkgs=(
-		gcc-c++.x86_64
-		libstdc++.x86_64
-		numactl.x86_64
-		numactl-libs.x86_64
-		numactl-devel.x86_64
-		yaml-cpp-devel.x86_64
+		gcc-c++
+		libstdc++
+		numactl
+		numactl-libs
+		numactl-devel
+		yaml-cpp-devel
 	)
 	yum install "${pkgs[@]}"
 }
