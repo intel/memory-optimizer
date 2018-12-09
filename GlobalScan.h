@@ -45,6 +45,7 @@ class GlobalScan
 
   private:
     void consumer_loop();
+    int consumer_job(Job& job);
     void walk_once();
     bool should_stop_walk();
     void update_dram_free_anon_bytes();

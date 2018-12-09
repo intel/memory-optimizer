@@ -267,12 +267,8 @@ void GlobalScan::walk_once()
          all_bytes >> 10);
 }
 
-void GlobalScan::consumer_loop()
+int GlobalScan::consumer_job(Job& job)
 {
-  printd("consumer_loop started\n");
-  for (;;)
-  {
-    Job job = work_queue.pop();
     switch(job.intent)
     {
     case JOB_WALK:
@@ -283,8 +279,21 @@ void GlobalScan::consumer_loop()
       break;
     case JOB_QUIT:
       printd("consumer_loop quit job\n");
-      return;
+      return 1;
     }
+
+    return 0;
+}
+
+void GlobalScan::consumer_loop()
+{
+  printd("consumer_loop started\n");
+  for (;;)
+  {
+    Job job = work_queue.pop();
+    int ret = consumer_job(job);
+    if (ret)
+      break;
     printd("consumer_loop done job\n");
     done_queue.push(job);
   }
