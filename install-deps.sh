@@ -15,6 +15,7 @@ debian_install()
 		libnuma-dev
 		libyaml-cpp-dev
 		ruby
+		diffstat
 
 		libasan4 # for gcc-7
 	)
@@ -30,6 +31,7 @@ rhel_install()
 		numactl-libs
 		numactl-devel
 		yaml-cpp-devel
+		diffstat
 
 		libasan
 	)
