@@ -245,9 +245,14 @@ void GlobalScan::walk_once()
   for (auto& m: idle_ranges)
   {
       job.migration = m;
-      work_queue.push(job);
-      printd("push job %d\n", nr);
-      ++nr;
+      if (option.max_threads) {
+        work_queue.push(job);
+        printd("push job %d\n", nr);
+        ++nr;
+      } else {
+        consumer_job(job);
+        job.migration->gather_walk_stats(young_bytes, top_bytes, all_bytes);
+      }
   }
 
   for (; nr; --nr)
@@ -308,8 +313,11 @@ void GlobalScan::migrate()
   for (auto& m: idle_ranges)
   {
       job.migration = m;
-      work_queue.push(job);
-      ++nr;
+      if (option.max_threads) {
+        work_queue.push(job);
+        ++nr;
+      } else
+        consumer_job(job);
   }
 
   for (; nr; --nr)

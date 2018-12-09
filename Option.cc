@@ -34,7 +34,7 @@ Option::Option()
   cold_max_refs = -1;
   pid = -1;
 
-  max_threads = 1;
+  max_threads = 0;
   split_rss_size = 0; // no split task address space
 
   exit_on_stabilized = 0; // percent moved
