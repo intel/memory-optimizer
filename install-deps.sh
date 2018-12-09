@@ -15,6 +15,8 @@ debian_install()
 		libnuma-dev
 		libyaml-cpp-dev
 		ruby
+
+		libasan4 # for gcc-7
 	)
 	apt-get install "${pkgs[@]}"
 }
@@ -28,6 +30,8 @@ rhel_install()
 		numactl-libs
 		numactl-devel
 		yaml-cpp-devel
+
+		libasan
 	)
 	yum install "${pkgs[@]}"
 }
