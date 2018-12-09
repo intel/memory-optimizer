@@ -75,17 +75,17 @@ size_t EPTMigrate::get_threshold_refs(ProcIdlePageType type,
 {
   int nr_walks = get_nr_walks();
 
-  if (type & PAGE_ACCESSED_MASK && option.nr_walks == 0) {
+  if (type <= MAX_ACCESSED && option.nr_walks == 0) {
     min_refs = nr_walks;
     max_refs = nr_walks;
     return 0;
   }
-  if (type & PAGE_ACCESSED_MASK && option.hot_min_refs > 0) {
+  if (type <= MAX_ACCESSED && option.hot_min_refs > 0) {
     min_refs = option.hot_min_refs;
     max_refs = nr_walks;
     return 0;
   }
-  if (!(type & PAGE_ACCESSED_MASK) && option.cold_max_refs >= 0) {
+  if (!(type <= MAX_ACCESSED) && option.cold_max_refs >= 0) {
     min_refs = 0;
     max_refs = option.cold_max_refs;
     return 0;
@@ -97,7 +97,7 @@ size_t EPTMigrate::get_threshold_refs(ProcIdlePageType type,
   double ratio;
 
   if (option.dram_percent) {
-    if (type & PAGE_ACCESSED_MASK)
+    if (type <= MAX_ACCESSED)
       ratio = option.dram_percent / 100.0;
     else
       ratio = (100.0 - option.dram_percent) / 100.0;
@@ -113,7 +113,7 @@ size_t EPTMigrate::get_threshold_refs(ProcIdlePageType type,
 
   fmt.print("migrate ratio: %.2f = %lu / %lu\n", ratio, portion, page_refs.size());
 
-  if (type & PAGE_ACCESSED_MASK) {
+  if (type < MAX_ACCESSED) {
     min_refs = nr_walks;
     max_refs = nr_walks;
     for (; min_refs > 1; --min_refs) {
@@ -142,6 +142,7 @@ size_t EPTMigrate::get_threshold_refs(ProcIdlePageType type,
 int EPTMigrate::select_top_pages(ProcIdlePageType type)
 {
   AddrSequence& page_refs = get_pagetype_refs(type).page_refs;
+  std::vector<void *>& addrs = pages_addr[pagetype_index[type]];
   int min_refs;
   int max_refs;
   unsigned long addr;
@@ -160,7 +161,7 @@ int EPTMigrate::select_top_pages(ProcIdlePageType type)
     printdd("va: %lx count: %d\n", it->first, (int)it->second);
     if (it->second >= min_refs &&
         it->second <= max_refs)
-      pages_addr[type].push_back((void *)(it->first << PAGE_SHIFT));
+      addrs.push_back((void *)(it->first << PAGE_SHIFT));
   }
   */
 
@@ -168,19 +169,19 @@ int EPTMigrate::select_top_pages(ProcIdlePageType type)
   while (!iter_ret) {
     if (ref_count >= min_refs &&
         ref_count <= max_refs)
-      pages_addr[type].push_back((void *)addr);
+      addrs.push_back((void *)addr);
 
     iter_ret = page_refs.get_next(addr, ref_count);
   }
 
-  if (pages_addr[type].empty())
+  if (addrs.empty())
     return 1;
 
-  sort(pages_addr[type].begin(), pages_addr[type].end());
+  sort(addrs.begin(), addrs.end());
 
   if (debug_level() >= 2)
-    for (size_t i = 0; i < pages_addr[type].size(); ++i) {
-      cout << "page " << i << ": " << pages_addr[type][i] << endl;
+    for (size_t i = 0; i < addrs.size(); ++i) {
+      cout << "page " << i << ": " << addrs[i] << endl;
     }
 
   return 0;
@@ -245,7 +246,7 @@ int EPTMigrate::migrate(ProcIdlePageType type)
 
 long EPTMigrate::do_move_pages(ProcIdlePageType type)
 {
-  auto& addrs = pages_addr[type];
+  auto& addrs = pages_addr[pagetype_index[type]];
   long ret;
 
   migrator.set_pid(pid);
@@ -268,7 +269,7 @@ unsigned long EPTMigrate::calc_numa_anon_capacity(ProcIdlePageType type,
   if (!numa_collection)
     return 0;
 
-  if (type & PAGE_ACCESSED_MASK) {
+  if (type < MAX_ACCESSED) {
     iter = numa_collection->dram_begin();
     iter_end = numa_collection->dram_end();
   } else {

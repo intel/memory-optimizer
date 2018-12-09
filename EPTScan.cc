@@ -182,7 +182,7 @@ int EPTScan::save_counts(std::string filename)
 
   for (int i = 0; i < nr; i++) {
     fprintf(file, "%4d", i);
-    for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_ACCESSED}) {
+    for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_PRESENT}) {
       unsigned long pages = sys_refs_count[type][i];
       unsigned long kb = pages * (pagetype_size[type] >> 10);
       fprintf(file, " %'15lu", kb);
@@ -193,7 +193,7 @@ int EPTScan::save_counts(std::string filename)
 
   fprintf(file, "SUM ");
   unsigned long total_kb = 0;
-  for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_ACCESSED}) {
+  for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_PRESENT}) {
     unsigned long kb = sum_kb[type];
     fprintf(file, " %'15lu", kb);
     total_kb += kb;

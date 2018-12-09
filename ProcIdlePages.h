@@ -20,27 +20,23 @@ static const unsigned long TASK_SIZE_MAX = (1UL << 47) - PAGE_SIZE;
 
 enum ProcIdlePageType
 {
-  // 4k page
-  PTE_IDLE,
-  PTE_ACCESSED,
+	PTE_ACCESSED,	/* 4k page */
+	PMD_ACCESSED,	/* 2M page */
+	PUD_PRESENT,	/* 1G page */
+	MAX_ACCESSED = PUD_PRESENT,
 
-  PAGE_ACCESSED_MASK = PTE_ACCESSED,
+	PTE_DIRTY,
+	PMD_DIRTY,
 
-  // 2M page
-  PMD_IDLE,
-  PMD_ACCESSED,
+	PTE_IDLE,
+	PMD_IDLE,
+	PMD_IDLE_PTES,	/* all PTE idle */
 
-  // 1G page
-  PUD_IDLE,
-  PUD_ACCESSED,
-
-  MAX_ACCESSED = PUD_ACCESSED,
-
-  PTE_HOLE,
-  PMD_HOLE,
-  PUD_HOLE,
-  P4D_HOLE,
-  PGDIR_HOLE,
+	PTE_HOLE,
+	PMD_HOLE,
+	PUD_HOLE,
+	P4D_HOLE,
+	PGDIR_HOLE,
 
   IDLE_PAGE_TYPE_MAX
 };
@@ -54,7 +50,8 @@ struct ProcIdleExtent
 
 extern unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX];
 extern const char* pagetype_name[IDLE_PAGE_TYPE_MAX];
-extern unsigned long pagetype_shift[IDLE_PAGE_TYPE_MAX];
+extern int pagetype_shift[IDLE_PAGE_TYPE_MAX];
+extern int pagetype_index[];
 
 typedef std::unordered_map<unsigned long, uint8_t> page_refs_map;
 
@@ -84,7 +81,7 @@ class ProcIdlePages
     int has_io_error() const { return io_error; }
 
     ProcIdleRefs& get_pagetype_refs(ProcIdlePageType type)
-                   { return pagetype_refs[type | PAGE_ACCESSED_MASK]; }
+                   { return pagetype_refs[pagetype_index[type]]; }
 
     int get_nr_walks() { return nr_walks; }
 

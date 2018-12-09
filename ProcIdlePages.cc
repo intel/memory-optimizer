@@ -13,62 +13,74 @@
 
 extern Option option;
 
-unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX] = {
-	// 4k page
-	[PTE_IDLE]      = PAGE_SIZE,
-	[PTE_ACCESSED]  = PAGE_SIZE,
+int pagetype_index[] = {
+  [PTE_ACCESSED]      = PTE_ACCESSED,
+  [PMD_ACCESSED]      = PMD_ACCESSED,
+  [PUD_PRESENT]       = PUD_PRESENT,
 
-	// 2M page
-	[PMD_IDLE]      = PMD_SIZE,
-	[PMD_ACCESSED]  = PMD_SIZE,
+  [PTE_DIRTY]         = PTE_ACCESSED,
+  [PMD_DIRTY]         = PMD_ACCESSED,
 
-	// 1G page
-	[PUD_IDLE]      = PUD_SIZE,
-	[PUD_ACCESSED]  = PUD_SIZE,
-
-	[PTE_HOLE]      = PAGE_SIZE,
-	[PMD_HOLE]      = PMD_SIZE,
-	[PUD_HOLE]      = PUD_SIZE,
-	[P4D_HOLE]      = P4D_SIZE,
-	[PGDIR_HOLE]    = PGDIR_SIZE,
+  [PTE_IDLE]          = PTE_ACCESSED,
+  [PMD_IDLE]          = PMD_ACCESSED,
 };
 
-unsigned long pagetype_shift[IDLE_PAGE_TYPE_MAX] = {
-	// 4k page
-	[PTE_IDLE]      = 12,
-	[PTE_ACCESSED]  = 12,
+unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX] = {
+  [PTE_ACCESSED]      = PAGE_SIZE,
+  [PMD_ACCESSED]      = PMD_SIZE,
+  [PUD_PRESENT]       = PUD_SIZE,
 
-	// 2M page
-	[PMD_IDLE]      = 21,
-	[PMD_ACCESSED]  = 21,
+  [PTE_DIRTY]         = PAGE_SIZE,
+  [PMD_DIRTY]         = PMD_SIZE,
 
-	// 1G page
-	[PUD_IDLE]      = 30,
-	[PUD_ACCESSED]  = 30,
+  [PTE_IDLE]          = PAGE_SIZE,
+  [PMD_IDLE]          = PMD_SIZE,
+  [PMD_IDLE_PTES]     = PMD_SIZE,
 
-	[PTE_HOLE]      = 12,
-	[PMD_HOLE]      = 21,
-	[PUD_HOLE]      = 30,
-	[P4D_HOLE]      = 39,
-	[PGDIR_HOLE]    = 39,
+  [PTE_HOLE]          = PAGE_SIZE,
+  [PMD_HOLE]          = PMD_SIZE,
+  [PUD_HOLE]          = PUD_SIZE,
+  [P4D_HOLE]          = P4D_SIZE,
+  [PGDIR_HOLE]        = PGDIR_SIZE,
+};
+
+int pagetype_shift[IDLE_PAGE_TYPE_MAX] = {
+  [PTE_ACCESSED]      = 12,
+  [PMD_ACCESSED]      = 21,
+  [PUD_PRESENT]       = 30,
+
+  [PTE_DIRTY]         = 12,
+  [PMD_DIRTY]         = 21,
+
+  [PTE_IDLE]          = 12,
+  [PMD_IDLE]          = 21,
+  [PMD_IDLE_PTES]     = 21,
+
+  [PTE_HOLE]          = 12,
+  [PMD_HOLE]          = 21,
+  [PUD_HOLE]          = 30,
+  [P4D_HOLE]          = 39,
+  [PGDIR_HOLE]        = 39,
 };
 
 
 const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
-  [PTE_IDLE]     = "4K_idle",
-  [PTE_ACCESSED] = "4K_accessed",
+  [PTE_ACCESSED]      = "4K_accessed",
+  [PMD_ACCESSED]      = "2M_accessed",
+  [PUD_PRESENT]       = "1G_present",
 
-  [PMD_IDLE]     = "2M_idle",
-  [PMD_ACCESSED] = "2M_accessed",
+  [PTE_DIRTY]         = "4K_dirty",
+  [PMD_DIRTY]         = "2M_dirty",
 
-  [PUD_IDLE]     = "1G_idle",
-  [PUD_ACCESSED] = "1G_accessed",
+  [PTE_IDLE]          = "4K_idle",
+  [PMD_IDLE]          = "2M_idle",
+  [PMD_IDLE_PTES]     = "2M_idle_4ks",
 
-  [PTE_HOLE]     = "4K_hole",
-  [PMD_HOLE]     = "2M_hole",
-  [PUD_HOLE]     = "1G_hole",
-  [P4D_HOLE]     = "512G_hole",
-  [PGDIR_HOLE]   = "512G_hole",
+  [PTE_HOLE]          = "4K_hole",
+  [PMD_HOLE]          = "2M_hole",
+  [PUD_HOLE]          = "1G_hole",
+  [P4D_HOLE]          = "512G_hole",
+  [PGDIR_HOLE]        = "512G_hole",
 };
 
 ProcIdlePages::ProcIdlePages()
@@ -222,7 +234,7 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
                                   unsigned long va, unsigned long end)
 {
   unsigned long page_size = pagetype_size[type];
-  AddrSequence& page_refs = pagetype_refs[type | PAGE_ACCESSED_MASK].page_refs;
+  AddrSequence& page_refs = pagetype_refs[pagetype_index[type]].page_refs;
 
   if (va & (page_size - 1)) {
     printf("ignore unaligned addr: %d %lx+%d %lx\n", type, va, nr, page_size);
@@ -231,10 +243,12 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
 
   for (int i = 0; i < nr; ++i)
   {
-    if (type & PAGE_ACCESSED_MASK)
-      page_refs.inc_payload(va, 1);
-    else
+    if (type >= PTE_IDLE)
       page_refs.inc_payload(va, 0);
+    else if (type >= PTE_DIRTY)
+      page_refs.inc_payload(va, 3);
+    else // accessed
+      page_refs.inc_payload(va, 1);
 
     //AddrSequence is not easy to random access, consider move
     //this checking into AddrSequence.
@@ -273,8 +287,12 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
 
     va &= ~(pagetype_size[type] - 1);
 
-    if (type <= MAX_ACCESSED)
-      inc_page_refs(type, nr, va, end);
+    if (type <= MAX_ACCESSED) {
+      if (type == PMD_IDLE_PTES)
+        inc_page_refs(PTE_IDLE, nr * 512, va, end);
+      else
+        inc_page_refs(type, nr, va, end);
+    }
 
     va += pagetype_size[type] * nr;
   }
