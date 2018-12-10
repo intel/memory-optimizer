@@ -94,6 +94,7 @@ class ProcIdlePages
                          unsigned long& va,
                          unsigned long end,
                          int bytes);
+    void dump_idlepages(proc_maps_entry& vma, int bytes);
 
     void inc_page_refs(ProcIdlePageType type, int nr,
                        unsigned long va, unsigned long end);

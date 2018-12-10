@@ -132,7 +132,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
       return -1;
     }
     if ((unsigned long)pos != va) {
-      fprintf(stderr, "error pos != va: %lu %lu\n", pos, va);
+      fprintf(stderr, "error pos != va: %lx-%lx=%lx\n", pos, va, pos - va);
       return -2;
     }
 
@@ -261,11 +261,21 @@ void ProcIdlePages::inc_page_refs(ProcIdlePageType type, int nr,
   }
 }
 
+void ProcIdlePages::dump_idlepages(proc_maps_entry& vma, int bytes)
+{
+  proc_maps.show(vma);
+  for (int j = 0; j < bytes; ++j)
+    printf("%x:%x  ", read_buf[j].type, read_buf[j].nr);
+  puts("");
+}
+
 void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
                                     unsigned long& va,
                                     unsigned long end,
                                     int bytes)
 {
+  int dumped = 0;
+
   for (int i = 0; i < bytes; ++i)
   {
     ProcIdlePageType type = (ProcIdlePageType) read_buf[i].type;
@@ -277,12 +287,19 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
       if (debug_level() >= 2) {
         printf("WARNING: va >= end: %lx %lx i=%d bytes=%d type=%d nr=%d\n",
                va, end, i, bytes, type, nr);
-        proc_maps.show(vma);
-        for (int j = 0; j < bytes; ++j)
-          printf("%x:%x  ", read_buf[j].type, read_buf[j].nr);
-        puts("");
+        if (dumped++ == 0)
+          dump_idlepages(vma, bytes);
       }
       return;
+    }
+
+    if (debug_level() >= 2) {
+      unsigned long align = va & (pagetype_size[type] - 1);
+      if (align) {
+        printf("align va %lx-%lx @%d %x:%x\n", va, align, i, type, nr);
+        if (dumped++ == 0)
+          dump_idlepages(vma, bytes);
+      }
     }
 
     va &= ~(pagetype_size[type] - 1);
