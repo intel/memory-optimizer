@@ -34,14 +34,13 @@ static const char* str_peer_node = "peer_node";
 
 void NumaNodeCollection::init_cpu_map(void)
 {
-  int cpu, nr_cpu;
+  int cpu;
   iterator node;
   struct bitmask *cpumask = numa_allocate_cpumask();
 
   if (!cpumask)
     err("Allocate cpumask");
   nr_cpu = numa_num_possible_cpus();
-  nr_cpu = nr_cpu;
   cpu_node_map.resize(nr_cpu);
   for (node = begin(); node != end(); node++) {
     numa_bitmask_clearall(cpumask);
