@@ -178,7 +178,7 @@ public:
 
   NumaNode *get_node(int nid)
   {
-    return nodes[nid];
+    return nodes.at(nid);
   }
 
   NumaNode& operator[](int nid)
@@ -224,7 +224,7 @@ public:
 
   NumaNode *node_of_cpu(int cpu)
   {
-    return get_node(cpu_node_map[cpu]);
+    return get_node(cpu_node_map.at(cpu));
   }
 
   bool is_valid_nid(int nid)
