@@ -130,11 +130,12 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
       dump_target_nodes();
 
     ret = move_pages(&addrs[i], size, false);
+    if (ret >= 0)
+      stats->save_move_states(status, target_nodes, status_after_move);
     if (ret) {
       fprintf(stderr, "WARNING: move pages failed %ld", ret);
-      break;
+      continue;
     }
-    stats->save_move_states(status, target_nodes, status_after_move);
   }
 
   return ret;
