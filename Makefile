@@ -1,7 +1,7 @@
 CC = gcc
 CXX = g++
 RM = rm
-DEBUG_FLAGS = -g -fsanitize=address
+DEBUG_FLAGS = -g -fsanitize=address -static-libasan
 DEBUG_FLAGS = -g -O3
 CFLAGS = $(DEBUG_FLAGS) -Wall
 CXXFLAGS = $(DEBUG_FLAGS) -Wall --std=c++11
