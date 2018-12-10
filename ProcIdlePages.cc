@@ -133,7 +133,15 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     }
     if ((unsigned long)pos != va) {
       fprintf(stderr, "error va-pos != 0: %lx-%lx=%lx\n", va, pos, va - pos);
-      return -2;
+
+      if (va > (unsigned long)pos)
+        if (lseek(idle_fd, va_to_offset(va), SEEK_SET) == (off_t) -1)
+        {
+          printf(" error: seek for addr %lx failed, skip.\n", va);
+          perror("lseek error");
+          io_error = -1;
+          return -2;
+        }
     }
 
     size = (end - va + (7 << PAGE_SHIFT)) >> (3 + PAGE_SHIFT);
