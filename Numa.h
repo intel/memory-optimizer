@@ -34,14 +34,17 @@ typedef std::vector<NodeInfo> NumaInfo;
  * "T *".
  */
 template<class BaseIterator>
+using DerefValueType = typename std::remove_pointer<typename BaseIterator::value_type>::type;
+
+template<class BaseIterator>
 class DerefIterator :
-    public std::iterator<std::input_iterator_tag,
-                         typename std::remove_pointer<typename BaseIterator::value_type>::type> {
+    public std::iterator<std::input_iterator_tag, DerefValueType<BaseIterator>>
+{
   BaseIterator it_curr;
   BaseIterator it_end;
 
 public:
-  typedef typename std::remove_pointer<typename BaseIterator::value_type>::type value_type;
+  using value_type = DerefValueType<BaseIterator>;
 
   DerefIterator(const DerefIterator<BaseIterator>& ait) :
     it_curr(ait.it_curr), it_end(ait.it_end) {}
