@@ -25,16 +25,16 @@ enum ProcIdlePageType
 	PUD_PRESENT,	/* 1G page */
 	MAX_ACCESSED = PUD_PRESENT,
 
-	PTE_DIRTY,
+	PTE_DIRTY,    /* 3 */
 	PMD_DIRTY,
 
-	PTE_IDLE,
+	PTE_IDLE,     /* 5 */
 	PMD_IDLE,
 	PMD_IDLE_PTES,	/* all PTE idle */
 
-	PTE_HOLE,
+	PTE_HOLE,     /* 8 */
 	PMD_HOLE,
-	PUD_HOLE,
+	PUD_HOLE,     /* 10 */
 	P4D_HOLE,
 	PGDIR_HOLE,
 
