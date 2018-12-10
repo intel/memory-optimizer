@@ -113,7 +113,7 @@ size_t EPTMigrate::get_threshold_refs(ProcIdlePageType type,
 
   fmt.print("migrate ratio: %.2f = %lu / %lu\n", ratio, portion, page_refs.size());
 
-  if (type < MAX_ACCESSED) {
+  if (type <= MAX_ACCESSED) {
     min_refs = nr_walks;
     max_refs = nr_walks;
     for (; min_refs > 1; --min_refs) {
@@ -269,7 +269,7 @@ unsigned long EPTMigrate::calc_numa_anon_capacity(ProcIdlePageType type,
   if (!numa_collection)
     return 0;
 
-  if (type < MAX_ACCESSED) {
+  if (type <= MAX_ACCESSED) {
     iter = numa_collection->dram_begin();
     iter_end = numa_collection->dram_end();
   } else {

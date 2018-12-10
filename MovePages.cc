@@ -246,9 +246,9 @@ int MovePages::get_target_node(NumaNode* node_obj)
     return -1;
   }
 
-  is_dram_to_dram = (type < MAX_ACCESSED)
+  is_dram_to_dram = (type <= MAX_ACCESSED)
                     && !node_obj->is_pmem();
-  is_pmem_to_pmem = (!(type < MAX_ACCESSED))
+  is_pmem_to_pmem = (!(type <= MAX_ACCESSED))
                     && node_obj->is_pmem();
 
   if (is_dram_to_dram || is_pmem_to_pmem)
@@ -279,7 +279,7 @@ bool MovePages::is_node_in_target_set(int node_id)
     return false;
   }
 
-  if (type < MAX_ACCESSED)
+  if (type <= MAX_ACCESSED)
     return !numa_obj->is_pmem();
   else
     return numa_obj->is_pmem();
