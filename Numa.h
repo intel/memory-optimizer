@@ -33,43 +33,47 @@ typedef std::vector<NodeInfo> NumaInfo;
  * DerefIterator will skip NULL elements automatically and acts like
  * "T *".
  */
-template<class BaseIterator, class T>
-class DerefIterator : public std::iterator<std::input_iterator_tag, T> {
+template<class BaseIterator>
+class DerefIterator :
+    public std::iterator<std::input_iterator_tag,
+                         typename std::remove_pointer<typename BaseIterator::value_type>::type> {
   BaseIterator it_curr;
   BaseIterator it_end;
 
 public:
-  DerefIterator(const DerefIterator<BaseIterator, T>& ait) :
+  typedef typename std::remove_pointer<typename BaseIterator::value_type>::type value_type;
+
+  DerefIterator(const DerefIterator<BaseIterator>& ait) :
     it_curr(ait.it_curr), it_end(ait.it_end) {}
   DerefIterator(const BaseIterator& curr, const BaseIterator& end) :
     it_curr(curr), it_end(end) {}
   DerefIterator(void) {}
-  bool operator==(const DerefIterator<BaseIterator, T>& ait)
+  bool operator==(const DerefIterator<BaseIterator>& ait)
   {
     return it_curr == ait.it_curr;
   }
-  bool operator!=(const DerefIterator<BaseIterator, T>& ait)
+  bool operator!=(const DerefIterator<BaseIterator>& ait)
   {
     return it_curr != ait.it_curr;
   }
-  DerefIterator<BaseIterator, T>& skip_null(void)
+  DerefIterator<BaseIterator>& skip_null(void)
   {
     while (it_curr != it_end && !*it_curr)
       it_curr++;
     return *this;
   }
-  DerefIterator<BaseIterator, T>& operator++(void)
+  DerefIterator<BaseIterator>& operator++(void)
   {
     it_curr++;
     return skip_null();
   }
-  DerefIterator<BaseIterator, T>& operator++(int)
+  DerefIterator<BaseIterator>& operator++(int)
   {
     it_curr++;
     return skip_null();
   }
-  T& operator*() { return **it_curr; }
-  T *operator->() { return *it_curr; }
+  value_type& operator*() { return **it_curr; }
+  value_type *operator->() { return *it_curr; }
 };
 
 enum numa_node_type {
@@ -155,7 +159,7 @@ class NumaNodeCollection
   void init_cpu_map(void);
 
 public:
-  typedef DerefIterator<std::vector<NumaNode *>::iterator, NumaNode> iterator;
+  typedef DerefIterator<std::vector<NumaNode *>::iterator> iterator;
 
   struct bitmask *all_mask;
 
