@@ -132,7 +132,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
       return -1;
     }
     if ((unsigned long)pos != va) {
-      fprintf(stderr, "error pos != va: %lx-%lx=%lx\n", pos, va, pos - va);
+      fprintf(stderr, "error va-pos != 0: %lx-%lx=%lx\n", va, pos, va - pos);
       return -2;
     }
 
