@@ -117,13 +117,13 @@ void GlobalScan::walk_multi()
   nr_acceptable_scans = 0;
 
   for (auto& m: idle_ranges)
-    m->prepare_walks(MAX_WALKS);
+    m->prepare_walks(option.max_walks);
 
   printf("\nStarting page table scans:\n");
   printf("%7s  %8s  %23s  %23s  %15s\n", "nr_scan", "interval", "young", "top hot", "all");
   printf("====================================================================================\n");
 
-  for (nr_walks = 0; nr_walks < MAX_WALKS;)
+  for (nr_walks = 0; nr_walks < option.max_walks;)
   {
     ++nr_walks;
 
@@ -353,7 +353,7 @@ void GlobalScan::update_interval(bool finished)
   if (interval < 0.000001)
     interval = 0.000001;
 
-  if (finished && nr_walks < MAX_WALKS / 4) {
+  if (finished && nr_walks < option.max_walks / 4) {
     printd("interval %f x1.2 due to low nr_walks %d\n",
            (double) interval, nr_walks);
     interval *= 1.2;

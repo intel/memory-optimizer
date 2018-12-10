@@ -60,7 +60,6 @@ class GlobalScan
     unsigned long get_dram_anon_bytes();
 
   private:
-    static const int MAX_WALKS = 20;
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;
     int nr_walks;

@@ -116,6 +116,7 @@ public:
   float initial_interval;
   float interval;
   float sleep_secs;
+  int max_walks;
   int nr_walks;
   int nr_loops;
 

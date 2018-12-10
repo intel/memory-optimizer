@@ -26,6 +26,7 @@ Option::Option()
 {
   nr_loops = 0;
   nr_walks = 0; // auto stop when nr_top_pages can fit in half DRAM size
+  max_walks = 10;
   interval = 0; // auto adjust
   initial_interval = 0.1;
   sleep_secs = 1;
@@ -62,6 +63,7 @@ void Option::dump()
   printf("interval = %f\n", interval);
   printf("sleep_secs = %f\n", sleep_secs);
   printf("nr_walks = %d\n", nr_walks);
+  printf("max_walks = %d\n", max_walks);
   printf("nr_loops = %d\n", nr_loops);
   printf("dram_percent = %d\n", dram_percent);
   printf("exit_on_stabilized = %d\n", exit_on_stabilized);
