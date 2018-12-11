@@ -69,6 +69,9 @@ unsigned long MoveStats::get_moved_bytes()
     key = i.first;
     unbox_movestate(key, from, to, result);
 
+    if (from < 0)
+      continue;
+
     if (from != to
         && result >= 0)
       moved_bytes += i.second;
