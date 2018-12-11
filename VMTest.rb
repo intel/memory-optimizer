@@ -201,7 +201,8 @@ class VMTest
         # Initial call, expecting lots of free pages.
         # At this time, QEMU may well take fewer DRAM than target ratio.
         numa_vmstat = proc_vmstat.numa_vmstat[nid]
-        free_kb = numa_vmstat['nr_free_pages'] + numa_vmstat['nr_inactive_file']
+        free_kb = numa_vmstat['nr_free_pages']
+        free_kb += numa_vmstat['nr_inactive_file'] / 2
         free_kb *= ProcVmstat::PAGE_SIZE >> 10
       end
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
