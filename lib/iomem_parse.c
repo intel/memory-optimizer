@@ -62,6 +62,10 @@ int get_memory_ranges_proc_iomem(struct memory_range **range, int *ranges)
 			&start, &end, &consumed);
 		if (count != 2)
 			continue;
+		
+		if (consumed >= MAX_LINE)
+			return -1;
+
 		str = line + consumed;
 
 		/* printf("%016Lx-%016Lx : %s", start, end, str); */
