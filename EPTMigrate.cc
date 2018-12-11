@@ -201,21 +201,15 @@ int EPTMigrate::migrate()
 
   if (policy.migrate_what & MIGRATE_COLD) {
     migrate_stats.clear();
-    err = migrate(PTE_IDLE);
-    if (err)
-      goto out;
-    err = migrate(PMD_IDLE);
-    if (err)
-      goto out;
+    migrate(PTE_IDLE);
+    migrate(PMD_IDLE);
     migrate_stats.show(fmt, MIGRATE_COLD);
   }
 
   if (policy.migrate_what & MIGRATE_HOT) {
     migrate_stats.clear();
-    err = migrate(PTE_ACCESSED);
-    if (err)
-      goto out;
-    err = migrate(PMD_ACCESSED);
+    migrate(PTE_ACCESSED);
+    migrate(PMD_ACCESSED);
     migrate_stats.show(fmt, MIGRATE_HOT);
   }
 
@@ -225,7 +219,6 @@ int EPTMigrate::migrate()
     vma_inspector.dump_task_nodes(pid, &fmt);
   }
 
-out:
   if (!fmt.empty())
     std::cout << fmt.str();
 
