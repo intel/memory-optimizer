@@ -273,7 +273,7 @@ void ProcIdlePages::dump_idlepages(proc_maps_entry& vma, int bytes)
 {
   proc_maps.show(vma);
   for (int j = 0; j < bytes; ++j)
-    printf("%x:%x  ", read_buf[j].type, read_buf[j].nr);
+    printf("%x ", (int)read_buf[j]);
   puts("");
 }
 
@@ -286,8 +286,8 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
 
   for (int i = 0; i < bytes; ++i)
   {
-    ProcIdlePageType type = (ProcIdlePageType) read_buf[i].type;
-    int nr = read_buf[i].nr;
+    ProcIdlePageType type = (ProcIdlePageType)PIP_TYPE(read_buf[i]);
+    int nr = PIP_SIZE(read_buf[i]);
 
     if (va >= end) {
       // This can happen infrequently when VMA changed. The new pages can be

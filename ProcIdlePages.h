@@ -41,12 +41,9 @@ enum ProcIdlePageType
   IDLE_PAGE_TYPE_MAX
 };
 
-struct ProcIdleExtent
-{
-  unsigned type : 4;  // ProcIdlePageType
-  unsigned nr   : 4;
-}__attribute__((packed));
-
+#define PIP_TYPE(a)             (0xf & (a >> 4))
+#define PIP_SIZE(a)	            (0xf & a)
+#define PIP_COMPOSE(type, nr)	  ((type << 4) | nr)
 
 extern unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX];
 extern const char* pagetype_name[IDLE_PAGE_TYPE_MAX];
@@ -122,7 +119,7 @@ class ProcIdlePages
     static const int READ_BUF_SIZE = PAGE_SIZE * 32;
 
     int idle_fd;
-    std::vector<ProcIdleExtent> read_buf;
+    std::vector<uint8_t> read_buf;
 };
 
 #endif
