@@ -59,6 +59,8 @@ class GlobalScan
     unsigned long get_dram_free_anon_bytes();
     unsigned long get_dram_anon_bytes();
 
+    unsigned long calc_migrated_bytes();
+
   private:
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;

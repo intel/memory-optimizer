@@ -309,10 +309,14 @@ void GlobalScan::consumer_loop()
 
 void GlobalScan::migrate()
 {
+  timeval ts_begin, ts_end;
+  float delta_time;
   int nr = 0;
   Job job;
+
   job.intent = JOB_MIGRATE;
 
+  gettimeofday(&ts_begin, NULL);
   for (auto& m: idle_ranges)
   {
       job.migration = m;
@@ -328,8 +332,20 @@ void GlobalScan::migrate()
     printd("wait migrate job %d\n", nr);
     job = done_queue.pop();
   }
+  gettimeofday(&ts_end, NULL);
 
   proc_vmstat.show_numa_stats(&numa_collection);
+
+  delta_time = tv_secs(ts_begin, ts_end);
+  if (delta_time > 0) {
+    unsigned long migrated_bytes = calc_migrated_bytes() >> 10;
+
+    printf("Migration speed: Moved %lu KB in %f seconds (%f KB/sec)\n",
+           migrated_bytes, delta_time,
+           migrated_bytes / delta_time);
+  } else {
+    printf("Migration speed: wrong delta_time: %f \n", delta_time);
+  }
 }
 
 void GlobalScan::update_interval(bool finished)
@@ -382,4 +398,15 @@ void GlobalScan::apply_option()
 {
   throttler.set_bwlimit_mbps(option.bandwidth_mbps);
   numa_collection.collect(&option.numa_hw_config);
+}
+
+unsigned long GlobalScan::calc_migrated_bytes()
+{
+  unsigned long total_moved_bytes = 0;
+
+  for (auto& m : idle_ranges) {
+    total_moved_bytes += m->get_migrate_stats().get_moved_bytes();
+  }
+
+  return total_moved_bytes;
 }
