@@ -187,6 +187,9 @@ void MovePages::show_status_count(Formatter* fmt)
 void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum)
 {
   unsigned long total_kb = 0;
+  unsigned long total_dram_kb = 0;
+  unsigned long total_pmem_kb = 0;
+  NumaNode* numa_obj;
 
   for (auto &kv : status_sum)
     // skip invalid pages
@@ -203,6 +206,35 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
       fmt->print("%'15lu  %2d%%  node %d\n", kb, percent(kb, total_kb), nid);
     else if (debug_level())
       fmt->print("%'15lu  %2d%%  %s\n", kb, percent(kb, total_kb), strerror(-nid));
+
+    if (!numa_collection || nid < 0)
+      continue;
+    numa_obj = numa_collection->get_node(nid);
+    if (!numa_obj)
+      continue;
+
+    switch(numa_obj->type()) {
+      case NUMA_NODE_DRAM:
+        total_dram_kb += kb;
+        break;
+      case NUMA_NODE_PMEM:
+        total_pmem_kb += kb;
+        break;
+      default:
+        //do nothing with unknown node type
+        break;
+    }
+  }
+
+  if (numa_collection) {
+    fmt->print("Anon DRAM nodes size for pid %d : %'15lu  %2d%%\n",
+               pid,
+               total_dram_kb,
+               percent(total_dram_kb, total_kb));
+    fmt->print("Anon PMEM nodes size for pid %d : %'15lu  %2d%%\n",
+               pid,
+               total_pmem_kb,
+               percent(total_pmem_kb, total_kb));
   }
 }
 

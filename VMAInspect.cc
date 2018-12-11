@@ -103,6 +103,7 @@ int VMAInspect::dump_task_nodes(pid_t i, Formatter* m)
 
   if (!err) {
     fmt->print("\nAnonymous page distribution across NUMA nodes in pid %d:\n", pid);
+    locator.set_pid(pid);
     locator.show_status_count(fmt, status_sum);
   }
 
