@@ -87,6 +87,7 @@ class ProcIdlePages
 
     int open_file(void);
 
+    uint64_t u8_to_u64(uint8_t a[]);
     void parse_idlepages(proc_maps_entry& vma,
                          unsigned long& va,
                          unsigned long end,

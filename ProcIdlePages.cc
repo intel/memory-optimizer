@@ -277,6 +277,20 @@ void ProcIdlePages::dump_idlepages(proc_maps_entry& vma, int bytes)
   puts("");
 }
 
+uint64_t ProcIdlePages::u8_to_u64(uint8_t a[])
+{
+  uint64_t n;
+  n = (((uint64_t)a[0] << 56) & 0xFF00000000000000ULL)
+    | (((uint64_t)a[1] << 48) & 0x00FF000000000000ULL)
+    | (((uint64_t)a[2] << 40) & 0x0000FF0000000000ULL)
+    | (((uint64_t)a[3] << 32) & 0x000000FF00000000ULL)
+    | (((uint64_t)a[4] << 24) & 0x00000000FF000000ULL)
+    | (((uint64_t)a[5] << 16) & 0x0000000000FF0000ULL)
+    | (((uint64_t)a[6] <<  8) & 0x000000000000FF00ULL)
+    | ( (uint64_t)a[7]        & 0x00000000000000FFULL);
+  return n;
+}
+
 void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
                                     unsigned long& va,
                                     unsigned long end,
