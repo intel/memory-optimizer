@@ -2,6 +2,7 @@
 #include <atomic>
 #include <iostream>
 #include <unistd.h>
+#include <limits.h>
 #include <sys/time.h>
 
 #include "lib/debug.h"
@@ -20,7 +21,9 @@ GlobalScan::GlobalScan() : conf_reload_flag(0)
 
 void GlobalScan::main_loop()
 {
-  int nloop = option.nr_loops;
+  unsigned max_round = option.nr_loops;
+  if (!max_round)
+    max_round = UINT_MAX;
 
   if (option.interval)
     interval = option.interval;
@@ -28,7 +31,7 @@ void GlobalScan::main_loop()
     interval = option.initial_interval;
 
   create_threads();
-  for (; !option.nr_loops || nloop-- > 0;)
+  for (unsigned nround = 0; nround <= max_round; ++nround)
   {
     reload_conf();
     collect();
