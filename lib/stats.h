@@ -3,8 +3,8 @@
 
 #include <sys/time.h>
 
-template<class M, class K>
-void add_count(M& map, const K& key, int n)
+template<class M, class K, class V>
+void add_count(M& map, const K& key, V&& n)
 {
   auto search = map.find(key);
 
