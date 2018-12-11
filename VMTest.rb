@@ -169,15 +169,23 @@ class VMTest
     end
   end
 
-  def eat_mem
+  def eat_mem(is_squeeze = false)
     rss_per_node = @qemu_rss_kb / (1 + @ratio) / @dram_nodes.size
     proc_vmstat = ProcVmstat.new
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
     @dram_nodes.each do |nid|
-      numa_vmstat = proc_vmstat.numa_vmstat[nid]
-      free_kb = numa_vmstat['nr_free_pages'] + numa_vmstat['nr_inactive_file']
-      free_kb *= ProcVmstat::PAGE_SIZE >> 10
+      if is_squeeze
+        # After rounds of migration, expect little free DRAM left, while QEMU
+        # may occupied more DRAM than desired. Squeeze extra bytes to PMEM.
+        free_kb = 0
+      else
+        # Initial call, expecting lots of free pages.
+        # At this time, QEMU may well take fewer DRAM than target ratio.
+        numa_vmstat = proc_vmstat.numa_vmstat[nid]
+        free_kb = numa_vmstat['nr_free_pages'] + numa_vmstat['nr_inactive_file']
+        free_kb *= ProcVmstat::PAGE_SIZE >> 10
+      end
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
       puts "Node #{nid}: free #{free_kb >> 10}M  qemu #{qemu_anon_kb >> 10}M => #{rss_per_node >> 10}M"
       spawn_usemem(nid, free_kb + qemu_anon_kb - rss_per_node)
@@ -199,6 +207,21 @@ class VMTest
     cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@tests_dir}/#{@scheme['migrate_config']}"
     puts cmd + " > " + @migrate_log
     return Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
+  end
+
+  def wait_for_migration_progress(rounds, percent)
+    10.times do
+      sleep 60
+      count = 0
+      File.open(@migrate_log).each do |line|
+        if line =~ /^need to migrate: +[0-9,]+ +(\d+)% of /
+          count += 1
+          return if count >= rounds
+          return if $1.to_i < percent
+        end
+      end
+    end
+    # wait at most 600 seconds
   end
 
   def run_one(should_migrate = false)
@@ -230,6 +253,10 @@ class VMTest
       wait_workload_startup
       eat_mem
       migrate_pid = spawn_migrate
+      wait_for_migration_progress 3, 30
+      eat_mem :squeeze
+      wait_for_migration_progress 10, 10
+      eat_mem :squeeze
     elsif @dram_nodes.size * @ratio > @pmem_nodes.size # if cannot rely on interleaving in baseline test
       eat_mem
     end
