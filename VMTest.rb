@@ -163,7 +163,8 @@ class VMTest
   end
 
   def show_dram_percent(dram_sum, proc_numa_maps)
-    total_anon_kb = proc_numa_maps.total_anon_kb + 1
+    total_anon_kb = proc_numa_maps.numa_kb['anon'] + 1
+    puts "QEMU numa #{proc_numa_maps.total_numa_kb >> 10}M"
     puts "QEMU anon #{total_anon_kb >> 10}M"
     puts "QEMU RSS  #{@qemu_rss_kb >> 10}M"
     puts "QEMU DRAM percent #{100 * dram_sum / total_anon_kb}%  target #{100 / (1 + @ratio)}%"
