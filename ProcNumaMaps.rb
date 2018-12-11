@@ -42,13 +42,17 @@ class ProcNumaMaps
     numa_kb
   end
 
-  def show_numa_placement
+  def total_anon_kb
     sum = 0
     numa_kb.each do |k, v|
       next unless k =~ /^N\d+$/
       sum += v;
     end
+    sum
+  end
 
+  def show_numa_placement
+    sum = total_anon_kb
     return unless sum > 0
 
     numa_kb.each do |k, v|

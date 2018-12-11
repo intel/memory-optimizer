@@ -162,14 +162,26 @@ class VMTest
     puts "QEMU RSS: #{@qemu_rss_kb >> 10}M"
   end
 
+  def show_dram_percent(dram_sum, proc_numa_maps)
+    total_anon_kb = proc_numa_maps.total_anon_kb + 1
+    puts "QEMU anon #{total_anon_kb >> 10}M"
+    puts "QEMU RSS  #{@qemu_rss_kb >> 10}M"
+    puts "QEMU DRAM percent #{100 * dram_sum / total_anon_kb}%  target #{100 / (1 + @ratio)}%"
+  end
+
   def show_qemu_placement
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
+    puts
+    puts "QEMU anon pages distribution:"
+    dram_sum = 0
     @dram_nodes.each do |nid|
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
+      dram_sum += qemu_anon_kb
       percent = 100 * qemu_anon_kb / (@qemu_rss_kb + 1)
       puts "Node #{nid}: #{qemu_anon_kb >> 10}M  #{percent}%"
     end
+    show_dram_percent(dram_sum, proc_numa_maps)
   end
 
   def eat_mem(is_squeeze = false)
@@ -177,6 +189,9 @@ class VMTest
     proc_vmstat = ProcVmstat.new
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
+    dram_sum = 0
+    puts
+    puts "Check eat DRAM memory"
     @dram_nodes.each do |nid|
       if is_squeeze
         # After rounds of migration, expect little free DRAM left, while QEMU
@@ -190,9 +205,11 @@ class VMTest
         free_kb *= ProcVmstat::PAGE_SIZE >> 10
       end
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
+      dram_sum += qemu_anon_kb
       puts "Node #{nid}: free #{free_kb >> 10}M  qemu #{qemu_anon_kb >> 10}M => #{rss_per_node >> 10}M"
       spawn_usemem(nid, free_kb + qemu_anon_kb - rss_per_node)
     end
+    show_dram_percent(dram_sum, proc_numa_maps)
   end
 
   def spawn_usemem(nid, kb)
