@@ -205,6 +205,7 @@ class VMTest
         free_kb = numa_vmstat['nr_free_pages']
         free_kb += numa_vmstat['nr_inactive_file'] / 2
         free_kb *= ProcVmstat::PAGE_SIZE >> 10
+        free_kb -= [free_kb, 180<<10].min        # reserve some free memory
       end
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
       dram_sum += qemu_anon_kb
