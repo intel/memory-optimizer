@@ -60,9 +60,12 @@ class VMTest
   end
 
   def kill_wait(pid)
+    begin
       Process.kill 'KILL', pid
       sleep 1
       Process.wait pid
+    rescue Errno::ESRCH, Errno::ECHILD
+    end
   end
 
   def spawn_qemu
@@ -209,9 +212,16 @@ class VMTest
     return Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
   end
 
-  def wait_for_migration_progress(rounds, percent)
+  def wait_for_migration_progress(migrate_pid, rounds, percent)
     10.times do
       sleep 60
+
+      begin
+        return if Process.waitpid(migrate_pid, Process::WNOHANG)
+      rescue
+        return
+      end
+
       count = 0
       File.open(@migrate_log).each do |line|
         if line =~ /^need to migrate: +[0-9,]+ +(\d+)% of /
@@ -253,9 +263,9 @@ class VMTest
       wait_workload_startup
       eat_mem
       migrate_pid = spawn_migrate
-      wait_for_migration_progress 3, 30
+      wait_for_migration_progress migrate_pid, 3, 30
       eat_mem :squeeze
-      wait_for_migration_progress 10, 10
+      wait_for_migration_progress migrate_pid, 10, 10
       eat_mem :squeeze
     elsif @dram_nodes.size * @ratio > @pmem_nodes.size # if cannot rely on interleaving in baseline test
       eat_mem
