@@ -14,7 +14,7 @@ class NumaNode;
 
 #define MPOL_MF_SW_YOUNG (1<<7)
 
-typedef std::unordered_map<int, int> MovePagesStatusCount;
+typedef std::unordered_map<int, unsigned long> MovePagesStatusCount;
 class NumaNodeCollection;
 
 
@@ -35,8 +35,15 @@ struct MoveStats
     void account(MovePagesStatusCount& status_count, int page_shift, int target_node);
     void save_move_states(std::vector<int>& status,
                           std::vector<int>& target_nodes,
-                          std::vector<int>& status_after_move);
+                          std::vector<int>& status_after_move,
+                          unsigned long page_shift);
     void show_move_state(Formatter& fmt);
+    unsigned long get_moved_bytes();
+
+  private:
+    int box_movestate(int status, int target_node, int result);
+   void unbox_movestate(int key,
+                        int& status, int& target_node, int& result);
 };
 
 class MovePages

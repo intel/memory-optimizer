@@ -27,7 +27,8 @@ void MoveStats::add(MoveStats* s)
 
 void MoveStats::save_move_states(std::vector<int>& status,
                                  std::vector<int>& target_nodes,
-                                 std::vector<int>& status_after_move)
+                                 std::vector<int>& status_after_move,
+                                 unsigned long page_shift)
 {
   int key;
 
@@ -36,10 +37,10 @@ void MoveStats::save_move_states(std::vector<int>& status,
     // let's what will return if negative value in
     //if (status[i] < 0)
     //  continue;
-    key = (status[i] << from_shift)
-      + (target_nodes[i] << to_shift)
-      + (status_after_move[i] << result_shift);
-    add_count(move_page_status, key, 1);
+    key = box_movestate(status[i],
+                        target_nodes[i],
+                        status_after_move[i]);
+    add_count(move_page_status, key, 1 << page_shift);
   }
 
   return;
@@ -47,18 +48,48 @@ void MoveStats::save_move_states(std::vector<int>& status,
 
 void MoveStats::show_move_state(Formatter& fmt)
 {
-  signed char from, to, result;
+  int from, to, result;
   int key;
 
   for (auto& i : move_page_status) {
     key = i.first;
-    from = (key >> from_shift) & 0xff;
-    to = (key >> to_shift) & 0xff;
-    result = (key >> result_shift) & 0xff;
-
-    fmt.print("from node %d to node %d: %d pages with result %d\n",
-              (int)from, (int)to, i.second, (int)result);
+    unbox_movestate(key, from, to, result);
+    fmt.print("from node %d to node %d: %lu KB with result %d\n",
+              from, to, i.second >> 10, result);
   }
+}
+
+unsigned long MoveStats::get_moved_bytes()
+{
+  unsigned long moved_bytes = 0;
+  int from, to, result;
+  int key;
+
+  for (auto& i : move_page_status) {
+    key = i.first;
+    unbox_movestate(key, from, to, result);
+
+    if (from != to
+        && result >= 0)
+      moved_bytes += i.second;
+  }
+
+  return moved_bytes;
+}
+
+int MoveStats::box_movestate(int status, int target_node, int result)
+{
+  return (status << from_shift)
+         + (target_node << to_shift)
+         + (result << result_shift);
+}
+
+void MoveStats::unbox_movestate(int key,
+                        int& status, int& target_node, int& result)
+{
+  status = (signed char)((key >> from_shift) & 0xff);
+  target_node = (signed char)((key >> to_shift) & 0xff);
+  result = (signed char)((key >> result_shift) & 0xff);
 }
 
 
@@ -131,7 +162,8 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
 
     ret = move_pages(&addrs[i], size, false);
     if (ret >= 0)
-      stats->save_move_states(status, target_nodes, status_after_move);
+      stats->save_move_states(status, target_nodes,
+                              status_after_move, page_shift);
     if (ret) {
       fprintf(stderr, "WARNING: move pages failed %ld\n", ret);
       continue;
