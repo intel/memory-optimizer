@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <iterator>
+#include <map>
 #include <numa.h>
 #include <numaif.h>
 
