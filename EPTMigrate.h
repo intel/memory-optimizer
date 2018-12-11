@@ -47,6 +47,10 @@ class EPTMigrate : public EPTScan
     static void reset_sys_migrate_stats();
     void count_migrate_stats();
 
+    MigrateStats& get_migrate_stats() {
+      return migrate_stats;
+    }
+
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
 
