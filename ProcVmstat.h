@@ -9,6 +9,7 @@
 
 typedef std::unordered_map<std::string, unsigned long> vmstat_map;
 
+class NumaNodeCollection;
 class ProcVmstat
 {
   public:
@@ -26,7 +27,7 @@ class ProcVmstat
     unsigned long anon_capacity();
     unsigned long anon_capacity(int nid);
 
-    void show_numa_stats();
+    void show_numa_stats(NumaNodeCollection* numa_collection);
 
   private:
     vmstat_map __load_vmstat(const char *path);

@@ -329,7 +329,7 @@ void GlobalScan::migrate()
     job = done_queue.pop();
   }
 
-  proc_vmstat.show_numa_stats();
+  proc_vmstat.show_numa_stats(&numa_collection);
 }
 
 void GlobalScan::update_interval(bool finished)

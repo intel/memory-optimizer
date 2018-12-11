@@ -2,10 +2,13 @@
 #include <stdio.h>
 #include <sys/user.h>
 
+
 #include <string>
 #include <vector>
 #include "lib/stats.h"
 #include "ProcVmstat.h"
+
+#include "Numa.h"
 
 int ProcVmstat::load_vmstat()
 {
@@ -108,8 +111,12 @@ unsigned long ProcVmstat::vmstat(std::vector<int>& nid)
   return sum;
 }
 
-void ProcVmstat::show_numa_stats()
+void ProcVmstat::show_numa_stats(NumaNodeCollection* numa_collection)
 {
+  unsigned long pmem_anon_kb = 0;
+  unsigned long dram_anon_kb = 0;
+  NumaNode* numa_obj;
+
   load_vmstat();
   load_numa_vmstat();
 
@@ -129,6 +136,31 @@ void ProcVmstat::show_numa_stats()
                             map.at("nr_isolated_anon");
     anon_kb *= PAGE_SIZE >> 10;
     printf("%'15lu  %2d%%  anon node %d\n", anon_kb, percent(anon_kb, total_anon_kb), nid);
+
+    if (numa_collection) {
+      numa_obj = numa_collection->get_node(nid);
+      if (numa_obj) {
+        switch (numa_obj->type()) {
+          case NUMA_NODE_DRAM:
+            dram_anon_kb += anon_kb;
+            break;
+          case NUMA_NODE_PMEM:
+            pmem_anon_kb += anon_kb;
+            break;
+          default:
+            //for unknown type do nothing
+            break;
+        }
+      }
+    }
+
     ++nid;
+  }
+
+  if (numa_collection) {
+    printf("Anon DRAM nodes size: %'15lu  %2d%%\n",
+           dram_anon_kb, percent(dram_anon_kb, total_anon_kb));
+    printf("Anon PMEM nodes size: %'15lu  %2d%%\n",
+           pmem_anon_kb, percent(pmem_anon_kb, total_anon_kb));
   }
 }
