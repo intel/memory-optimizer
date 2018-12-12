@@ -120,6 +120,11 @@ public:
       mem_total * watermark_percent / 100;
   }
 
+  unsigned long mem_used(void)
+  {
+    return mem_total - mem_free;
+  }
+
   void set_peer_node(NumaNode* peer_node)
   {
     switch (type_) {
@@ -231,6 +236,11 @@ public:
   bool is_valid_nid(int nid)
   {
     return nid >= 0 && nid <= max_node && nodes[nid];
+  }
+
+  int dram_node_count()
+  {
+    return dram_nodes.size();
   }
 
   void dump();
