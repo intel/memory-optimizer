@@ -1,3 +1,5 @@
+*.o
+*.d
 addr-seq
 page-refs
 pid-list
