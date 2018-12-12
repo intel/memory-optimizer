@@ -311,6 +311,7 @@ void GlobalScan::migrate()
 {
   timeval ts_begin, ts_end;
   float delta_time;
+  unsigned long migrated_kb;
   int nr = 0;
   Job job;
 
@@ -337,15 +338,10 @@ void GlobalScan::migrate()
   proc_vmstat.show_numa_stats(&numa_collection);
 
   delta_time = tv_secs(ts_begin, ts_end);
-  if (delta_time > 0) {
-    unsigned long migrated_bytes = calc_migrated_bytes() >> 10;
-
-    printf("Migration speed: Moved %lu KB in %f seconds (%f KB/sec)\n",
-           migrated_bytes, delta_time,
-           migrated_bytes / delta_time);
-  } else {
-    printf("Migration speed: wrong delta_time: %f \n", delta_time);
-  }
+  migrated_kb = calc_migrated_bytes() >> 10;
+  printf("Migration speed: Moved %lu KB in %f seconds (%f KB/sec)\n",
+         migrated_kb, delta_time,
+         migrated_kb / delta_time);
 }
 
 void GlobalScan::update_interval(bool finished)
