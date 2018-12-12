@@ -66,6 +66,7 @@ int get_memory_ranges_proc_iomem(struct memory_range **range, int *ranges)
 		if (consumed >= sizeof(line)) {
 			fprintf(stderr,
 				"line too long, consider increase MAX_LINE\n");
+			fclose(fp);
 			return -1;
 		}
 
