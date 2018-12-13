@@ -103,8 +103,8 @@ public:
 
 class NumaNodeCollection
 {
-  int max_node;
-  int nr_cpu;
+  int nr_possible_node_;
+  int nr_possible_cpu_;
 
   /* map from cpu No. to node id */
   std::vector<int> cpu_node_map;
@@ -125,9 +125,9 @@ public:
   void check_dram_nodes_watermark(int watermark_percent);
   int get_node_lowest_cpu(int node);
 
-  int nr_node(void)
+  int nr_possible_node(void)
   {
-    return max_node + 1;
+    return nr_possible_node_;
   }
 
   NumaNode *get_node(int nid)
@@ -161,7 +161,7 @@ public:
 
   bool is_valid_nid(int nid)
   {
-    return nid >= 0 && nid <= max_node && node_map[nid];
+    return nid >= 0 && nid < nr_possible_node_ && node_map[nid];
   }
 
   int dram_node_count()

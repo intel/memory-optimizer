@@ -39,14 +39,14 @@ void NumaNodeCollection::init_cpu_map(void)
 
   if (!cpumask)
     err("Allocate cpumask");
-  nr_cpu = numa_num_possible_cpus();
-  cpu_node_map.resize(nr_cpu);
+  nr_possible_cpu_ = numa_num_possible_cpus();
+  cpu_node_map.resize(nr_possible_cpu_);
   for (auto& node: nodes) {
     int nid = node->id();
     numa_bitmask_clearall(cpumask);
     if (numa_node_to_cpus(nid, cpumask) < 0)
       err("numa_node_to_cpus");
-    for (cpu = 0; cpu < nr_cpu; cpu++) {
+    for (cpu = 0; cpu < nr_possible_cpu_; cpu++) {
       if (numa_bitmask_isbitset(cpumask, cpu))
         cpu_node_map[cpu] = nid;
     }
@@ -79,7 +79,7 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
    * FIXME: Rewrite NUMA topology parsing with HMAT utility
    * after it is available.
    */
-  max_node = numa_max_node();
+  nr_possible_node_ = numa_max_node() + 1;
   dram_mask = numa_parse_nodestring(numa_option->numa_dram_list.c_str());
   pmem_mask = numa_parse_nodestring(numa_option->numa_pmem_list.c_str());
   if (!dram_mask || !pmem_mask) {
@@ -89,8 +89,8 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
     exit(1);
   }
 
-  node_map.resize(max_node + 1);
-  for (i = 0; i <= max_node; i++) {
+  node_map.resize(nr_possible_node_);
+  for (i = 0; i < nr_possible_node_; i++) {
     NumaNode *pnode = NULL;
 
     if (numa_bitmask_isbitset(dram_mask, i)) {
@@ -111,8 +111,8 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
   do {
     p++;
     if (sscanf(p, "%d->%d", &from, &to) != 2 ||
-        from > max_node ||
-        to > max_node) {
+        from >= nr_possible_node_ ||
+        to >= nr_possible_node_) {
       fprintf(stderr, "Invalid pmem to dram map: %s\n",
               numa_option->pmem_dram_map.c_str());
       exit(1);
@@ -130,18 +130,15 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
 void NumaNodeCollection::collect_by_sysfs(void)
 {
   int err;
-  int max_node_id = numa_max_node();
-  int max_node_count = max_node_id + 1;
-
   NumaInfo numa_info;
 
-  err = load_numa_info(numa_info, max_node_count);
+  err = load_numa_info(numa_info, nr_possible_node_);
   if (err < 0) {
     fprintf(stderr, "failed to load_numa_info(), err = %d\n", err);
     return;
   }
 
-  node_map.resize(max_node_count);
+  node_map.resize(nr_possible_node_);
   err = create_node_objects(numa_info);
   if (err < 0) {
     fprintf(stderr, "failed to create_node_objects, err = %d\n", err);
@@ -263,13 +260,11 @@ void NumaNodeCollection::setup_node_relationship(NumaInfo& numa_info, bool is_bi
 
 void NumaNodeCollection::set_target_node(int node_id, int target_node_id, bool is_bidir)
 {
-  int max_id = std::max(0, (int)(node_map.size() - 1));
-
-  if (node_id > max_id
-      || target_node_id > max_id
+  if (node_id >= nr_possible_node_
+      || target_node_id >= nr_possible_node_
       || target_node_id < 0) {
     fprintf(stderr, "wrong node id: node_id = %d target_node_id = %d max id = %d\n",
-            node_id, target_node_id, max_id);
+            node_id, target_node_id, nr_possible_node_ - 1);
     return;
   }
 
@@ -324,7 +319,7 @@ void NumaNodeCollection::check_dram_nodes_watermark(int watermark_percent)
 
 int NumaNodeCollection::get_node_lowest_cpu(int node)
 {
-  for (int cpu = 0; cpu < nr_cpu; cpu++) {
+  for (int cpu = 0; cpu < nr_possible_cpu_; cpu++) {
     if (cpu_node_map[cpu] == node)
       return cpu;
   }
