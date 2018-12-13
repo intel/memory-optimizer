@@ -42,15 +42,14 @@ class DerefIterator :
     public std::iterator<std::input_iterator_tag, DerefValueType<BaseIterator>>
 {
   BaseIterator it_curr;
-  BaseIterator it_end;
 
 public:
   using value_type = DerefValueType<BaseIterator>;
 
   DerefIterator(const DerefIterator<BaseIterator>& ait) :
-    it_curr(ait.it_curr), it_end(ait.it_end) {}
-  DerefIterator(const BaseIterator& curr, const BaseIterator& end) :
-    it_curr(curr), it_end(end) {}
+    it_curr(ait.it_curr) {}
+  DerefIterator(const BaseIterator& curr) :
+    it_curr(curr) {}
   DerefIterator(void) {}
   bool operator==(const DerefIterator<BaseIterator>& ait)
   {
@@ -60,21 +59,15 @@ public:
   {
     return it_curr != ait.it_curr;
   }
-  DerefIterator<BaseIterator>& skip_null(void)
-  {
-    while (it_curr != it_end && !*it_curr)
-      it_curr++;
-    return *this;
-  }
   DerefIterator<BaseIterator>& operator++(void)
   {
     it_curr++;
-    return skip_null();
+    return *this;
   }
   DerefIterator<BaseIterator>& operator++(int)
   {
     it_curr++;
-    return skip_null();
+    return *this;
   }
   value_type& operator*() { return **it_curr; }
   value_type *operator->() { return *it_curr; }
@@ -158,9 +151,11 @@ class NumaNodeCollection
   int max_node;
   int nr_cpu;
 
-  /* map from cpu No. to the numa node */
+  /* map from cpu No. to node id */
   std::vector<int> cpu_node_map;
 
+  /* map from node id to NumaNode* */
+  std::vector<NumaNode *> node_map;
   std::vector<NumaNode *> nodes;
   std::vector<NumaNode *> dram_nodes;
   std::vector<NumaNode *> pmem_nodes;
@@ -184,7 +179,7 @@ public:
 
   NumaNode *get_node(int nid)
   {
-    return nodes.at(nid);
+    return node_map.at(nid);
   }
 
   NumaNode& operator[](int nid)
@@ -194,38 +189,32 @@ public:
 
   iterator begin(void)
   {
-    iterator it(nodes.begin(), nodes.end());
-    return it.skip_null();
+    return iterator(nodes.begin());
   }
 
   iterator end(void)
   {
-    iterator it(nodes.end(), nodes.end());
-    return it;
+    return iterator(nodes.end());
   }
 
   iterator dram_begin(void)
   {
-    iterator it(dram_nodes.begin(), dram_nodes.end());
-    return it.skip_null();
+    return iterator(dram_nodes.begin());
   }
 
   iterator dram_end(void)
   {
-    iterator it(dram_nodes.end(), dram_nodes.end());
-    return it;
+    return iterator(dram_nodes.end());
   }
 
   iterator pmem_begin(void)
   {
-    iterator it(pmem_nodes.begin(), pmem_nodes.end());
-    return it.skip_null();
+    return iterator(pmem_nodes.begin());
   }
 
   iterator pmem_end(void)
   {
-    iterator it(pmem_nodes.end(), pmem_nodes.end());
-    return it;
+    return iterator(pmem_nodes.end());
   }
 
   NumaNode *node_of_cpu(int cpu)
@@ -235,7 +224,7 @@ public:
 
   bool is_valid_nid(int nid)
   {
-    return nid >= 0 && nid <= max_node && nodes[nid];
+    return nid >= 0 && nid <= max_node && node_map[nid];
   }
 
   int dram_node_count()

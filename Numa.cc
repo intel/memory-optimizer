@@ -97,7 +97,7 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
       numa_bitmask_setbit(all_mask, i);
   }
 
-  nodes.resize(max_node + 1);
+  node_map.resize(max_node + 1);
   for (i = 0; i <= max_node; i++) {
     NumaNode *pnode = NULL;
 
@@ -108,7 +108,8 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
       pnode = new NumaNode(i, NUMA_NODE_PMEM);
       pmem_nodes.push_back(pnode);
     }
-    nodes[i] = pnode;
+    nodes.push_back(pnode);
+    node_map[i] = pnode;
   }
 
   /* node maps to itself by default */
@@ -148,7 +149,7 @@ void NumaNodeCollection::collect_by_sysfs(void)
     return;
   }
 
-  nodes.resize(max_node_count);
+  node_map.resize(max_node_count);
   err = create_node_objects(numa_info);
   if (err < 0) {
     fprintf(stderr, "failed to create_node_objects, err = %d\n", err);
@@ -242,7 +243,8 @@ int NumaNodeCollection::create_node(int node_id, numa_node_type type)
       break;
   }
 
-  nodes[node_id] = new_node;
+  nodes.push_back(new_node);
+  node_map[node_id] = new_node;
 
   return 0;
 }
@@ -271,7 +273,7 @@ void NumaNodeCollection::setup_node_relationship(NumaInfo& numa_info, bool is_bi
 
 void NumaNodeCollection::set_target_node(int node_id, int target_node_id, bool is_bidir)
 {
-  int max_id = std::max(0, (int)(nodes.size() - 1));
+  int max_id = std::max(0, (int)(node_map.size() - 1));
 
   if (node_id > max_id
       || target_node_id > max_id
@@ -281,9 +283,9 @@ void NumaNodeCollection::set_target_node(int node_id, int target_node_id, bool i
     return;
   }
 
-  nodes[node_id]->set_peer_node(nodes[target_node_id]);
+  node_map[node_id]->set_peer_node(node_map[target_node_id]);
   if (is_bidir)
-    nodes[target_node_id]->set_peer_node(nodes[node_id]);
+    node_map[target_node_id]->set_peer_node(node_map[node_id]);
 }
 
 int NumaNodeCollection::load_numa_info(NumaInfo& numa_info, int node_count)
@@ -346,10 +348,6 @@ void NumaNodeCollection::dump()
 
   printf("All nodes:\n");
   for (auto& numa_obj : nodes) {
-
-    // fix segment fault
-    if (!numa_obj)
-      continue;
 
     peer_node = numa_obj->get_peer_node();
     if (peer_node)
