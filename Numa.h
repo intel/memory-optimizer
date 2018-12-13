@@ -164,11 +164,6 @@ public:
     return nid >= 0 && nid < nr_possible_node_ && node_map[nid];
   }
 
-  int dram_node_count()
-  {
-    return dram_nodes.size();
-  }
-
   void dump();
 
 private:
