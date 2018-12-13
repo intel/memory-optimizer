@@ -22,6 +22,8 @@ require_relative "ProcNumaMaps"
 
 class VMTest
 
+  MIN_FREE_KB = 180<<10
+
   attr_accessor :transparent_hugepage
   attr_accessor :qemu_script
   attr_accessor :workload_script
@@ -205,7 +207,7 @@ class VMTest
         free_kb = numa_vmstat['nr_free_pages']
         free_kb += numa_vmstat['nr_inactive_file'] / 2
         free_kb *= ProcVmstat::PAGE_SIZE >> 10
-        free_kb -= [free_kb, 180<<10].min        # reserve some free memory
+        free_kb -= [free_kb, MIN_FREE_KB].min        # Linux will reserve some free memory
       end
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
       dram_sum += qemu_anon_kb
