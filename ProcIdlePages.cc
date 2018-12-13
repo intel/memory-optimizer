@@ -39,9 +39,6 @@ unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX] = {
 
   [PTE_HOLE]          = PAGE_SIZE,
   [PMD_HOLE]          = PMD_SIZE,
-  [PUD_HOLE]          = PUD_SIZE,
-  [P4D_HOLE]          = P4D_SIZE,
-  [PGDIR_HOLE]        = PGDIR_SIZE,
 };
 
 int pagetype_shift[IDLE_PAGE_TYPE_MAX] = {
@@ -58,9 +55,6 @@ int pagetype_shift[IDLE_PAGE_TYPE_MAX] = {
 
   [PTE_HOLE]          = 12,
   [PMD_HOLE]          = 21,
-  [PUD_HOLE]          = 30,
-  [P4D_HOLE]          = 39,
-  [PGDIR_HOLE]        = 39,
 };
 
 
@@ -78,9 +72,6 @@ const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
 
   [PTE_HOLE]          = "4K_hole",
   [PMD_HOLE]          = "2M_hole",
-  [PUD_HOLE]          = "1G_hole",
-  [P4D_HOLE]          = "512G_hole",
-  [PGDIR_HOLE]        = "512G_hole",
 };
 
 ProcIdlePages::ProcIdlePages()
@@ -298,8 +289,14 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
 {
   int dumped = 0;
 
-  for (int i = 0; i < bytes; ++i)
+  for (int i = 0; i < bytes;)
   {
+    if (read_buf[i] == PIP_CMD_SET_HVA) {
+      va = u8_to_u64(&read_buf[++i]);
+      i += sizeof(uint64_t);
+      continue;
+    }
+
     ProcIdlePageType type = (ProcIdlePageType)PIP_TYPE(read_buf[i]);
     int nr = PIP_SIZE(read_buf[i]);
 
@@ -309,7 +306,7 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
       if (debug_level() >= 2) {
         printf("WARNING: va >= end: %lx %lx i=%d bytes=%d type=%d nr=%d\n",
                va, end, i, bytes, type, nr);
-        if (dumped++ == 0)
+        if (debug_level() >= 3 && !dumped++)
           dump_idlepages(vma, bytes);
       }
       return;
@@ -319,12 +316,10 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
       unsigned long align = va & (pagetype_size[type] - 1);
       if (align) {
         printf("align va %lx-%lx @%d %x:%x\n", va, align, i, type, nr);
-        if (dumped++ == 0)
+        if (debug_level() >= 3 && !dumped++)
           dump_idlepages(vma, bytes);
       }
     }
-
-    va &= ~(pagetype_size[type] - 1);
 
     if (type <= MAX_ACCESSED) {
       if (type == PMD_IDLE_PTES)
@@ -334,6 +329,7 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
     }
 
     va += pagetype_size[type] * nr;
+    ++i;
   }
 }
 

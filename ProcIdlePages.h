@@ -20,23 +20,22 @@ static const unsigned long TASK_SIZE_MAX = (1UL << 47) - PAGE_SIZE;
 
 enum ProcIdlePageType
 {
-	PTE_ACCESSED,	/* 4k page */
-	PMD_ACCESSED,	/* 2M page */
-	PUD_PRESENT,	/* 1G page */
-	MAX_ACCESSED = PUD_PRESENT,
+  PTE_ACCESSED,	/* 4k page */
+  PMD_ACCESSED,	/* 2M page */
+  PUD_PRESENT,	/* 1G page */
+  MAX_ACCESSED = PUD_PRESENT,
 
-	PTE_DIRTY,    /* 3 */
-	PMD_DIRTY,
+  PTE_DIRTY,    /* 3 */
+  PMD_DIRTY,
 
-	PTE_IDLE,     /* 5 */
-	PMD_IDLE,
-	PMD_IDLE_PTES,	/* all PTE idle */
+  PTE_IDLE,     /* 5 */
+  PMD_IDLE,
+  PMD_IDLE_PTES,	/* all PTE idle */
 
-	PTE_HOLE,     /* 8 */
-	PMD_HOLE,
-	PUD_HOLE,     /* 10 */
-	P4D_HOLE,
-	PGDIR_HOLE,
+  PTE_HOLE,     /* 8 */
+  PMD_HOLE,
+
+  PIP_CMD,      /* 10 */
 
   IDLE_PAGE_TYPE_MAX
 };
@@ -44,6 +43,8 @@ enum ProcIdlePageType
 #define PIP_TYPE(a)             (0xf & (a >> 4))
 #define PIP_SIZE(a)	            (0xf & a)
 #define PIP_COMPOSE(type, nr)	  ((type << 4) | nr)
+
+#define PIP_CMD_SET_HVA		      PIP_COMPOSE(PIP_CMD, 0)
 
 extern unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX];
 extern const char* pagetype_name[IDLE_PAGE_TYPE_MAX];
