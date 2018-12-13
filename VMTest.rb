@@ -224,7 +224,7 @@ class VMTest
     end
     cmd = "numactl --preferred #{nid} usemem --detach --pid-file #{@usemem_pid_file} --sleep -1 --step 2m --mlock --prefault #{kb >> 10}m"
     puts cmd
-    Process.spawn(*cmd.split)
+    system(*cmd.split)
   end
 
   def spawn_migrate
@@ -287,7 +287,9 @@ class VMTest
       migrate_pid = spawn_migrate
       wait_for_migration_progress migrate_pid, 3, 30
       eat_mem :squeeze
+      eat_mem :squeeze
       wait_for_migration_progress migrate_pid, 10, 10
+      eat_mem :squeeze
       eat_mem :squeeze
     elsif @dram_nodes.size * @ratio > @pmem_nodes.size # if cannot rely on interleaving in baseline test
       eat_mem
