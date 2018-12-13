@@ -120,8 +120,6 @@ class NumaNodeCollection
 public:
   using iterator = std::vector<NumaNode *>::iterator;
 
-  struct bitmask *all_mask;
-
   void collect(NumaHWConfig *numa_option = NULL);
   void collect_dram_nodes_meminfo(void);
   void check_dram_nodes_watermark(int watermark_percent);

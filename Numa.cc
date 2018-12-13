@@ -89,14 +89,6 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
     exit(1);
   }
 
-  all_mask = numa_allocate_nodemask();
-  numa_bitmask_clearall(all_mask);
-  for (i = 0; i <= max_node; i++) {
-    if (numa_bitmask_isbitset(dram_mask, i) ||
-        numa_bitmask_isbitset(pmem_mask, i))
-      numa_bitmask_setbit(all_mask, i);
-  }
-
   node_map.resize(max_node + 1);
   for (i = 0; i <= max_node; i++) {
     NumaNode *pnode = NULL;
