@@ -257,22 +257,18 @@ unsigned long EPTMigrate::calc_numa_anon_capacity(ProcIdlePageType type,
                                                   ProcVmstat& proc_vmstat)
 {
   unsigned long sum = 0;
-  NumaNodeCollection::iterator iter, iter_end;
+  const std::vector<NumaNode *> *nodes;
 
   if (!numa_collection)
     return 0;
 
-  if (type <= MAX_ACCESSED) {
-    iter = numa_collection->dram_begin();
-    iter_end = numa_collection->dram_end();
-  } else {
-    iter = numa_collection->pmem_begin();
-    iter_end = numa_collection->pmem_end();
-  }
+  if (type <= MAX_ACCESSED)
+    nodes = &numa_collection->get_dram_nodes();
+  else
+    nodes = &numa_collection->get_pmem_nodes();
 
-  for(; iter != iter_end; ++iter) {
-    sum += proc_vmstat.anon_capacity(iter->id());
-  }
+  for(auto& node: *nodes)
+    sum += proc_vmstat.anon_capacity(node->id());
 
   return sum;
 }

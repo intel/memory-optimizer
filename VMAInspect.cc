@@ -24,10 +24,8 @@ void VMAInspect::dump_node_percent(int slot)
   size_t dram_nodes_size = 0;
 
   if (numa_collection) {
-    for (auto iter = numa_collection->dram_begin();
-         iter != numa_collection->dram_end(); ++iter) {
-      dram_nodes_size += (size_t)status_count[iter->id()];
-    }
+    for (auto node: numa_collection->get_dram_nodes())
+      dram_nodes_size += (size_t)status_count[node->id()];
   }
 
   int pct = percent(dram_nodes_size, locator.get_status().size());

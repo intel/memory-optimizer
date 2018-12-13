@@ -35,20 +35,20 @@ static const char* str_peer_node = "peer_node";
 void NumaNodeCollection::init_cpu_map(void)
 {
   int cpu;
-  iterator node;
   struct bitmask *cpumask = numa_allocate_cpumask();
 
   if (!cpumask)
     err("Allocate cpumask");
   nr_cpu = numa_num_possible_cpus();
   cpu_node_map.resize(nr_cpu);
-  for (node = begin(); node != end(); node++) {
+  for (auto& node: nodes) {
+    int nid = node->id();
     numa_bitmask_clearall(cpumask);
-    if (numa_node_to_cpus(node->id(), cpumask) < 0)
+    if (numa_node_to_cpus(nid, cpumask) < 0)
       err("numa_node_to_cpus");
     for (cpu = 0; cpu < nr_cpu; cpu++) {
       if (numa_bitmask_isbitset(cpumask, cpu))
-        cpu_node_map[cpu] = node->id();
+        cpu_node_map[cpu] = nid;
     }
   }
   numa_free_cpumask(cpumask);
@@ -251,14 +251,12 @@ int NumaNodeCollection::create_node(int node_id, numa_node_type type)
 
 void NumaNodeCollection::set_default_target_node()
 {
-  iterator node;
-
   /* node maps to itself by default */
-  for (node = dram_begin(); node != dram_end(); node++)
-    node->promote_target = &*node;
+  for (auto& node: dram_nodes)
+    node->promote_target = node;
 
-  for (node = pmem_begin(); node != pmem_end(); node++)
-    node->demote_target = &*node;
+  for (auto& node: pmem_nodes)
+    node->demote_target = node;
 }
 
 void NumaNodeCollection::setup_node_relationship(NumaInfo& numa_info, bool is_bidir)
@@ -322,13 +320,13 @@ int NumaNodeCollection::create_node_objects(NumaInfo& numa_info)
 
 void NumaNodeCollection::collect_dram_nodes_meminfo(void)
 {
-  for (iterator node = dram_begin(); node != dram_end(); node++)
+  for (auto& node: dram_nodes)
     node->collect_meminfo();
 }
 
 void NumaNodeCollection::check_dram_nodes_watermark(int watermark_percent)
 {
-  for (iterator node = dram_begin(); node != dram_end(); node++)
+  for (auto& node: dram_nodes)
     node->check_watermark(watermark_percent);
 }
 

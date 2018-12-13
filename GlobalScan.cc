@@ -173,9 +173,8 @@ unsigned long GlobalScan::get_dram_anon_bytes()
 {
     unsigned long dram_anon = 0;
 
-    for(auto iter = numa_collection.dram_begin();
-      iter != numa_collection.dram_end(); ++iter) {
-      int nid = iter->id();
+    for(auto node: numa_collection.get_dram_nodes()) {
+      int nid = node->id();
       dram_anon += proc_vmstat.vmstat(nid, "nr_active_anon");
       dram_anon += proc_vmstat.vmstat(nid, "nr_inactive_anon");
     }
@@ -216,10 +215,8 @@ unsigned long GlobalScan::get_dram_free_anon_bytes()
 {
     unsigned long dram_anon_capacity = 0;
 
-    for(auto iter = numa_collection.dram_begin();
-      iter != numa_collection.dram_end(); ++iter) {
-      dram_anon_capacity += proc_vmstat.anon_capacity(iter->id());
-    }
+    for (auto node: numa_collection.get_dram_nodes())
+      dram_anon_capacity += proc_vmstat.anon_capacity(node->id());
 
     return dram_anon_capacity << PAGE_SHIFT;
 }

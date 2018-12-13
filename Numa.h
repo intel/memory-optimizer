@@ -28,51 +28,6 @@
 typedef std::map<const char*, std::string> NodeInfo;
 typedef std::vector<NodeInfo> NumaInfo;
 
-/*
- * BaseIterator is iterator for container with element type "T *", so
- * acts like "T **".  And container elements may be NULL.
- * DerefIterator will skip NULL elements automatically and acts like
- * "T *".
- */
-template<class BaseIterator>
-using DerefValueType = typename std::remove_pointer<typename BaseIterator::value_type>::type;
-
-template<class BaseIterator>
-class DerefIterator :
-    public std::iterator<std::input_iterator_tag, DerefValueType<BaseIterator>>
-{
-  BaseIterator it_curr;
-
-public:
-  using value_type = DerefValueType<BaseIterator>;
-
-  DerefIterator(const DerefIterator<BaseIterator>& ait) :
-    it_curr(ait.it_curr) {}
-  DerefIterator(const BaseIterator& curr) :
-    it_curr(curr) {}
-  DerefIterator(void) {}
-  bool operator==(const DerefIterator<BaseIterator>& ait)
-  {
-    return it_curr == ait.it_curr;
-  }
-  bool operator!=(const DerefIterator<BaseIterator>& ait)
-  {
-    return it_curr != ait.it_curr;
-  }
-  DerefIterator<BaseIterator>& operator++(void)
-  {
-    it_curr++;
-    return *this;
-  }
-  DerefIterator<BaseIterator>& operator++(int)
-  {
-    it_curr++;
-    return *this;
-  }
-  value_type& operator*() { return **it_curr; }
-  value_type *operator->() { return *it_curr; }
-};
-
 enum numa_node_type {
   NUMA_NODE_DRAM,
   NUMA_NODE_PMEM,
@@ -163,7 +118,7 @@ class NumaNodeCollection
   void init_cpu_map(void);
 
 public:
-  typedef DerefIterator<std::vector<NumaNode *>::iterator> iterator;
+  using iterator = std::vector<NumaNode *>::iterator;
 
   struct bitmask *all_mask;
 
@@ -189,33 +144,17 @@ public:
 
   iterator begin(void)
   {
-    return iterator(nodes.begin());
+    return nodes.begin();
   }
 
   iterator end(void)
   {
-    return iterator(nodes.end());
+    return nodes.end();
   }
 
-  iterator dram_begin(void)
-  {
-    return iterator(dram_nodes.begin());
-  }
-
-  iterator dram_end(void)
-  {
-    return iterator(dram_nodes.end());
-  }
-
-  iterator pmem_begin(void)
-  {
-    return iterator(pmem_nodes.begin());
-  }
-
-  iterator pmem_end(void)
-  {
-    return iterator(pmem_nodes.end());
-  }
+  const std::vector<NumaNode *>& get_all_nodes() { return nodes; }
+  const std::vector<NumaNode *>& get_dram_nodes() { return dram_nodes; }
+  const std::vector<NumaNode *>& get_pmem_nodes() { return pmem_nodes; }
 
   NumaNode *node_of_cpu(int cpu)
   {
