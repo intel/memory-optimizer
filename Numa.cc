@@ -99,7 +99,9 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
     } else if (numa_bitmask_isbitset(pmem_mask, i)) {
       pnode = new NumaNode(i, NUMA_NODE_PMEM);
       pmem_nodes.push_back(pnode);
-    }
+    } else
+      continue;
+
     nodes.push_back(pnode);
     node_map[i] = pnode;
   }
