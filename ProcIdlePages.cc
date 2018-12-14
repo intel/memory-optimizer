@@ -266,8 +266,15 @@ void ProcIdlePages::dump_idlepages(proc_maps_entry& vma, int bytes)
 {
   proc_maps.show(vma);
   for (int j = 0; j < bytes; ++j)
-    printf("%x ", (int)read_buf[j]);
-  puts("");
+  {
+    if (read_buf[j] == PIP_CMD_SET_HVA) {
+      if (j)
+        printf("\n");
+      printf("[%3d] ", j);
+    }
+    printf("%02x ", (int)read_buf[j]);
+  }
+  printf("\n\n");
 }
 
 uint64_t ProcIdlePages::u8_to_u64(uint8_t a[])
@@ -294,7 +301,14 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
   for (int i = 0; i < bytes;)
   {
     if (read_buf[i] == PIP_CMD_SET_HVA) {
-      va = u8_to_u64(&read_buf[++i]);
+      unsigned long new_va = u8_to_u64(&read_buf[++i]);
+      if (new_va < va && i > 1) {
+        printf("WARNING: va goes backward: %lx - %lx = %lx\n",
+               va, new_va, va - new_va);
+        if (debug_level() >= 0 && !dumped++)
+          dump_idlepages(vma, bytes);
+      }
+      va = new_va;
       i += sizeof(uint64_t);
       continue;
     }
