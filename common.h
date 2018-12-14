@@ -29,7 +29,7 @@ typedef long long s64;
 #define NS_PER_SEC	1000000000ULL
 #define NS_PER_MSEC	1000000ULL
 
-inline void err(const std::string& what)
+inline void sys_err(const std::string& what)
 {
   throw std::system_error(errno, std::generic_category(), what);
 }

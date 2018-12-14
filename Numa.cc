@@ -19,6 +19,7 @@
 
 #include <map>
 
+#include "common.h"
 #include "Numa.h"
 
 
@@ -38,14 +39,14 @@ void NumaNodeCollection::init_cpu_map(void)
   struct bitmask *cpumask = numa_allocate_cpumask();
 
   if (!cpumask)
-    err("Allocate cpumask");
+    sys_err("Allocate cpumask");
   nr_possible_cpu_ = numa_num_possible_cpus();
   cpu_node_map.resize(nr_possible_cpu_);
   for (auto& node: nodes) {
     int nid = node->id();
     numa_bitmask_clearall(cpumask);
     if (numa_node_to_cpus(nid, cpumask) < 0)
-      err("numa_node_to_cpus");
+      sys_err("numa_node_to_cpus");
     for (cpu = 0; cpu < nr_possible_cpu_; cpu++) {
       if (numa_bitmask_isbitset(cpumask, cpu))
         cpu_node_map[cpu] = nid;
