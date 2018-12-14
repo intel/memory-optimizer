@@ -136,6 +136,8 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     }
 
     size = (end - va + (7 << PAGE_SHIFT)) >> (3 + PAGE_SHIFT);
+    if (size < EPT_IDLE_BUF_MIN)
+      size = EPT_IDLE_BUF_MIN;
     if (size > read_buf.size())
       size = read_buf.size();
 

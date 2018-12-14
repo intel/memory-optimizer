@@ -46,6 +46,8 @@ enum ProcIdlePageType
 
 #define PIP_CMD_SET_HVA		      PIP_COMPOSE(PIP_CMD, 0)
 
+#define EPT_IDLE_BUF_MIN        ((sizeof(uint64_t) + 2) * 2)
+
 extern unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX];
 extern const char* pagetype_name[IDLE_PAGE_TYPE_MAX];
 extern int pagetype_shift[IDLE_PAGE_TYPE_MAX];
