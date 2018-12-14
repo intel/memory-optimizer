@@ -16,8 +16,11 @@
 #ifndef __COMMON__HH__
 #define __COMMON__HH__
 
-#define err(x) perror(x), exit(1)
-#define mb() asm volatile("" ::: "memory")
+#include <system_error>
+
+#include <sys/user.h>
+#include <errno.h>
+
 #define MB (1024*1024)
 typedef unsigned long long u64;
 typedef long long s64;
@@ -25,10 +28,15 @@ typedef long long s64;
 #define MS_PER_SEC	1000ULL
 #define NS_PER_SEC	1000000000ULL
 #define NS_PER_MSEC	1000000ULL
-#define PAGE_SHIFT	12
-#define PAGE_SIZE	(1UL << PAGE_SHIFT)
 
-// remove because duplicated with /usr/include/x86_64-linux-gnu/sys/user.h:174:0:
-// #define PAGE_MASK	(PAGE_SIZE - 1)
+inline void err(const std::string& what)
+{
+  throw std::system_error(errno, std::generic_category(), what);
+}
+
+inline void mb()
+{
+  asm volatile("" ::: "memory");
+}
 
 #endif /* __COMMON__HH__ */
