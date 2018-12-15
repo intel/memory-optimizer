@@ -18,6 +18,9 @@ static const unsigned long P4D_SIZE = 1UL << 39;
 static const unsigned long PGDIR_SIZE = 1UL << 39;
 static const unsigned long TASK_SIZE_MAX = (1UL << 47) - PAGE_SIZE;
 
+#define SCAN_HUGE_PAGE      O_NONBLOCK
+#define SCAN_SKIM_IDLE      O_NOFOLLOW
+
 enum ProcIdlePageType
 {
   PTE_ACCESSED,	/* 4k page */

@@ -230,12 +230,16 @@ int ProcIdlePages::walk()
 
 int ProcIdlePages::open_file()
 {
+  unsigned int flags = O_RDWR;
   char filepath[PATH_MAX];
 
   memset(filepath, 0, sizeof(filepath));
   snprintf(filepath, sizeof(filepath), "/proc/%d/idle_bitmap", pid);
 
-  idle_fd = open(filepath, O_RDWR);
+  if (nr_walks > 0)
+    flags |= SCAN_SKIM_IDLE;
+
+  idle_fd = open(filepath, flags);
   if (idle_fd < 0) {
     io_error = idle_fd;
     perror(filepath);
