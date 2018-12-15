@@ -42,5 +42,8 @@ addr-seq: AddrSequence.cc AddrSequence.h
 pid-list: ProcPid.cc ProcPid.h ProcStatus.cc ProcStatus.h
 	$(CXX) ProcPid.cc ProcStatus.cc -o $@ $(CXXFLAGS) -DPID_LIST_SELF_TEST
 
+cscope:
+	cscope-indexer -r
+	ctags -R --links=no
 clean:
 	$(RM) $(OBJS)
