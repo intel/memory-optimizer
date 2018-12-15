@@ -125,6 +125,7 @@ class ProcIdlePages
     int idle_fd;
     std::vector<uint8_t> read_buf;
 
+    unsigned long min_read_size;
     unsigned long next_va;
 };
 

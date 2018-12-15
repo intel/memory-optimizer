@@ -141,8 +141,8 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     }
 
     size = (end - va + (7 << PAGE_SHIFT)) >> (3 + PAGE_SHIFT);
-    if (size < EPT_IDLE_BUF_MIN)
-      size = EPT_IDLE_BUF_MIN;
+    if (size < min_read_size)
+      size = min_read_size;
     if (size > read_buf.size())
       size = read_buf.size();
 
@@ -205,6 +205,11 @@ int ProcIdlePages::walk()
 
   ++nr_walks;
   read_buf.resize(READ_BUF_SIZE);
+
+  if (option.max_threads <= 1)
+    min_read_size = PAGE_SIZE;        // typical deployment
+  else
+    min_read_size = EPT_IDLE_BUF_MIN; // avoid stepping on each other
 
   // must do rewind() before a walk() start.
   for (auto& prc: pagetype_refs)
