@@ -1,0 +1,13 @@
+options:
+  dump_options: false
+  exit_on_stabilized: 3
+  initial_interval: 1
+
+policies:
+  - name: usemem
+    placement: dram
+  - name: sysbench
+    migration: hot
+    dump_distribution: true
+  - name: qemu-system-x86
+    migration: hot

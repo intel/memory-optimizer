@@ -1,0 +1,40 @@
+dram_nodes:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+pmem_nodes:
+- 8
+- 9
+- 10
+- 11
+- 12
+- 13
+- 14
+- 15
+ratios: # PMEM:DRAM
+- 0     # pure DRAM
+- 1
+- 2     # 2:1 PMEM:DRAM
+- 4
+- 999   # pure PMEM
+qemu_script: kvm-wfg.sh
+qemu_ssh: 2225
+#skip_baseline_run: true
+workload_script: run-sysbench-memory.sh
+workload_params:
+- &params
+  time: 1200
+  threads: 32
+  memory_block_size: 1G
+  memory_scope: local
+  rand_type: gaussian
+  memory_oper: read
+- <<: *params
+  memory_oper: write
+migrate_cmd: sys-refs
+migrate_config: sys-refs-sysbench-memory-32t.yaml
