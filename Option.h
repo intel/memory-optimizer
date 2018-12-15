@@ -132,7 +132,7 @@ public:
   int max_threads;
   unsigned long split_rss_size;
 
-  unsigned long bandwidth_mbps;
+  float bandwidth_mbps;
   MigrateWhat migrate_what;
 
   std::string output_file;

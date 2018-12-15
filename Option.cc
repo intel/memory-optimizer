@@ -73,7 +73,7 @@ void Option::dump()
   printf("cold_max_refs = %d\n", cold_max_refs);
   printf("max_threads = %d\n", max_threads);
   printf("split_rss_size = %lu\n", split_rss_size);
-  printf("bandwidth_mbps = %lu\n", bandwidth_mbps);
+  printf("bandwidth_mbps = %g\n", bandwidth_mbps);
   printf("migrate_what = %d\n", migrate_what);
   printf("output_file = %s\n", output_file.c_str());
   printf("config_file = %s\n", config_file.c_str());
