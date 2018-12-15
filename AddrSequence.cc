@@ -201,8 +201,10 @@ int AddrSequence::append_addr(unsigned long addr, int n)
   // the addr in append stage should grow from low to high
   // and never duplicated or rollback, so here we
   // return directly
-  if (addr <= last_cluster_end)
+  if (addr <= last_cluster_end) {
+    printf("ignore overlapped addr %lx <= %lx\n", addr, last_cluster_end);
     return IGNORE_DUPLICATED_ADDR;
+  }
 
   AddrCluster& cluster = addr_clusters.back();
   if (can_merge_into_cluster(cluster, addr))
