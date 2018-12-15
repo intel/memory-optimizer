@@ -79,7 +79,7 @@ class VMTest
       "qemu_log" => @qemu_log,
     }
 
-    cmd = File.join(@tests_dir, @qemu_script)
+    cmd = File.join(@conf_dir, @qemu_script)
     puts "env " + env.map { |k,v| "#{k}=#{v}" }.join(' ') + " " + cmd
     @qemu_pid = Process.spawn(env, cmd)
   end
@@ -123,7 +123,7 @@ class VMTest
 
   def rsync_workload
     cmd = ["rsync", "-a", "-e", "ssh -p #{@qemu_ssh}",
-           File.join(@tests_dir, @workload_script), "root@localhost:#{@guest_workspace}/"]
+           File.join(@conf_dir, @workload_script), "root@localhost:#{@guest_workspace}/"]
     puts cmd.join(' ')
     system(*cmd)
   end
@@ -229,7 +229,7 @@ class VMTest
 
   def spawn_migrate
     dram_percent = 100 / (@ratio + 1)
-    cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@tests_dir}/#{@scheme['migrate_config']}"
+    cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@conf_dir}/#{@scheme['migrate_config']}"
     puts cmd + " > " + @migrate_log
     return Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
   end
@@ -368,6 +368,7 @@ class VMTest
 
   def run_all(config_file)
     @scheme = YAML.load_file(config_file)
+    @conf_dir = File.dirname(File.realpath config_file)
     setup_params
     setup_sys
     @time_dir = Time.now.strftime("%F.%T")
