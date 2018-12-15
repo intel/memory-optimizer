@@ -88,6 +88,9 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
   unsigned long size;
   int rc = 0;
 
+  if (end <= next_va)
+    return 0;
+
   if (end <= va_start)
     return 0;
 
@@ -101,6 +104,8 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
   if (debug_level() >= 2)
     proc_maps.show(vma);
 
+  if (va < next_va)
+    va = next_va;
   if (va < va_start)
     va = va_start;
   if (end > va_end)
@@ -173,6 +178,7 @@ int ProcIdlePages::walk_vma(proc_maps_entry& vma)
     parse_idlepages(vma, va, end, rc);
   }
 
+  next_va = va;
   return 0;
 }
 
@@ -203,6 +209,8 @@ int ProcIdlePages::walk()
   // must do rewind() before a walk() start.
   for (auto& prc: pagetype_refs)
     prc.page_refs.rewind();
+
+  next_va = 0;
 
   for (auto &vma: address_map) {
     err = walk_vma(vma);
