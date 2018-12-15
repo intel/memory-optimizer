@@ -337,7 +337,7 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
       }
     }
 
-    if (type <= MAX_ACCESSED) {
+    if (type <= PMD_IDLE_PTES) {
       if (type == PMD_IDLE_PTES)
         inc_page_refs(PTE_IDLE, nr * 512, va, end);
       else
