@@ -61,6 +61,14 @@ class VMTest
     system("modprobe kvm_ept_idle")
   end
 
+  def save_reproduce_files(scheme_file)
+    system 'mkdir', '-p', @time_dir
+    system 'cp', scheme_file, @time_dir
+    system 'cp', File.join(@conf_dir, @qemu_script), @time_dir
+    system 'cp', File.join(@conf_dir, @workload_script), @time_dir
+    system 'cp', File.join(@conf_dir, @scheme['migrate_config']), @time_dir
+  end
+
   def kill_wait(pid)
     begin
       Process.kill 'KILL', pid
@@ -259,7 +267,7 @@ class VMTest
   def run_one(should_migrate = false)
     path_params = @workload_params.map { |k,v| "#{k}=#{v}" }.join('#')
     path_params += '.' + @migrate_script if should_migrate
-    @log_dir = File.join(@host_workspace, @time_dir, "ratio=#{@ratio}", path_params)
+    @log_dir = File.join(@time_dir, "ratio=#{@ratio}", path_params)
     @workload_log = File.join(@log_dir, @workload_script + ".log")
     @migrate_log  = File.join(@log_dir, @migrate_script  + ".log")
     @qemu_log     = File.join(@log_dir, @qemu_script     + ".log")
@@ -366,12 +374,13 @@ class VMTest
     end
   end
 
-  def run_all(config_file)
-    @scheme = YAML.load_file(config_file)
-    @conf_dir = File.dirname(File.realpath config_file)
+  def run_all(scheme_file)
+    @scheme = YAML.load_file(scheme_file)
+    @conf_dir = File.dirname(File.realpath scheme_file)
+    @time_dir = File.join(@host_workspace, Time.now.strftime("%F.%T"))
     setup_params
     setup_sys
-    @time_dir = Time.now.strftime("%F.%T")
+    save_reproduce_files scheme_file
     @scheme["ratios"].each do |ratio|
       @ratio = ratio
       setup_nodes(ratio)
