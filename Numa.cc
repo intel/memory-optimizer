@@ -92,19 +92,14 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
 
   node_map.resize(nr_possible_node_);
   for (i = 0; i < nr_possible_node_; i++) {
-    NumaNode *pnode = NULL;
+    numa_node_type type = NUMA_NODE_END;
 
-    if (numa_bitmask_isbitset(dram_mask, i)) {
-      pnode = new NumaNode(i, NUMA_NODE_DRAM);
-      dram_nodes.push_back(pnode);
-    } else if (numa_bitmask_isbitset(pmem_mask, i)) {
-      pnode = new NumaNode(i, NUMA_NODE_PMEM);
-      pmem_nodes.push_back(pnode);
-    } else
-      continue;
+    if (numa_bitmask_isbitset(dram_mask, i))
+      type = NUMA_NODE_DRAM;
+    else if (numa_bitmask_isbitset(pmem_mask, i))
+      type = NUMA_NODE_PMEM;
 
-    nodes.push_back(pnode);
-    node_map[i] = pnode;
+    create_node(i, type);
   }
 
   /* node maps to itself by default */
@@ -224,6 +219,8 @@ int NumaNodeCollection::create_node(int node_id, numa_node_type type)
   NumaNode *new_node;
   new_node = new NumaNode(node_id, type);
 
+  node_map[node_id].reset(new_node);
+
   switch(type) {
     case NUMA_NODE_DRAM:
       dram_nodes.push_back(new_node);
@@ -236,7 +233,6 @@ int NumaNodeCollection::create_node(int node_id, numa_node_type type)
   }
 
   nodes.push_back(new_node);
-  node_map[node_id] = new_node;
 
   return 0;
 }
@@ -271,9 +267,9 @@ void NumaNodeCollection::set_target_node(int node_id, int target_node_id, bool i
     return;
   }
 
-  node_map[node_id]->set_peer_node(node_map[target_node_id]);
+  get_node(node_id)->set_peer_node(get_node(target_node_id));
   if (is_bidir)
-    node_map[target_node_id]->set_peer_node(node_map[node_id]);
+    get_node(target_node_id)->set_peer_node(get_node(node_id));
 }
 
 int NumaNodeCollection::load_numa_info(NumaInfo& numa_info, int node_count)

@@ -19,6 +19,8 @@
 #include <vector>
 #include <iterator>
 #include <map>
+#include <memory>
+
 #include <numa.h>
 #include <numaif.h>
 
@@ -109,8 +111,9 @@ class NumaNodeCollection
   /* map from cpu No. to node id */
   std::vector<int> cpu_node_map;
 
-  /* map from node id to NumaNode* */
-  std::vector<NumaNode *> node_map;
+  /* map from node id to NumaNode*, and memory manager */
+  std::vector<std::unique_ptr<NumaNode>> node_map;
+
   std::vector<NumaNode *> nodes;
   std::vector<NumaNode *> dram_nodes;
   std::vector<NumaNode *> pmem_nodes;
@@ -132,7 +135,7 @@ public:
 
   NumaNode *get_node(int nid)
   {
-    return node_map.at(nid);
+    return node_map.at(nid).get();
   }
 
   NumaNode& operator[](int nid)
