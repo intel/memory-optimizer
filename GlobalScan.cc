@@ -42,7 +42,9 @@ void GlobalScan::main_loop()
     if (exit_on_stabilized())
       break;
 
-    double sleep_time = std::max(option.sleep_secs, interval);
+    double sleep_time = std::max(option.sleep_secs, 2 * interval);
+    if (sleep_time > 10 * interval)
+        sleep_time = 10 * interval;
     printf("\nSleeping for %.2f seconds\n", sleep_time);
     usleep(sleep_time * 1000000);
   }
@@ -264,7 +266,7 @@ void GlobalScan::walk_once()
 
   update_dram_free_anon_bytes();
 
-  printf("%7d  %8.2f  %'15lu %6.2f%%  %'15lu %6.2f%%  %'15lu\n",
+  printf("%7d  %8.3f  %'15lu %6.2f%%  %'15lu %6.2f%%  %'15lu\n",
          nr_walks,
          (double)interval,
          young_bytes >> 10, 100.0 * young_bytes / all_bytes,
