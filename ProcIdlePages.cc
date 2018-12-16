@@ -234,7 +234,7 @@ int ProcIdlePages::open_file()
   char filepath[PATH_MAX];
 
   memset(filepath, 0, sizeof(filepath));
-  snprintf(filepath, sizeof(filepath), "/proc/%d/idle_bitmap", pid);
+  snprintf(filepath, sizeof(filepath), "/proc/%d/idle_pages", pid);
 
   if (nr_walks > 0)
     flags |= SCAN_SKIM_IDLE;
