@@ -39,8 +39,8 @@ enum numa_node_type {
 class NumaNode {
   int id_;
   enum numa_node_type type_;
-  long mem_total;
-  long mem_free;
+  long mem_total_;
+  long mem_free_;
 
 public:
   bool mem_watermark_ok;
@@ -59,20 +59,20 @@ public:
 
   void collect_meminfo(void)
   {
-    mem_total = numa_node_size(id_, &mem_free);
-    if (mem_total == -1)
+    mem_total_ = numa_node_size(id_, &mem_free_);
+    if (mem_total_ == -1)
       err("numa_node_size");
   }
 
   void check_watermark(int watermark_percent)
   {
-    mem_watermark_ok = mem_free >
-      mem_total * watermark_percent / 100;
+    mem_watermark_ok = mem_free_ >
+      mem_total_ * watermark_percent / 100;
   }
 
   unsigned long mem_used(void)
   {
-    return mem_total - mem_free;
+    return mem_total_ - mem_free_;
   }
 
   void set_peer_node(NumaNode* peer_node)
@@ -109,14 +109,14 @@ class NumaNodeCollection
   int nr_possible_cpu_;
 
   /* map from cpu No. to node id */
-  std::vector<int> cpu_node_map;
+  std::vector<int> cpu_node_map_;
 
   /* map from node id to NumaNode*, and memory manager */
-  std::vector<std::unique_ptr<NumaNode>> node_map;
+  std::vector<std::unique_ptr<NumaNode>> node_map_;
 
-  std::vector<NumaNode *> nodes;
-  std::vector<NumaNode *> dram_nodes;
-  std::vector<NumaNode *> pmem_nodes;
+  std::vector<NumaNode *> nodes_;
+  std::vector<NumaNode *> dram_nodes_;
+  std::vector<NumaNode *> pmem_nodes_;
 
   void init_cpu_map(void);
 
@@ -135,7 +135,7 @@ public:
 
   NumaNode *get_node(int nid)
   {
-    return node_map.at(nid).get();
+    return node_map_.at(nid).get();
   }
 
   NumaNode& operator[](int nid)
@@ -145,26 +145,26 @@ public:
 
   iterator begin(void)
   {
-    return nodes.begin();
+    return nodes_.begin();
   }
 
   iterator end(void)
   {
-    return nodes.end();
+    return nodes_.end();
   }
 
-  const std::vector<NumaNode *>& get_all_nodes() { return nodes; }
-  const std::vector<NumaNode *>& get_dram_nodes() { return dram_nodes; }
-  const std::vector<NumaNode *>& get_pmem_nodes() { return pmem_nodes; }
+  const std::vector<NumaNode *>& get_all_nodes() { return nodes_; }
+  const std::vector<NumaNode *>& get_dram_nodes() { return dram_nodes_; }
+  const std::vector<NumaNode *>& get_pmem_nodes() { return pmem_nodes_; }
 
   NumaNode *node_of_cpu(int cpu)
   {
-    return get_node(cpu_node_map.at(cpu));
+    return get_node(cpu_node_map_.at(cpu));
   }
 
   bool is_valid_nid(int nid)
   {
-    return nid >= 0 && nid < nr_possible_node_ && node_map[nid];
+    return nid >= 0 && nid < nr_possible_node_ && node_map_[nid];
   }
 
   void dump();

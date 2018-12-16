@@ -41,15 +41,15 @@ void NumaNodeCollection::init_cpu_map(void)
   if (!cpumask)
     sys_err("Allocate cpumask");
   nr_possible_cpu_ = numa_num_possible_cpus();
-  cpu_node_map.resize(nr_possible_cpu_);
-  for (auto& node: nodes) {
+  cpu_node_map_.resize(nr_possible_cpu_);
+  for (auto& node: nodes_) {
     int nid = node->id();
     numa_bitmask_clearall(cpumask);
     if (numa_node_to_cpus(nid, cpumask) < 0)
       sys_err("numa_node_to_cpus");
     for (cpu = 0; cpu < nr_possible_cpu_; cpu++) {
       if (numa_bitmask_isbitset(cpumask, cpu))
-        cpu_node_map[cpu] = nid;
+        cpu_node_map_[cpu] = nid;
     }
   }
   numa_free_cpumask(cpumask);
@@ -90,7 +90,7 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
     exit(1);
   }
 
-  node_map.resize(nr_possible_node_);
+  node_map_.resize(nr_possible_node_);
   for (i = 0; i < nr_possible_node_; i++) {
     numa_node_type type = NUMA_NODE_END;
 
@@ -136,7 +136,7 @@ void NumaNodeCollection::collect_by_sysfs(void)
     return;
   }
 
-  node_map.resize(nr_possible_node_);
+  node_map_.resize(nr_possible_node_);
   err = create_node_objects(numa_info);
   if (err < 0) {
     fprintf(stderr, "failed to create_node_objects, err = %d\n", err);
@@ -219,20 +219,20 @@ int NumaNodeCollection::create_node(int node_id, numa_node_type type)
   NumaNode *new_node;
   new_node = new NumaNode(node_id, type);
 
-  node_map[node_id].reset(new_node);
+  node_map_[node_id].reset(new_node);
 
   switch(type) {
     case NUMA_NODE_DRAM:
-      dram_nodes.push_back(new_node);
+      dram_nodes_.push_back(new_node);
       break;
     case NUMA_NODE_PMEM:
-      pmem_nodes.push_back(new_node);
+      pmem_nodes_.push_back(new_node);
       break;
     default:
       break;
   }
 
-  nodes.push_back(new_node);
+  nodes_.push_back(new_node);
 
   return 0;
 }
@@ -240,10 +240,10 @@ int NumaNodeCollection::create_node(int node_id, numa_node_type type)
 void NumaNodeCollection::set_default_target_node()
 {
   /* node maps to itself by default */
-  for (auto& node: dram_nodes)
+  for (auto& node: dram_nodes_)
     node->promote_target = node;
 
-  for (auto& node: pmem_nodes)
+  for (auto& node: pmem_nodes_)
     node->demote_target = node;
 }
 
@@ -306,20 +306,20 @@ int NumaNodeCollection::create_node_objects(NumaInfo& numa_info)
 
 void NumaNodeCollection::collect_dram_nodes_meminfo(void)
 {
-  for (auto& node: dram_nodes)
+  for (auto& node: dram_nodes_)
     node->collect_meminfo();
 }
 
 void NumaNodeCollection::check_dram_nodes_watermark(int watermark_percent)
 {
-  for (auto& node: dram_nodes)
+  for (auto& node: dram_nodes_)
     node->check_watermark(watermark_percent);
 }
 
 int NumaNodeCollection::get_node_lowest_cpu(int node)
 {
   for (int cpu = 0; cpu < nr_possible_cpu_; cpu++) {
-    if (cpu_node_map[cpu] == node)
+    if (cpu_node_map_[cpu] == node)
       return cpu;
   }
 
@@ -331,7 +331,7 @@ void NumaNodeCollection::dump()
   NumaNode* peer_node;
 
   printf("All nodes:\n");
-  for (auto& numa_obj : nodes) {
+  for (auto& numa_obj : nodes_) {
 
     peer_node = numa_obj->get_peer_node();
     if (peer_node)
@@ -347,13 +347,13 @@ void NumaNodeCollection::dump()
   }
 
   printf("DRAM nodes:\n");
-  for (auto& numa_obj : dram_nodes)
+  for (auto& numa_obj : dram_nodes_)
     printf("Node %d type:%d\n",
            numa_obj->id(),
            numa_obj->type());
 
   printf("PMEM nodes:\n");
-  for (auto& numa_obj : pmem_nodes)
+  for (auto& numa_obj : pmem_nodes_)
     printf("Node %d type:%d\n",
            numa_obj->id(),
            numa_obj->type());
