@@ -303,8 +303,8 @@ class VMTest
 
     if should_migrate
       wait_workload_startup
-      eat_mem
       migrate_pid = spawn_migrate
+      eat_mem
       wait_for_migration_progress migrate_pid, 3, 30
       eat_mem :squeeze
       eat_mem :squeeze
