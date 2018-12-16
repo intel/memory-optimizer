@@ -41,9 +41,9 @@ class NumaNode {
   enum numa_node_type type_;
   long mem_total_;
   long mem_free_;
+  bool mem_watermark_ok_;
 
 public:
-  bool mem_watermark_ok;
 
   // possible to a union here?
   NumaNode *promote_target;
@@ -66,9 +66,11 @@ public:
 
   void check_watermark(int watermark_percent)
   {
-    mem_watermark_ok = mem_free_ >
+    mem_watermark_ok_ = mem_free_ >
       mem_total_ * watermark_percent / 100;
   }
+
+  bool get_mem_watermark_ok() { return mem_watermark_ok_; }
 
   unsigned long mem_used(void)
   {
