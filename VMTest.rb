@@ -2,6 +2,7 @@
 
 require 'yaml'
 require 'open3'
+require 'logger'
 require_relative "ProcVmstat"
 require_relative "ProcStatus"
 require_relative "ProcNumaMaps"
@@ -61,6 +62,15 @@ class VMTest
     system("modprobe kvm_ept_idle")
   end
 
+  def log(msg = "\n")
+    @logger.info msg
+  end
+
+  def warn(msg = "\n")
+    puts msg
+    @logger.warn msg
+  end
+
   def save_reproduce_files(scheme_file)
     system 'mkdir', '-p', @time_dir
     system 'cp', scheme_file, @time_dir
@@ -88,7 +98,7 @@ class VMTest
     }
 
     cmd = File.join(@conf_dir, @qemu_script)
-    puts "env " + env.map { |k,v| "#{k}=#{v}" }.join(' ') + " " + cmd
+    log "env " + env.map { |k,v| "#{k}=#{v}" }.join(' ') + " " + cmd
     @qemu_pid = Process.spawn(env, cmd)
   end
 
@@ -103,10 +113,10 @@ class VMTest
         # ssh_exchange_identification: read: Connection reset by peer
         # ssh_exchange_identification: Connection closed by remote host
         next if line =~ /^ssh_exchange_identification: /
-        puts line
+        log line
       end
     end
-    puts "failed to ssh VM"
+    warn "failed to ssh VM"
     Process.kill 'KILL', @qemu_pid
     exit 1
   end
@@ -132,7 +142,7 @@ class VMTest
   def rsync_workload
     cmd = ["rsync", "-a", "-e", "ssh -p #{@qemu_ssh}",
            File.join(@conf_dir, @workload_script), "root@localhost:#{@guest_workspace}/"]
-    puts cmd.join(' ')
+    log cmd.join(' ')
     system(*cmd)
   end
 
@@ -141,7 +151,7 @@ class VMTest
     cmd += @workload_params.map do |k,v| "#{k}=#{v}" end
     cmd += %w[stdbuf -oL]
     cmd << File.join(@guest_workspace, @workload_script)
-    puts cmd.join(' ') + " > " + @workload_log
+    log cmd.join(' ') + " > " + @workload_log
     return Process.spawn(*cmd, [:out, :err]=>[@workload_log, 'w'])
   end
 
@@ -162,35 +172,35 @@ class VMTest
       sleep 1
       return if File.read(log).include? msg
     end
-    puts "WARNING: timeout waiting for '#{msg}' in #{log}"
+    warn "WARNING: timeout waiting for '#{msg}' in #{log}"
   end
 
   def read_qemu_rss
     proc_status = ProcStatus.new
     proc_status.load(@qemu_pid)
     @qemu_rss_kb = proc_status["VmRSS"].to_i
-    puts "QEMU RSS: #{@qemu_rss_kb >> 10}M"
+    log "QEMU RSS: #{@qemu_rss_kb >> 10}M"
   end
 
   def show_dram_percent(dram_sum, proc_numa_maps)
     total_anon_kb = proc_numa_maps.numa_kb['anon'] + 1
-    puts "QEMU numa #{proc_numa_maps.total_numa_kb >> 10}M"
-    puts "QEMU anon #{total_anon_kb >> 10}M"
-    puts "QEMU RSS  #{@qemu_rss_kb >> 10}M"
-    puts "QEMU DRAM percent #{100 * dram_sum / total_anon_kb}%  target #{100 / (1 + @ratio)}%"
+    log "QEMU numa #{proc_numa_maps.total_numa_kb >> 10}M"
+    log "QEMU anon #{total_anon_kb >> 10}M"
+    log "QEMU RSS  #{@qemu_rss_kb >> 10}M"
+    log "QEMU DRAM percent #{100 * dram_sum / total_anon_kb}%  target #{100 / (1 + @ratio)}%"
   end
 
   def show_qemu_placement
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
-    puts
-    puts "QEMU anon pages distribution:"
+    log
+    log "QEMU anon pages distribution:"
     dram_sum = 0
     @dram_nodes.each do |nid|
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
       dram_sum += qemu_anon_kb
       percent = 100 * qemu_anon_kb / (@qemu_rss_kb + 1)
-      puts "Node #{nid}: #{qemu_anon_kb >> 10}M  #{percent}%"
+      log "Node #{nid}: #{qemu_anon_kb >> 10}M  #{percent}%"
     end
     show_dram_percent(dram_sum, proc_numa_maps)
   end
@@ -201,8 +211,8 @@ class VMTest
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
     dram_sum = 0
-    puts
-    puts "Check eat DRAM memory"
+    log
+    log "Check eat DRAM memory"
     @dram_nodes.each do |nid|
       if is_squeeze
         # After rounds of migration, expect little free DRAM left, while QEMU
@@ -219,7 +229,7 @@ class VMTest
       end
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
       dram_sum += qemu_anon_kb
-      puts "Node #{nid}: free #{free_kb >> 10}M  qemu #{qemu_anon_kb >> 10}M => #{rss_per_node >> 10}M"
+      log "Node #{nid}: free #{free_kb >> 10}M  qemu #{qemu_anon_kb >> 10}M => #{rss_per_node >> 10}M"
       spawn_usemem(nid, free_kb + qemu_anon_kb - rss_per_node)
     end
     show_dram_percent(dram_sum, proc_numa_maps)
@@ -227,18 +237,18 @@ class VMTest
 
   def spawn_usemem(nid, kb)
     if kb < 0
-      puts "WARNING: not starting usemem due to negative kb = #{kb}" if kb < -(1000<<10)
+      warn "WARNING: not starting usemem due to negative kb = #{kb}" if kb < -(1000<<10)
       return
     end
     cmd = "numactl --preferred #{nid} usemem --detach --pid-file #{@usemem_pid_file} --sleep -1 --step 2m --mlock --prefault #{kb >> 10}m"
-    puts cmd
+    log cmd
     system(*cmd.split)
   end
 
   def spawn_migrate
     dram_percent = 100 / (@ratio + 1)
     cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@conf_dir}/#{@scheme['migrate_config']}"
-    puts cmd + " > " + @migrate_log
+    log cmd + " > " + @migrate_log
     return Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
   end
 
@@ -267,19 +277,21 @@ class VMTest
   def run_one(should_migrate = false)
     path_params = @workload_params.map { |k,v| "#{k}=#{v}" }.join('#')
     path_params += '.' + @migrate_script if should_migrate
-    @log_dir = File.join(@time_dir, "ratio=#{@ratio}", path_params)
-    @workload_log = File.join(@log_dir, @workload_script + ".log")
-    @migrate_log  = File.join(@log_dir, @migrate_script  + ".log")
-    @qemu_log     = File.join(@log_dir, @qemu_script     + ".log")
-    @usemem_pid_file = File.join(@log_dir, "usemem.pid")
-
-    puts '-' * 80
-    puts "#{Time.now}  Running test with params #{@workload_params} should_migrate=#{should_migrate}"
+    log_dir = File.join(@time_dir, "ratio=#{@ratio}", path_params)
+    log_file = File.join(log_dir, 'log')
+    @workload_log = File.join(log_dir, @workload_script + ".log")
+    @migrate_log  = File.join(log_dir, @migrate_script  + ".log")
+    @qemu_log     = File.join(log_dir, @qemu_script     + ".log")
+    @usemem_pid_file = File.join(log_dir, "usemem.pid")
 
     # Avoid this dependency in old RHEL
     #   require "FileUtils"
-    #   FileUtils.mkdir_p(@log_dir)
-    system('mkdir', '-p', @log_dir) # on host rootfs
+    #   FileUtils.mkdir_p(log_dir)
+    system('mkdir', '-p', log_dir) # on host rootfs
+    @logger = Logger.new(log_file)
+
+    puts "less #{log_file}"
+    log "Running test with params #{@workload_params} should_migrate=#{should_migrate}"
 
     spawn_qemu
     wait_vm
@@ -310,7 +322,7 @@ class VMTest
     end
 
     usemem_pids = File.read(@usemem_pid_file).split rescue []
-    usemem_pids.each do |pid| Process.kill 'KILL', pid.to_i rescue puts "WARNING: failed to kill usemem" end
+    usemem_pids.each do |pid| Process.kill 'KILL', pid.to_i rescue warn "WARNING: failed to kill usemem" end
 
     stop_qemu
   end
