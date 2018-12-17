@@ -249,17 +249,30 @@ class VMTest
     dram_percent = 100 / (@ratio + 1)
     cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@conf_dir}/#{@scheme['migrate_config']}"
     log cmd + " > " + @migrate_log
-    return Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
+    @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
   end
 
-  def wait_for_migration_progress(migrate_pid, rounds, percent)
+  def eat_mem_loop
+      eat_mem
+      rounds = 2
+      percent = 50
+      10.times do
+        stopped = wait_for_migration_progress sounds, percent
+        eat_mem :squeeze
+        break if stopped
+        rounds += 2 + (rounds / 4)
+        percent = 1 + (percent / 2)
+      end
+  end
+
+  def wait_for_migration_progress(rounds, percent)
     10.times do
       sleep 60
 
       begin
-        return if Process.waitpid(migrate_pid, Process::WNOHANG)
+        return true if Process.waitpid(@migrate_pid, Process::WNOHANG)
       rescue
-        return
+        return true
       end
 
       count = 0
@@ -272,6 +285,7 @@ class VMTest
       end
     end
     # wait at most 600 seconds
+    false
   end
 
   def run_one(should_migrate = false)
@@ -303,14 +317,8 @@ class VMTest
 
     if should_migrate
       wait_workload_startup
-      migrate_pid = spawn_migrate
-      eat_mem
-      wait_for_migration_progress migrate_pid, 3, 30
-      eat_mem :squeeze
-      eat_mem :squeeze
-      wait_for_migration_progress migrate_pid, 10, 10
-      eat_mem :squeeze
-      eat_mem :squeeze
+      spawn_migrate
+      eat_mem_loop
     elsif @dram_nodes.size * @ratio > @pmem_nodes.size # if cannot rely on interleaving in baseline test
       eat_mem
     end
@@ -318,7 +326,7 @@ class VMTest
     Process.wait workload_pid
 
     if should_migrate
-      kill_wait migrate_pid
+      kill_wait @migrate_pid
     end
 
     usemem_pids = File.read(@usemem_pid_file).split rescue []
