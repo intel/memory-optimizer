@@ -58,6 +58,7 @@ class VMTest
 
   def setup_sys
     File.write("/sys/kernel/mm/transparent_hugepage/enabled", @transparent_hugepage)
+    File.write("/proc/sys/vm/oom_kill_allocating_task", "1");
     File.write("/proc/sys/kernel/numa_balancing", "0")
     system("modprobe kvm_ept_idle")
   end
