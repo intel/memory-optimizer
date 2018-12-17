@@ -193,12 +193,15 @@ class VMTest
     log "QEMU RSS: #{@qemu_rss_kb >> 10}M"
   end
 
-  def show_dram_percent(dram_sum, proc_numa_maps)
+  def show_dram_percent(proc_numa_maps)
+    dram_rss_kb = @scheme["dram_nodes"].inject do |sum, nid|
+      sum + (proc_numa_maps.numa_kb["N#{nid}"] || 0)
+    end
     total_anon_kb = proc_numa_maps.numa_kb['anon'] + 1
     log "QEMU numa #{proc_numa_maps.total_numa_kb >> 10}M"
     log "QEMU anon #{total_anon_kb >> 10}M"
     log "QEMU RSS  #{@qemu_rss_kb >> 10}M"
-    log "QEMU DRAM percent #{100 * dram_sum / total_anon_kb}%  target #{100 / (1 + @ratio)}%"
+    log "QEMU DRAM percent #{100 * dram_rss_kb / total_anon_kb}%  target #{100 / (1 + @ratio)}%"
   end
 
   def show_qemu_placement
@@ -206,14 +209,12 @@ class VMTest
     proc_numa_maps.load(@qemu_pid)
     log
     log "QEMU anon pages distribution:"
-    dram_sum = 0
     @dram_nodes.each do |nid|
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
-      dram_sum += qemu_anon_kb
       percent = 100 * qemu_anon_kb / (@qemu_rss_kb + 1)
       log "Node #{nid}: #{qemu_anon_kb >> 10}M  #{percent}%"
     end
-    show_dram_percent(dram_sum, proc_numa_maps)
+    show_dram_percent(proc_numa_maps)
   end
 
   # In the below scenario,
@@ -252,7 +253,6 @@ class VMTest
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
     rss_per_node = calc_target_rss_per_node(proc_numa_maps)
-    dram_sum = 0
     log
     log "Check eat DRAM memory"
     @dram_nodes.each do |nid|
@@ -270,11 +270,10 @@ class VMTest
         free_kb -= [free_kb, MIN_FREE_KB].min        # Linux will reserve some free memory
       end
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
-      dram_sum += qemu_anon_kb
       log "Node #{nid}: free #{free_kb >> 10}M  qemu #{qemu_anon_kb >> 10}M => #{rss_per_node >> 10}M"
       spawn_usemem(nid, free_kb + qemu_anon_kb - rss_per_node)
     end
-    show_dram_percent(dram_sum, proc_numa_maps)
+    show_dram_percent(proc_numa_maps)
   end
 
   def spawn_usemem(nid, kb)
