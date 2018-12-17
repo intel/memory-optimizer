@@ -245,9 +245,8 @@ class VMTest
   #         929,556   8%  anon node 15
   def calc_target_rss_per_node(proc_numa_maps)
     other_dram_nodes = @scheme["dram_nodes"] - @dram_nodes
-    other_dram_kb = other_dram_nodes.inject do |sum, nid|
-      sum + (proc_numa_maps.numa_kb["N#{nid}"] || 0)
-    end
+    other_dram_kb = 0
+    other_dram_nodes.each do |nid| other_dram_kb += (proc_numa_maps.numa_kb["N#{nid}"] || 0) end
     dram_rss_kb = @qemu_rss_kb / (1 + @ratio)
     (dram_rss_kb - other_dram_kb) / @dram_nodes.size
   end
