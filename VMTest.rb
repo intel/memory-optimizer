@@ -287,7 +287,12 @@ class VMTest
       warn "WARNING: not starting usemem due to negative kb = #{kb}" if kb < -(1000<<10)
       return
     end
-    cmd = "numactl --membind #{nid} usemem --detach --pid-file #{@usemem_pid_file} --sleep -1 --step 2m --mlock --prefault #{kb >> 10}m"
+    if @scheme['hugetlb']
+      usemem_hugetlb = "--hugetlb"
+    else
+      usemem_hugetlb = nil
+    end
+    cmd = "numactl --membind #{nid} usemem --detach --pid-file #{@usemem_pid_file} --sleep -1 --step 2m --mlock --prefault #{usemem_hugetlb} #{kb >> 10}m"
     log cmd
     system(*cmd.split)
   end
