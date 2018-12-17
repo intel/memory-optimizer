@@ -245,7 +245,8 @@ class VMTest
     other_dram_kb = other_dram_nodes.inject do |sum, nid|
       sum + (proc_numa_maps.numa_kb["N#{nid}"] || 0)
     end
-    (@qemu_rss_kb - other_dram_kb) / (1 + @ratio) / @dram_nodes.size
+    dram_rss_kb = @qemu_rss_kb / (1 + @ratio)
+    (dram_rss_kb - other_dram_kb) / @dram_nodes.size
   end
 
   def eat_mem(is_squeeze = false)
