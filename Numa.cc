@@ -56,6 +56,7 @@ void NumaNodeCollection::init_cpu_map(void)
 
 void NumaNodeCollection::collect(NumaHWConfig *numa_option)
 {
+  nr_possible_node_ = numa_max_node() + 1;
   // numa_option has higher priority
   // FIXME: need sync collect_by_config() with new added fields (demote_node and so on)
   //        before enable overwrite logic
@@ -79,7 +80,6 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
    * FIXME: Rewrite NUMA topology parsing with HMAT utility
    * after it is available.
    */
-  nr_possible_node_ = numa_max_node() + 1;
   dram_mask = numa_parse_nodestring(numa_option->numa_dram_list.c_str());
   pmem_mask = numa_parse_nodestring(numa_option->numa_pmem_list.c_str());
   if (!dram_mask || !pmem_mask) {
