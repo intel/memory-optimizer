@@ -205,11 +205,42 @@ class VMTest
     show_dram_percent(dram_sum, proc_numa_maps)
   end
 
+  # In the below scenario,
+  #   @dram_nodes = [0, 1]
+  #   other_dram_nodes = (2..7)
+  #   @ratio = 4
+  # This calculates the target RSS for node 0/1 given the expected @ratio.
+  # Anonymous page distribution across NUMA nodes:
+  #      11,385,036       anon total
+  #       1,324,180  11%  anon node 0
+  #       1,291,004  11%  anon node 1
+  #         182,088   1%  anon node 2
+  #         182,388   1%  anon node 3
+  #         277,508   2%  anon node 4
+  #         182,464   1%  anon node 5
+  #         182,452   1%  anon node 6
+  #         182,340   1%  anon node 7
+  #       1,026,100   9%  anon node 8
+  #         949,632   8%  anon node 9
+  #         929,948   8%  anon node 10
+  #         929,552   8%  anon node 11
+  #         950,232   8%  anon node 12
+  #         932,740   8%  anon node 13
+  #         932,852   8%  anon node 14
+  #         929,556   8%  anon node 15
+  def calc_target_rss_per_node(proc_numa_maps)
+    other_dram_nodes = @scheme["dram_nodes"] - @dram_nodes
+    other_dram_kb = other_dram_nodes.inject do |sum, nid|
+      sum + (proc_numa_maps.numa_kb["N#{nid}"] || 0)
+    end
+    (@qemu_rss_kb - other_dram_kb) / (1 + @ratio) / @dram_nodes.size
+  end
+
   def eat_mem(is_squeeze = false)
-    rss_per_node = @qemu_rss_kb / (1 + @ratio) / @dram_nodes.size
     proc_vmstat = ProcVmstat.new
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
+    rss_per_node = calc_target_rss_per_node(proc_numa_maps)
     dram_sum = 0
     log
     log "Check eat DRAM memory"
