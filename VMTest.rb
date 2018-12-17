@@ -277,7 +277,7 @@ class VMTest
   end
 
   def spawn_usemem(nid, kb)
-    if kb < 0
+    if kb < 1024
       warn "WARNING: not starting usemem due to negative kb = #{kb}" if kb < -(1000<<10)
       return
     end
