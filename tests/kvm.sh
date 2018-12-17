@@ -5,6 +5,7 @@
 	/c/linux/arch/x86/boot/bzImage
 )
 
+[[ $qemu_cmd ]] || qemu_cmd=qemu-system-x86_64
 [[ $qemu_smp ]] || qemu_smp='cpus=32'
 [[ $qemu_mem ]] || qemu_mem='128G'
 [[ $qemu_ssh ]] || qemu_ssh='2222'
@@ -14,7 +15,7 @@
 
 kvm=(
 	$numactl
-	qemu-system-x86_64
+	$qemu_cmd
 	-machine pc,nvdimm
 	-cpu host
 	-enable-kvm

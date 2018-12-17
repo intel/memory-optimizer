@@ -46,6 +46,7 @@ class VMTest
 
   def setup_params
     @qemu_script = @scheme["qemu_script"]   || "kvm.sh"
+    @qemu_cmd    = @scheme["qemu_cmd"]      || "qemu-system-x86_64"
     @qemu_smp    = @scheme["qemu_smp"].to_s || "32"
     @qemu_mem    = @scheme["qemu_mem"]      || "128G"
     @qemu_ssh    = @scheme["qemu_ssh"].to_s || "2222"
@@ -103,6 +104,7 @@ class VMTest
   def spawn_qemu
     env = {
       "interleave" => @all_nodes.join(','),
+      "qemu_cmd" => @qemu_cmd,
       "qemu_smp" => @qemu_smp,
       "qemu_mem" => @qemu_mem,
       "qemu_ssh" => @qemu_ssh,
