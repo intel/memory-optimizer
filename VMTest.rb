@@ -79,6 +79,17 @@ class VMTest
     system 'cp', File.join(@conf_dir, @scheme['migrate_config']), @time_dir
   end
 
+  def check_child(pid)
+      begin
+        # nil   => running
+        # pid   => stopped
+        return Process.waitpid(pid, Process::WNOHANG)
+      rescue
+        # false => no longer exist
+        return false
+      end
+  end
+
   def kill_wait(pid)
     begin
       Process.kill 'KILL', pid
@@ -288,35 +299,29 @@ class VMTest
       rounds = 2
       percent = 50
       10.times do
-        stopped = wait_for_migration_progress sounds, percent
+        break if wait_for_migration_progress(rounds, percent) == false
         eat_mem :squeeze
-        break if stopped
         rounds += 2 + (rounds / 4)
         percent = 1 + (percent / 2)
       end
+      eat_mem :squeeze
   end
 
   def wait_for_migration_progress(rounds, percent)
-    10.times do
-      sleep 60
-
-      begin
-        return true if Process.waitpid(@migrate_pid, Process::WNOHANG)
-      rescue
-        return true
-      end
-
+    10.times do |i|
+      sleep i * 10
+      return false if check_child(@migrate_pid) == false
       count = 0
       File.open(@migrate_log).each do |line|
         if line =~ /^need to migrate: +[0-9,]+ +(\d+)% of /
           count += 1
-          return if count >= rounds
-          return if $1.to_i < percent
+          return true if count >= rounds
+          return true if $1.to_i < percent
         end
       end
     end
     # wait at most 600 seconds
-    false
+    return true
   end
 
   def run_one(should_migrate = false)
