@@ -272,7 +272,9 @@ class VMTest
       end
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
       log "Node #{nid}: free #{free_kb >> 10}M  qemu #{qemu_anon_kb >> 10}M => #{rss_per_node >> 10}M"
-      spawn_usemem(nid, free_kb + qemu_anon_kb - rss_per_node)
+      free_kb /= 2    # eat memory step by step in a dynamic environment, to avoid OOM kill
+      eat_kb = free_kb + qemu_anon_kb - rss_per_node
+      spawn_usemem(nid, eat_kb)
     end
     show_dram_percent(proc_numa_maps)
   end
@@ -295,16 +297,16 @@ class VMTest
   end
 
   def eat_mem_loop
-      eat_mem
-      rounds = 2
-      percent = 50
-      10.times do
-        break if wait_for_migration_progress(rounds, percent) == false
-        eat_mem :squeeze
-        rounds += 2 + (rounds / 4)
-        percent = 1 + (percent / 2)
-      end
+    5.times do |i| eat_mem; sleep i end
+    rounds = 2
+    percent = 50
+    10.times do
+      break if wait_for_migration_progress(rounds, percent) == false
       eat_mem :squeeze
+      rounds += 2 + (rounds / 4)
+      percent = 1 + (percent / 2)
+    end
+    eat_mem :squeeze
   end
 
   def wait_for_migration_progress(rounds, percent)
