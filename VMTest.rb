@@ -436,7 +436,7 @@ class VMTest
     @scheme["workload_params"].each do |params|
       @workload_params = params
       run_one unless @scheme["skip_baseline_run"]
-      run_one should_migrate: true unless @dram_nodes.empty?
+      run_one should_migrate: true unless (@dram_nodes.empty? || @scheme["skip_migration_run"])
     end
   end
 
