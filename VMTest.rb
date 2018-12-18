@@ -23,7 +23,7 @@ require_relative "ProcNumaMaps"
 
 class VMTest
 
-  MIN_FREE_KB = 180<<10
+  MIN_FREE_KB = 500<<10
 
   attr_accessor :transparent_hugepage
   attr_accessor :qemu_script
