@@ -276,6 +276,7 @@ class VMTest
       log "Node #{nid}: free #{free_kb >> 10}M  qemu #{qemu_anon_kb >> 10}M => #{rss_per_node >> 10}M"
       free_kb /= 2    # eat memory step by step in a dynamic environment, to avoid OOM kill
       eat_kb = free_kb + qemu_anon_kb - rss_per_node
+      eat_kb -= eat_kb >> 9  # account for 8/4096 page table pages
       spawn_usemem(nid, eat_kb)
     end
     show_dram_percent(proc_numa_maps)
