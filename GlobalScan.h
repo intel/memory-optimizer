@@ -60,6 +60,7 @@ class GlobalScan
     unsigned long get_dram_anon_bytes();
 
     unsigned long calc_migrated_bytes();
+    void show_migrate_speed(float delta_time);
 
   private:
     static const float MIN_INTERVAL;

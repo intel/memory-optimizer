@@ -333,9 +333,13 @@ void GlobalScan::migrate()
   gettimeofday(&ts_end, NULL);
 
   proc_vmstat.show_numa_stats(&numa_collection);
+  show_migrate_speed(tv_secs(ts_begin, ts_end));
+}
 
-  float delta_time = tv_secs(ts_begin, ts_end);
+void GlobalScan::show_migrate_speed(float delta_time)
+{
   unsigned long migrated_kb = calc_migrated_bytes() >> 10;
+
   printf("Migration speed: moved %'lu KB in %.2f seconds (%'lu KB/sec)\n",
          migrated_kb, delta_time,
          (unsigned long)(migrated_kb / (delta_time + 0.0000001)));
