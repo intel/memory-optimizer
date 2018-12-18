@@ -359,7 +359,7 @@ void GlobalScan::update_interval(bool finished)
          (double) interval,
          (double) real_interval,
          (double) ratio,
-         (double) 100 * young_bytes / all_bytes);
+         (double) 100 * young_bytes / (all_bytes + 1));
 
   interval = real_interval * ratio;
   if (interval < 0.000001)
