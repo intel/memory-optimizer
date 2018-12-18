@@ -340,7 +340,7 @@ void GlobalScan::migrate()
   migrated_kb = calc_migrated_bytes() >> 10;
   printf("Migration speed: moved %'lu KB in %.2f seconds (%'lu KB/sec)\n",
          migrated_kb, delta_time,
-         migrated_kb / ((unsigned long)delta_time + 1));
+         (unsigned long)(migrated_kb / (delta_time + 0.0000001)));
 }
 
 void GlobalScan::update_interval(bool finished)
