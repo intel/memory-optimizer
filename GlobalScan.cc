@@ -309,8 +309,6 @@ void GlobalScan::consumer_loop()
 void GlobalScan::migrate()
 {
   timeval ts_begin, ts_end;
-  float delta_time;
-  unsigned long migrated_kb;
   int nr = 0;
   Job job;
 
@@ -336,8 +334,8 @@ void GlobalScan::migrate()
 
   proc_vmstat.show_numa_stats(&numa_collection);
 
-  delta_time = tv_secs(ts_begin, ts_end);
-  migrated_kb = calc_migrated_bytes() >> 10;
+  float delta_time = tv_secs(ts_begin, ts_end);
+  unsigned long migrated_kb = calc_migrated_bytes() >> 10;
   printf("Migration speed: moved %'lu KB in %.2f seconds (%'lu KB/sec)\n",
          migrated_kb, delta_time,
          (unsigned long)(migrated_kb / (delta_time + 0.0000001)));
