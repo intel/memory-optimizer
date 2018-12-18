@@ -47,9 +47,9 @@ class VMTest
   def setup_params
     @qemu_script = @scheme["qemu_script"]   || "kvm.sh"
     @qemu_cmd    = @scheme["qemu_cmd"]      || "qemu-system-x86_64"
-    @qemu_smp    = @scheme["qemu_smp"].to_s || "32"
+    @qemu_smp    =(@scheme["qemu_smp"]      || "32").to_s
     @qemu_mem    = @scheme["qemu_mem"]      || "128G"
-    @qemu_ssh    = @scheme["qemu_ssh"].to_s || "2222"
+    @qemu_ssh    =(@scheme["qemu_ssh"]      || "2222").to_s
 
     @transparent_hugepage = @scheme["transparent_hugepage"] || "never"
 
