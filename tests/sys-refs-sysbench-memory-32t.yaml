@@ -1,6 +1,6 @@
 options:
   dump_options: false
-  exit_on_stabilized: 3
+  # exit_on_stabilized: 3
   initial_interval: 1
 
 policies:

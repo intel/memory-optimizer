@@ -25,6 +25,7 @@ ratios: # PMEM:DRAM
 qemu_script: kvm-wfg.sh
 qemu_ssh: 2225
 #skip_baseline_run: true
+one_way_migrate: 1
 workload_script: run-sysbench-memory.sh
 workload_params:
 - &params

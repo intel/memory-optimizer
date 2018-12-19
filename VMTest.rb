@@ -101,9 +101,9 @@ class VMTest
     end
   end
 
-  def spawn_qemu
+  def spawn_qemu(one_way)
     env = {
-      "interleave" => @all_nodes.join(','),
+      "interleave" => (one_way ? @pmem_nodes : @all_nodes).join(','),
       "qemu_cmd" => @qemu_cmd,
       "qemu_smp" => @qemu_smp,
       "qemu_mem" => @qemu_mem,
@@ -254,6 +254,7 @@ class VMTest
   end
 
   def eat_mem(is_squeeze = false)
+    return if @scheme["one_way_migrate"]
     proc_vmstat = ProcVmstat.new
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
@@ -308,6 +309,7 @@ class VMTest
   end
 
   def eat_mem_loop
+    return if @scheme["one_way_migrate"]
     5.times do |i| eat_mem; sleep i end
     rounds = 2
     percent = 50
@@ -356,7 +358,7 @@ class VMTest
     puts "less #{log_file}"
     log "Running test with params #{@workload_params} should_migrate=#{should_migrate}"
 
-    spawn_qemu
+    spawn_qemu(should_migrate && @scheme["one_way_migrate"])
     wait_vm
 
     rsync_workload
@@ -449,6 +451,12 @@ class VMTest
   def save_migrate_yaml
     m = YAML.load_file File.join(@conf_dir, @scheme['migrate_config'])
     m["numa_nodes"] = gen_numa_nodes_conf
+    if @scheme["one_way_migrate"]
+      m["options"]["exit_on_exceeded"] = 1
+      m["options"]["dram_percent"] = 100 / (@ratio + 1)
+    else
+      m["options"]["exit_on_stabilized"] = 3
+    end
     @ratio_dir = File.join(@time_dir, "ratio=#{@ratio}")
     @migrate_config = File.join(@ratio_dir, @scheme['migrate_config'])
     system('mkdir', '-p', @ratio_dir)
