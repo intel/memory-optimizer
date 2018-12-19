@@ -302,7 +302,7 @@ class VMTest
 
   def spawn_migrate
     dram_percent = 100 / (@ratio + 1)
-    cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@conf_dir}/#{@scheme['migrate_config']}"
+    cmd = "stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@migrate_config}"
     log cmd + " > " + @migrate_log
     @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
   end
@@ -340,7 +340,7 @@ class VMTest
   def run_one(should_migrate = false)
     path_params = @workload_params.map { |k,v| "#{k}=#{v}" }.join('#')
     path_params += '.' + @migrate_script if should_migrate
-    log_dir = File.join(@time_dir, "ratio=#{@ratio}", path_params)
+    log_dir = File.join(@ratio_dir, path_params)
     log_file = File.join(log_dir, 'log')
     @workload_log = File.join(log_dir, @workload_script + ".log")
     @migrate_log  = File.join(log_dir, @migrate_script  + ".log")
@@ -435,6 +435,28 @@ class VMTest
     @all_nodes = @dram_nodes + @pmem_nodes
   end
 
+  def gen_numa_nodes_conf
+    numa_nodes = Hash.new
+    @dram_nodes.each_with_index do |nid, i|
+      numa_nodes[nid] = { "type" => "DRAM", "demote_to" => @pmem_nodes[i] }
+    end
+    @pmem_nodes.each_with_index do |nid, i|
+      numa_nodes[nid] = { "type" => "PMEM", "promote_to" => @dram_nodes[i % @dram_nodes.size] }
+    end
+    numa_nodes
+  end
+
+  def save_migrate_yaml
+    m = YAML.load_file File.join(@conf_dir, @scheme['migrate_config'])
+    m["numa_nodes"] = gen_numa_nodes_conf
+    @ratio_dir = File.join(@time_dir, "ratio=#{@ratio}")
+    @migrate_config = File.join(@ratio_dir, @scheme['migrate_config'])
+    system('mkdir', '-p', @ratio_dir)
+    File.open(@migrate_config, 'w') do |file|
+      file.write YAML.dump(m)
+    end
+  end
+
   def run_group
     @scheme["workload_params"].each do |params|
       @workload_params = params
@@ -453,6 +475,7 @@ class VMTest
     @scheme["ratios"].each do |ratio|
       @ratio = ratio
       setup_nodes(ratio)
+      save_migrate_yaml
       run_group
     end
   end
