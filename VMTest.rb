@@ -270,12 +270,11 @@ class VMTest
         # At this time, QEMU may well take fewer DRAM than target ratio.
         numa_vmstat = proc_vmstat.numa_vmstat[nid]
         free_kb = numa_vmstat['nr_free_pages']
-        free_kb += numa_vmstat['nr_inactive_file'] / 2
         free_kb *= ProcVmstat::PAGE_SIZE >> 10
-        free_kb -= [free_kb, MIN_FREE_KB].min        # Linux will reserve some free memory
       end
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
       log "Node #{nid}: free #{free_kb >> 10}M  qemu #{qemu_anon_kb >> 10}M => #{rss_per_node >> 10}M"
+      free_kb -= [free_kb, MIN_FREE_KB].min        # Linux will reserve some free memory
       free_kb /= 2    # eat memory step by step in a dynamic environment, to avoid OOM kill
       eat_kb = free_kb + qemu_anon_kb - rss_per_node
       eat_kb -= eat_kb >> 9  # account for 8/4096 page table pages
