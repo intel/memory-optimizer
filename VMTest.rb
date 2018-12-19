@@ -212,7 +212,7 @@ class VMTest
     proc_numa_maps.load(@qemu_pid)
     log
     log "QEMU anon pages distribution:"
-    @dram_nodes.each do |nid|
+    (@scheme["dram_nodes"] + @scheme["pmem_nodes"]).each do |nid|
       qemu_anon_kb = proc_numa_maps.numa_kb["N#{nid}"] || 0
       percent = 100 * qemu_anon_kb / (@qemu_rss_kb + 1)
       log "Node #{nid}: #{qemu_anon_kb >> 10}M  #{percent}%"
