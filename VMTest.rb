@@ -204,7 +204,7 @@ class VMTest
     log "QEMU numa #{proc_numa_maps.total_numa_kb >> 10}M"
     log "QEMU anon #{total_anon_kb >> 10}M"
     log "QEMU RSS  #{@qemu_rss_kb >> 10}M"
-    log "QEMU DRAM percent #{100 * dram_rss_kb / total_anon_kb}%  target #{100 / (1 + @ratio)}%"
+    log "QEMU DRAM #{dram_rss_kb >> 10}M  percent #{100 * dram_rss_kb / total_anon_kb}%  target #{100 / (1 + @ratio)}%"
   end
 
   def show_qemu_placement
