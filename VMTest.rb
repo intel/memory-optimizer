@@ -313,11 +313,11 @@ class VMTest
     percent = 50
     10.times do
       break if wait_for_migration_progress(rounds, percent) == false
-      eat_mem :squeeze
+      9.times do |i| break unless eat_mem :squeeze; sleep 1 end
       rounds += 2 + (rounds / 4)
       percent = 1 + (percent / 2)
     end
-    9.times do |i| break unless eat_mem :squeeze; sleep i end
+    99.times do |i| break unless eat_mem :squeeze; sleep 1 end
   end
 
   def wait_for_migration_progress(rounds, percent)
