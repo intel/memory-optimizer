@@ -100,6 +100,8 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("bandwidth_mbps",  bandwidth_mbps);
       OP_GET_VALUE("dram_percent",    dram_percent);
       OP_GET_VALUE("output",          output_file);
+      OP_GET_VALUE("hugetlb",         hugetlb);
+      OP_GET_VALUE("thp",             thp);
       OP_GET_VALUE("exit_on_stabilized", exit_on_stabilized);
       OP_GET_VALUE("numa_dram_nodes", numa_hw_config.numa_dram_list);
       OP_GET_VALUE("numa_pmem_nodes", numa_hw_config.numa_pmem_list);

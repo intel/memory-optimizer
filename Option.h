@@ -128,6 +128,9 @@ public:
   bool exit_on_exceeded = false; // when exceed dram_percent
   bool dump_options = false;
 
+  int hugetlb = 0;
+  int thp = 0;
+
   int max_threads = 0;
   unsigned long split_rss_size = 0; // no split task address space
 
