@@ -52,7 +52,8 @@ struct NumaHWConfig{
   std::string pmem_dram_map;
 };
 
-typedef std::vector< std::unordered_map<std::string, std::string> > NumaHWConfigV2;
+typedef std::unordered_map<std::string, std::string> NumaHWConfigEntry;
+typedef std::vector<NumaHWConfigEntry> NumaHWConfigV2;
 
 struct Option
 {

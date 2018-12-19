@@ -1,5 +1,5 @@
 #include "Option.h"
-
+#include "lib/stats.h"
 #include <iostream>
 
 std::unordered_map<std::string, bool> Option::bool_name_map = {
@@ -65,6 +65,21 @@ void Option::dump()
       printf("placement: %d\n", policies[i].placement);
       printf("dump_distribution: %d\n", policies[i].dump_distribution);
       printf("\n");
+  }
+
+  printf("Numa HW Config V2:\n");
+  for(auto &numa_config_item : numa_hw_config_v2) {
+    std::string id = "unknown";
+    std::string type = "unknown";
+    std::string link_to = "unknown";
+
+    find_map(numa_config_item, "id", id);
+    find_map(numa_config_item, "type", type);
+    find_map(numa_config_item, "promote_to", link_to);
+    find_map(numa_config_item, "demote_to", link_to);
+
+    printf("id: %s type: %s linkto: %s\n",
+           id.c_str(), type.c_str(), link_to.c_str());
   }
 
   printf("option dump end.\n");

@@ -24,10 +24,16 @@ class OptionParser: public Option
     int parse_policies(YAML::Node &&policies_node);
     void parse_one_policy(YAML::Node &&policy_node);
     void parse_common_policy(const YAML::const_iterator& iter, Policy& policy);
+    void parse_numa_nodes(YAML::Node &numa_nodes);
+    void parse_one_numa_node(YAML::Node &one_numa_node, NumaHWConfigEntry &one_entry);
 
     template<typename Tval>
     int get_value(const YAML::const_iterator  &iter,
                   const char* key_name, Tval &value);
+    //specialize for YAML::Node as value type
+    int get_value(const YAML::const_iterator  &iter,
+                  const char* key_name, YAML::Node &value);
+
 };
 
 #endif

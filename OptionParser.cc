@@ -64,6 +64,20 @@ int OptionParser::get_value(const YAML::const_iterator  &iter,
   return 0;
 }
 
+int OptionParser::get_value(const YAML::const_iterator  &iter,
+                            const char* key_name, YAML::Node &value)
+{
+  std::string key = iter->first.as<std::string>();
+  if (!key.compare(key_name))
+  {
+    value = iter->second;
+    return 1;
+  }
+
+  return 0;
+}
+
+
 int OptionParser::parse_option(YAML::Node &&option_node)
 {
     if (!option_node)
@@ -103,10 +117,47 @@ int OptionParser::parse_option(YAML::Node &&option_node)
         continue;
       }
 
+      YAML::Node sub_node;
+      if (get_value(iter, "numa_nodes", sub_node)) {
+        parse_numa_nodes(sub_node);
+        continue;
+      }
+
       // parse_common_policy(iter, default_policy);
     }
 
     return 0;
+}
+
+void OptionParser::parse_numa_nodes(YAML::Node &numa_nodes)
+{
+  std::string id;
+  YAML::Node node_entry;
+  NumaHWConfigEntry new_config_entry;
+
+  for (auto iter = numa_nodes.begin();
+       iter != numa_nodes.end();
+       ++iter) {
+    new_config_entry.clear();
+
+    id = iter->first.as<std::string>();
+    node_entry = iter->second;
+
+    parse_one_numa_node(node_entry, new_config_entry);
+    new_config_entry["id"] = id;
+
+    numa_hw_config_v2.push_back(new_config_entry);
+  }
+}
+
+void OptionParser::parse_one_numa_node(YAML::Node &one_numa_node,
+                                       NumaHWConfigEntry &one_entry)
+{
+  for (auto iter = one_numa_node.begin();
+       iter != one_numa_node.end();
+       ++iter)
+    one_entry[iter->first.as<std::string>()]
+      = iter->second.as<std::string>();
 }
 
 int OptionParser::parse_policies(YAML::Node &&policies_node)
