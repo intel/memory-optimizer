@@ -291,7 +291,7 @@ class VMTest
       return
     end
     if @scheme['hugetlb']
-      usemem_hugetlb = "--hugetlb"
+      usemem_hugetlb = "--hugetlb --anonymous"
     else
       usemem_hugetlb = nil
     end
