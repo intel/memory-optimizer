@@ -22,27 +22,6 @@ std::unordered_map<std::string, Placement> Option::placement_name_map = {
   {"aep", PLACEMENT_AEP},
 };
 
-Option::Option()
-{
-  nr_loops = 0;
-  nr_walks = 0; // auto stop when nr_top_pages can fit in half DRAM size
-  max_walks = 10;
-  interval = 0; // auto adjust
-  initial_interval = 0.1;
-  sleep_secs = 1;
-  migrate_what = MIGRATE_HOT;
-  hot_min_refs = -1;
-  cold_max_refs = -1;
-  pid = -1;
-
-  max_threads = 0;
-  split_rss_size = 0; // no split task address space
-
-  exit_on_stabilized = 0; // percent moved
-  exit_on_exceeded = false; // when exceed dram_percent
-  dump_options = false;
-}
-
 int Option::set_dram_percent(int dp)
 {
   if (dp < 0 || dp > 100) {

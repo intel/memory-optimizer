@@ -38,7 +38,6 @@ struct Policy
   Placement placement;
   bool dump_distribution;
 };
-
 typedef std::vector<Policy> PolicySet;
 
 
@@ -53,11 +52,10 @@ struct NumaHWConfig{
   std::string pmem_dram_map;
 };
 
+typedef std::vector< std::unordered_map<std::string, std::string> > NumaHWConfigV2;
 
 struct Option
 {
-  Option();
-
   int set_dram_percent(int dp);
 
   int add_policy(Policy& new_policy);
@@ -102,7 +100,7 @@ struct Option
   }
 
 public:
-  int debug_level;
+  int debug_level = 0;
 
   static const int DRAM_NUMA_NODE = 0;
   static const int PMEM_NUMA_NODE = 1;
@@ -111,34 +109,35 @@ public:
   static std::unordered_map<std::string, MigrateWhat> migrate_name_map;
   static std::unordered_map<std::string, Placement> placement_name_map;
 
-  pid_t pid;
+  pid_t pid = -1;
 
-  float initial_interval;
-  float interval;
-  float sleep_secs;
-  int max_walks;
-  int nr_walks;
-  int nr_loops;
+  float initial_interval = 0.1;
+  float interval = 0; // auto adjust
+  float sleep_secs = 1;
+  int max_walks = 10;
+  int nr_walks = 0; // auto stop when nr_top_pages can fit in half DRAM size
+  int nr_loops = 0;
 
   // set either dram_percent or hot_min_refs/cold_max_refs, but not both
-  int dram_percent;
-  int hot_min_refs;
-  int cold_max_refs;
+  int dram_percent = 0;
+  int hot_min_refs = -1;
+  int cold_max_refs = -1;
 
-  int exit_on_stabilized;
-  bool exit_on_exceeded;
-  bool dump_options;
+  int exit_on_stabilized = 0; // percent moved
+  bool exit_on_exceeded = false; // when exceed dram_percent
+  bool dump_options = false;
 
-  int max_threads;
-  unsigned long split_rss_size;
+  int max_threads = 0;
+  unsigned long split_rss_size = 0; // no split task address space
 
-  float bandwidth_mbps;
-  MigrateWhat migrate_what;
+  float bandwidth_mbps = 0;
+  MigrateWhat migrate_what = MIGRATE_HOT;
 
   std::string output_file;
   std::string config_file;
 
   NumaHWConfig numa_hw_config;
+  NumaHWConfigV2 numa_hw_config_v2;
 
   int debug_move_pages = 0;
 
