@@ -73,7 +73,7 @@ unsigned long MoveStats::get_moved_bytes()
       continue;
 
     if (from != to
-        && result >= 0)
+        && to == result)
       moved_bytes += i.second;
   }
 
