@@ -260,6 +260,7 @@ class VMTest
     rss_per_node = calc_target_rss_per_node(proc_numa_maps)
     log
     log "Check eat DRAM memory"
+    progress = false
     @dram_nodes.each do |nid|
       if is_squeeze
         # After rounds of migration, expect little free DRAM left, while QEMU
@@ -278,9 +279,10 @@ class VMTest
       free_kb /= 2    # eat memory step by step in a dynamic environment, to avoid OOM kill
       eat_kb = free_kb + qemu_anon_kb - rss_per_node
       eat_kb -= eat_kb >> 9  # account for 8/4096 page table pages
-      spawn_usemem(nid, eat_kb)
+      progress = (spawn_usemem(nid, eat_kb) || progress)
     end
     show_dram_percent(proc_numa_maps)
+    progress
   end
 
   def spawn_usemem(nid, kb)
@@ -315,7 +317,7 @@ class VMTest
       rounds += 2 + (rounds / 4)
       percent = 1 + (percent / 2)
     end
-    eat_mem :squeeze
+    9.times do |i| break unless eat_mem :squeeze; sleep i end
   end
 
   def wait_for_migration_progress(rounds, percent)
