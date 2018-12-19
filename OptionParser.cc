@@ -90,6 +90,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("numa_dram_nodes", numa_hw_config.numa_dram_list);
       OP_GET_VALUE("numa_pmem_nodes", numa_hw_config.numa_pmem_list);
       OP_GET_VALUE("numa_peer_nodes", numa_hw_config.pmem_dram_map);
+      OP_GET_VALUE("debug_move_pages",    debug_move_pages);
 #undef OP_GET_VALUE
 
       std::string str_val;

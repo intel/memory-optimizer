@@ -140,6 +140,8 @@ public:
 
   NumaHWConfig numa_hw_config;
 
+  int debug_move_pages = 0;
+
   // Not used for now, so current sys-refs behavior is to ignore all processes
   // w/o a policy defined. In future, may consider applying this to all
   // processes in ProcessCollection::collect().

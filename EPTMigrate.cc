@@ -49,7 +49,7 @@ void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
   fmt.print("already in %4s: %'15lu %3d%% of %4s pages\n", node, skip_kb, percent(skip_kb, to_move_kb), type);
   fmt.print("need to migrate: %'15lu %3d%% of %4s pages\n", move_kb, percent(move_kb, to_move_kb), type);
 
-  if (debug_level() >= 1)
+  if (option.debug_move_pages)
     show_move_state(fmt);
 }
 
