@@ -20,6 +20,18 @@ void inc_count(M& map, const K& key)
   add_count(map, key, 1);
 }
 
+template<class M, class K, class V>
+int find_map(M& map, const K& key, V&& value)
+{
+  auto search = map.find(key);
+  if (search != map.end()) {
+    value = search->second;
+    return 1;
+  }
+
+  return 0;
+}
+
 template<class T>
 inline int percent(T n, T total)
 {
