@@ -120,11 +120,11 @@ int OptionParser::parse_option(YAML::Node &&option_node)
 
       std::string str_val;
       if (get_value(iter, "dump_options", str_val)) {
-        Option::parse_name_map(bool_name_map, str_val, dump_options, 1);
+        Option::parse_name_map(bool_name_map, str_val, dump_options, 2);
         continue;
       }
       if (get_value(iter, "exit_on_exceeded", str_val)) {
-        Option::parse_name_map(bool_name_map, str_val, exit_on_exceeded, 1);
+        Option::parse_name_map(bool_name_map, str_val, exit_on_exceeded, 2);
         continue;
       }
 
