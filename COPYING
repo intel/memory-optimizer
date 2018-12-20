@@ -1,0 +1,12 @@
+The memory-optimizer tools are provided under:
+
+	SPDX-License-Identifier: GPL-2.0
+
+Being under the terms of the GNU General Public License version 2 only,
+according with:
+
+	doc/GPL-2.0
+
+With explicit exceptions listed below:
+
+	Queue.h			BSD-2-Clause
