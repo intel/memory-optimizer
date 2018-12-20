@@ -54,6 +54,8 @@ void GlobalScan::main_loop()
     count_migrate_stats();
     if (exit_on_stabilized())
       break;
+    if (exit_on_exceeded())
+      break;
 
     double sleep_time = std::max(option.sleep_secs, 2 * interval);
     if (sleep_time > 10 * interval)
@@ -78,6 +80,22 @@ bool GlobalScan::exit_on_stabilized()
            EPTMigrate::sys_migrate_stats.move_kb    >> 10,
            EPTMigrate::sys_migrate_stats.to_move_kb >> 10);
     return true;
+}
+
+// use scheme:
+//   migration: hot
+//   dram_percent: xx
+//   initial placement: all in PMEM nodes
+//   final placement: dram_percent hot pages moved to DRAM nodes
+bool GlobalScan::exit_on_exceeded()
+{
+  if (!option.exit_on_exceeded)
+    return false;
+
+  if (get_dram_anon_bytes() >= dram_free_anon_bytes)
+      return true;
+
+  return false;
 }
 
 int GlobalScan::collect()
@@ -226,16 +244,6 @@ bool GlobalScan::should_stop_walk()
       return true;
   } else
     nr_acceptable_scans = 0;
-
-  // use scheme:
-  //   migration: hot
-  //   dram_percent: xx
-  //   initial placement: all in PMEM nodes
-  //   final placement: dram_percent hot pages moved to DRAM nodes
-  if (option.exit_on_exceeded) {
-    if (get_dram_anon_bytes() >= dram_free_anon_bytes)
-      return true;
-  }
 
   return false;
 }

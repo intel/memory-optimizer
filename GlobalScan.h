@@ -61,6 +61,7 @@ class GlobalScan
     void update_dram_free_anon_bytes();
     void reload_conf();
     bool exit_on_stabilized();
+    bool exit_on_exceeded();
 
     unsigned long accept_hot_bytes()   { return dram_free_anon_bytes * 3 / 4; }
     unsigned long target_young_bytes() { return dram_free_anon_bytes * 2 / 3; }
