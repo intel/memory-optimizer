@@ -1,4 +1,12 @@
 #!/usr/bin/ruby
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright (c) 2018 Intel Corporation
+#
+# Authors: Fengguang Wu <fengguang.wu@intel.com>
+#          Yao Yuan <yuan.yao@intel.com>
+#
 
 require 'yaml'
 require 'open3'
