@@ -200,7 +200,11 @@ class VMTest
   def read_qemu_rss
     proc_status = ProcStatus.new
     proc_status.load(@qemu_pid)
-    @qemu_rss_kb = proc_status["VmRSS"].to_i
+    if @scheme["hugetlb"]
+      @qemu_rss_kb = proc_status["HugetlbPages"].to_i
+    else
+      @qemu_rss_kb = proc_status["VmRSS"].to_i
+    end
     log "QEMU RSS: #{@qemu_rss_kb >> 10}M"
   end
 
