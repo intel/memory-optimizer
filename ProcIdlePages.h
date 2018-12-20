@@ -133,7 +133,7 @@ class ProcIdlePages
     ProcIdleRefs pagetype_refs[MAX_ACCESSED + 1];
 
   private:
-    static const int READ_BUF_SIZE = PAGE_SIZE * 32;
+    static const int READ_BUF_SIZE = 1 << 20;
 
     int idle_fd;
     std::vector<uint8_t> read_buf;
