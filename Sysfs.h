@@ -19,13 +19,18 @@ class Sysfs
 {
   public:
     int hugetlb(int nid, std::string name);
+    int hugetlb(std::string name);
     void load_hugetlb();
 
     bool file_exists(char path[]);
     int read_int(std::string dir, std::string name);
 
   private:
+    void load_global_hugetlb();
+
+  private:
     std::vector<std::unordered_map<std::string, int>> hugetlb_map;
+    std::unordered_map<std::string, int>       global_hugetlb_map;
 };
 
 #endif

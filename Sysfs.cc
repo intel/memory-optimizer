@@ -51,6 +51,20 @@ void Sysfs::load_hugetlb()
     read_hugetlb("surplus_hugepages");
 #undef read_hugetlb
   }
+
+  load_global_hugetlb();
+}
+
+void Sysfs::load_global_hugetlb()
+{
+  const char path[] = "/sys/kernel/mm/hugepages/hugepages-2048kB";
+#define read_hugetlb(name)  global_hugetlb_map[name] = read_int(path, name)
+  read_hugetlb("nr_hugepages");
+  read_hugetlb("free_hugepages");
+  read_hugetlb("surplus_hugepages");
+  read_hugetlb("nr_overcommit_hugepages");
+  read_hugetlb("resv_hugepages");
+#undef read_hugetlb
 }
 
 int Sysfs::hugetlb(int nid, std::string name)
@@ -58,4 +72,11 @@ int Sysfs::hugetlb(int nid, std::string name)
   if (hugetlb_map.empty())
     load_hugetlb();
   return hugetlb_map.at(nid).at(name);
+}
+
+int Sysfs::hugetlb(std::string name)
+{
+  if (global_hugetlb_map.empty())
+    load_global_hugetlb();
+  return global_hugetlb_map.at(name);
 }
