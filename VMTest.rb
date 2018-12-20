@@ -459,6 +459,10 @@ class VMTest
   def save_migrate_yaml
     m = YAML.load_file File.join(@conf_dir, @scheme['migrate_config'])
     m["numa_nodes"] = gen_numa_nodes_conf unless @dram_nodes.empty?
+    if @scheme['hugetlb']
+      m["options"]["hugetlb"] = 1
+      @scheme["one_way_migrate"] = 1 # no kernel hugetlb DRAM=>PMEM migration for now
+    end
     if @scheme["one_way_migrate"]
       m["options"]["exit_on_exceeded"] = 1
       m["options"]["dram_percent"] = 100 / (@ratio + 1)
