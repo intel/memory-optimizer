@@ -1,3 +1,15 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2018 Intel Corporation
+ *
+ * Authors: Fengguang Wu <fengguang.wu@intel.com>
+ *          Yao Yuan <yuan.yao@intel.com>
+ *          Peng Bo <bo2.peng@intel.com>
+ *          Peng Dong <dongx.peng@intel.com>
+ *          Zeng Zhiyi <zhiyi.zeng@intel.com>
+ */
+
 #include <fcntl.h>
 #include <iostream>
 #include <linux/limits.h>

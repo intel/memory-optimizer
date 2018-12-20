@@ -1,3 +1,13 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2018 Intel Corporation
+ *
+ * Authors: Yao Yuan <yuan.yao@intel.com>
+ *          Fengguang Wu <fengguang.wu@intel.com>
+ *          Liu Jingqi <jingqi.liu@intel.com>
+ */
+
 #ifndef _VMA_INSPECT_H
 #define _VMA_INSPECT_H
 

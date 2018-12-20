@@ -1,3 +1,14 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2018 Intel Corporation
+ *
+ * Authors: Fengguang Wu <fengguang.wu@intel.com>
+ *          Peng Bo <bo2.peng@intel.com>
+ *          Yao Yuan <yuan.yao@intel.com>
+ *          Liu Jingqi <jingqi.liu@intel.com>
+ */
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <getopt.h>

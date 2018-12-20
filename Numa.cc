@@ -1,4 +1,15 @@
 /*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2018 Intel Corporation
+ *
+ * Authors: Yao Yuan <yuan.yao@intel.com>
+ *          Huang Ying <ying.huang@intel.com>
+ *          Jin Yao <yao.jin@linux.intel.com>
+ *          Fengguang Wu <fengguang.wu@intel.com>
+ */
+
+/*
  * Copyright (c) 2018 Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without

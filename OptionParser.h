@@ -1,3 +1,12 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2018 Intel Corporation
+ *
+ * Authors: Fengguang Wu <fengguang.wu@intel.com>
+ *          Yao Yuan <yuan.yao@intel.com>
+ */
+
 #ifndef __OPTION_PARSER_H__
 #define __OPTION_PARSER_H__
 

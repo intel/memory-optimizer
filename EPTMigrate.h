@@ -1,3 +1,12 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2018 Intel Corporation
+ *
+ * Authors: Yao Yuan <yuan.yao@intel.com>
+ *          Fengguang Wu <fengguang.wu@intel.com>
+ */
+
 #ifndef _MIGRATION_H
 #define _MIGRATION_H
 

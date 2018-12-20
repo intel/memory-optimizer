@@ -1,3 +1,11 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2018 Intel Corporation
+ *
+ * Authors: Yao Yuan <yuan.yao@intel.com>
+ */
+
 #include <unistd.h>
 #include <string.h>
 #include <vector>

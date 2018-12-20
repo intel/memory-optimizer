@@ -1,3 +1,13 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2018 Intel Corporation
+ *
+ * Authors: Fengguang Wu <fengguang.wu@intel.com>
+ *          Yao Yuan <yuan.yao@intel.com>
+ *          Liu Jingqi <jingqi.liu@intel.com>
+ */
+
 #ifndef AEP_PROC_IDLE_PAGES_H
 #define AEP_PROC_IDLE_PAGES_H
 

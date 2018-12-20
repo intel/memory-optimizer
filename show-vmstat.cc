@@ -1,3 +1,11 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2018 Intel Corporation
+ *
+ * Authors: Fengguang Wu <fengguang.wu@intel.com>
+ */
+
 #include <iostream>
 
 #include "ProcVmstat.h"
