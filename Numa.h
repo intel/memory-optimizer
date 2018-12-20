@@ -188,7 +188,8 @@ private:
     int parse_sysfs_per_node(int node_id, NodeInfo& node_info);
     int parse_field(const char* field_name, std::string &value);
 
-    numa_node_type get_numa_type(std::string &type_str);
+    template<typename T>
+    numa_node_type get_node_type(T& map, std::string &type_str);
 
     int load_numa_info(NumaInfo& numa_info, int node_count);
     int create_node_objects(NumaInfo& numa_info);
@@ -196,6 +197,12 @@ private:
     void setup_node_relationship(NumaInfo& numa_info, bool is_bidir);
     void set_target_node(int node_id, int target_node_id, bool is_bidir);
     void set_default_target_node();
+
+    int get_node_id(NumaHWConfigEntry& entry);
+    int get_node_linkto(NumaHWConfigEntry& entry);
+    numa_node_type get_hwconfig_node_type(NumaHWConfigEntry& entry);
+    int create_node_objects(NumaHWConfigV2& numa_hw_config);
+    void setup_node_relationship(NumaHWConfigV2& numa_hw_config, bool is_bidir);
 };
 
 #endif /* __NUMA__HH__ */
