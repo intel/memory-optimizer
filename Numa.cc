@@ -66,19 +66,19 @@ void NumaNodeCollection::init_cpu_map(void)
   numa_free_cpumask(cpumask);
 }
 
-void NumaNodeCollection::collect(NumaHWConfig *numa_option)
+void NumaNodeCollection::collect(NumaHWConfig *numa_option,
+                                 NumaHWConfigV2 *numa_option_v2)
 {
   nr_possible_node_ = numa_max_node() + 1;
-  // numa_option has higher priority
-  // FIXME: need sync collect_by_config() with new added fields (demote_node and so on)
-  //        before enable overwrite logic
+
   if (numa_option && numa_option->is_valid())
     collect_by_config(numa_option);
+  else if (numa_option_v2 && !numa_option_v2->empty())
+    collect_by_config(numa_option_v2);
   else
     collect_by_sysfs();
 
   dump();
-
 }
 
 void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
@@ -134,6 +134,11 @@ void NumaNodeCollection::collect_by_config(NumaHWConfig *numa_option)
 
   numa_free_nodemask(dram_mask);
   numa_free_nodemask(pmem_mask);
+}
+
+void NumaNodeCollection::collect_by_config(NumaHWConfigV2 *numa_option)
+{
+
 }
 
 void NumaNodeCollection::collect_by_sysfs(void)

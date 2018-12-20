@@ -405,7 +405,8 @@ void GlobalScan::reload_conf()
 void GlobalScan::apply_option()
 {
   throttler.set_bwlimit_mbps(option.bandwidth_mbps);
-  numa_collection.collect(&option.numa_hw_config);
+  numa_collection.collect(&option.numa_hw_config,
+                          &option.numa_hw_config_v2);
 }
 
 unsigned long GlobalScan::calc_migrated_bytes()

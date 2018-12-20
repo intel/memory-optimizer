@@ -111,7 +111,6 @@ public:
         return NULL;
     }
   }
-
 };
 
 class NumaNodeCollection
@@ -134,7 +133,8 @@ class NumaNodeCollection
 public:
   using iterator = std::vector<NumaNode *>::iterator;
 
-  void collect(NumaHWConfig *numa_option = NULL);
+  void collect(NumaHWConfig *numa_option,
+               NumaHWConfigV2 *numa_option_v2);
   void collect_dram_nodes_meminfo(void);
   void check_dram_nodes_watermark(int watermark_percent);
   int get_node_lowest_cpu(int node);
@@ -182,6 +182,7 @@ public:
 
 private:
     void collect_by_config(NumaHWConfig *numa_option);
+    void collect_by_config(NumaHWConfigV2 *numa_option);
     void collect_by_sysfs(void);
 
     int parse_sysfs_per_node(int node_id, NodeInfo& node_info);
