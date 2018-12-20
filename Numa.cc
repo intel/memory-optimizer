@@ -158,6 +158,8 @@ void NumaNodeCollection::collect_by_config(NumaHWConfigV2 *numa_option)
 
   set_default_target_node();
   setup_node_relationship(*numa_option, false);
+
+  init_cpu_map();
 }
 
 void NumaNodeCollection::collect_by_sysfs(void)
