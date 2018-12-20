@@ -1,3 +1,15 @@
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright (c) 2018 Intel Corporation
+#
+# Authors: Fengguang Wu <fengguang.wu@intel.com>
+#          Yao Yuan <yuan.yao@intel.com>
+#          Bo Peng <bo2.peng@intel.com>
+#          Liu Jingqi <jingqi.liu@intel.com>
+#          Huang Ying <ying.huang@intel.com>
+#
+
 CC = gcc
 CXX = g++
 RM = rm

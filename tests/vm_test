@@ -1,3 +1,11 @@
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright (c) 2018 Intel Corporation
+#
+# Authors: Liu Jingqi <jingqi.liu@intel.com>
+#
+
 #!/bin/bash
 
 bc_scale="scale=2;"
