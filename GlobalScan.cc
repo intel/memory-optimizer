@@ -26,6 +26,8 @@ extern OptionParser option;
 const float GlobalScan::MIN_INTERVAL = 0.001;
 const float GlobalScan::MAX_INTERVAL = 10;
 
+#define HUGE_PAGE_SHIFT 21
+
 GlobalScan::GlobalScan() : conf_reload_flag(0)
 {
 }
@@ -185,14 +187,28 @@ void GlobalScan::count_migrate_stats()
 unsigned long GlobalScan::get_dram_anon_bytes()
 {
     unsigned long dram_anon = 0;
+    unsigned long pages;
+
+    if (option.hugetlb)
+      sysfs.load_hugetlb();
 
     for(auto node: numa_collection.get_dram_nodes()) {
       int nid = node->id();
-      dram_anon += proc_vmstat.vmstat(nid, "nr_active_anon");
-      dram_anon += proc_vmstat.vmstat(nid, "nr_inactive_anon");
+      if (option.hugetlb) {
+        pages = sysfs.hugetlb(nid, "nr_hugepages") -
+                sysfs.hugetlb(nid, "free_hugepages");
+        dram_anon += pages << HUGE_PAGE_SHIFT;
+      } else if (option.thp) {
+        pages = proc_vmstat.vmstat(nid, "nr_anon_transparent_hugepages");
+        dram_anon += pages << HUGE_PAGE_SHIFT;
+      } else {
+        pages = proc_vmstat.vmstat(nid, "nr_active_anon") +
+                proc_vmstat.vmstat(nid, "nr_inactive_anon");
+        dram_anon += pages << PAGE_SHIFT;
+      }
     }
 
-    return dram_anon << PAGE_SHIFT;
+    return dram_anon;
 }
 
 // similar to EPTScan::should_stop()

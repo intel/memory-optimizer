@@ -17,6 +17,7 @@
 #include "Process.h"
 #include "EPTMigrate.h"
 #include "BandwidthLimit.h"
+#include "Sysfs.h"
 #include "Numa.h"
 
 enum JobIntent
@@ -95,6 +96,7 @@ class GlobalScan
     BandwidthLimit throttler;
     NumaNodeCollection numa_collection;
     ProcVmstat proc_vmstat;
+    Sysfs sysfs;
 };
 
 #endif

@@ -23,7 +23,7 @@ TASK_REFS_SOURCE_FILES = Option.cc ProcIdlePages.cc ProcMaps.cc ProcVmstat.cc EP
 			 lib/debug.c lib/stats.h Formatter.h
 TASK_REFS_HEADER_FILES = $(TASK_REFS_SOURCE_FILES:.cc=.h)
 SYS_REFS_SOURCE_FILES = $(TASK_REFS_SOURCE_FILES) ProcPid.cc ProcStatus.cc Process.cc GlobalScan.cc Queue.h \
-						  OptionParser.cc
+						  OptionParser.cc Sysfs.cc
 SYS_REFS_HEADER_FILES = $(SYS_REFS_SOURCE_FILES:.cc=.h)
 
 OBJS = sys-refs page-refs task-maps show-vmstat addr-seq task-refs pid-list
