@@ -52,3 +52,10 @@ elif has_cmd yum; then
 else
 	echo "unknown system"
 fi
+
+cat <<EOF
+tests/run-vm-tests.rb may need the "usemem" tool:
+
+git clone https://git.kernel.org/pub/scm/linux/kernel/git/wfg/vm-scalability.git
+cd vm-scalability && make usemem && cp usemem /usr/local/bin/
+EOF
