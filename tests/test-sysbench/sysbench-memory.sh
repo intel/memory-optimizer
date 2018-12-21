@@ -192,11 +192,11 @@ run_tests()
 	#run_test c "-m0"
 }
 
-log_dir=$(basename $0)-$(date +'%Y%m%d_%H%M%S')
-mkdir -p $script_dir/$log_dir
-cp -a $script_path $script_dir/$log_dir/
-echo "less    $script_dir/$log_dir/*.?"
-echo "tail -f $script_dir/$log_dir/*.h | grcat $project_dir/tests/grc-conf.sys-refs"
+log_dir=$script_dir/$(basename $0)-$(date +'%Y%m%d_%H%M%S')
+mkdir -p $log_dir
+cp -a $script_path $log_dir/
+echo "less    $log_dir/*.?"
+echo "tail -f $log_dir/*.h | grcat $project_dir/tests/grc-conf.sys-refs"
 
 thp=always
 thp=never
