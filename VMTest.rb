@@ -475,7 +475,7 @@ class VMTest
       m["options"]["exit_on_stabilized"] = 3
     end
     @ratio_dir = File.join(@time_dir, "ratio=#{@ratio}")
-    @migrate_config = File.join(@ratio_dir, @scheme['migrate_config'])
+    @migrate_config = File.join(@ratio_dir, File.basename(@scheme['migrate_config']))
     system('mkdir', '-p', @ratio_dir)
     File.open(@migrate_config, 'w') do |file|
       file.write YAML.dump(m)
