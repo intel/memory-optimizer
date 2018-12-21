@@ -1,0 +1,49 @@
+setup notes:
+  HW: 2S machine, 1 DRAM node and 1 PMEM node per socket.
+  GRUB: numa=fake=4U default_hugepagesz=2M hugepagesz=2M hugepages=256000
+dram_nodes:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+pmem_nodes:
+- 8
+- 9
+- 10
+- 11
+- 12
+- 13
+- 14
+- 15
+ratios: # PMEM:DRAM
+- 0     # pure DRAM
+- 1
+- 2     # 2:1 PMEM:DRAM
+- 4
+- 999   # pure PMEM
+qemu_script: kvm-hugetlb.sh
+qemu_ssh: 2225
+qemu_mem: 70G # workload size + safety margin
+#skip_baseline_run: true
+hugetlb: true
+one_way_migrate: 1
+#transparent_hugepage: always
+workload_script: run-sysbench-memory.sh
+workload_params:
+- &params
+  time: 1200
+  threads: 32
+  memory_block_size: 2G
+  memory_scope: local
+  #memory_block_size: 64G
+  #memory_scope: global
+  rand_type: gaussian
+  memory_oper: read
+- <<: *params
+  memory_oper: write
+migrate_cmd: sys-refs
+migrate_config: sys-refs-sysbench-memory-32t.yaml
