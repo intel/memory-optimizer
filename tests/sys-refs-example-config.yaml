@@ -1,6 +1,3 @@
-Config file format:
-    format of configuration file:
----
 options:
     interval: 2             # interval between scans
     sleep: 3                # wait time between scan round
@@ -15,5 +12,3 @@ policies:
 
     - name: zsh             # process name filter
       placement: dram       # or aep
-...
-
