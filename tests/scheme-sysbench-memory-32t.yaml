@@ -22,7 +22,7 @@ ratios: # PMEM:DRAM
 - 2     # 2:1 PMEM:DRAM
 - 4
 - 999   # pure PMEM
-qemu_script: kvm-wfg.sh
+qemu_script: kvm.sh
 qemu_ssh: 2225
 #skip_baseline_run: true
 one_way_migrate: 1
