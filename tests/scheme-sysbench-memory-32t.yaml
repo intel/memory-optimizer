@@ -1,6 +1,7 @@
-setup notes:
-  HW: 2S machine, 1 DRAM node and 1 PMEM node per socket.
-  GRUB: numa=fake=4U
+#  setup notes:
+#    HW: 2S machine, 1 DRAM node and 1 PMEM node per socket.
+#    GRUB: numa=fake=4U
+
 dram_nodes:
 - 0
 - 1
