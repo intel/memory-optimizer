@@ -1,12 +1,3 @@
-Dependency:
-    Please install below packages before you start to make:
-
-    ubuntu:
-        sudo apt-get install libyaml-cpp-dev libnuma-dev
-    CentOS:
-        sudo yum install yaml-cpp-devel
-        sudo yum install numactl-libs.x86_64
-
 Config file format:
     format of configuration file:
 ---
