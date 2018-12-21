@@ -317,7 +317,8 @@ class VMTest
     dram_percent = 100 / (@ratio + 1)
     cmd = "/usr/bin/time -v stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@migrate_config}"
     log cmd + " > " + @migrate_log
-    @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'w'])
+    File.open(@migrate_log, 'w') do |f| f.puts cmd end
+    @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'a'])
   end
 
   def eat_mem_loop
