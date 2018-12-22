@@ -54,8 +54,13 @@ else
 fi
 
 cat <<EOF
-tests/run-vm-tests.rb may need the "usemem" tool:
+# tests/run-vm-tests.rb may need the "usemem" tool from
 
 git clone https://git.kernel.org/pub/scm/linux/kernel/git/wfg/vm-scalability.git
 cd vm-scalability && make usemem && cp usemem /usr/local/bin/
+
+# need latest sysbench for benchmarks
+
+git clone https://github.com/akopytov/sysbench
+cd sysbench && ./autogen.sh && ./configure && make && cp src/sysbench /usr/local/bin/
 EOF
