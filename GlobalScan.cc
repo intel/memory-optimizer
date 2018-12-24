@@ -180,7 +180,6 @@ void GlobalScan::walk_multi()
       usleep((interval - elapsed) * 1000000);
   }
 
-  printf("\n");
   update_interval(1);
 }
 
@@ -410,6 +409,16 @@ void GlobalScan::update_interval(bool finished)
     printd("interval %f x1.2 due to low nr_walks %d\n",
            (double) interval, nr_walks);
     interval *= 1.2;
+  }
+
+  if (finished) {
+    printf("target_young: %'luKB  %d%%  %d%%\n", target_young_bytes() >> 10,
+                                         percent(target_young_bytes(), young_bytes),
+                                         percent(target_young_bytes(), all_bytes));
+    printf("target_hot:   %'luKB  %d%%  %d%%\n", target_hot_bytes() >> 10,
+                                         percent(target_hot_bytes(), top_bytes),
+                                         percent(target_hot_bytes(), all_bytes));
+    printf("\n");
   }
 }
 
