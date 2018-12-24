@@ -209,8 +209,9 @@ class VMTest
   end
 
   def show_dram_percent(proc_numa_maps)
-    dram_rss_kb = @scheme["dram_nodes"].inject do |sum, nid|
-      sum + (proc_numa_maps.numa_kb["N#{nid}"] || 0)
+    dram_rss_kb = 0
+    @scheme["dram_nodes"].each do |nid|
+      dram_rss_kb += (proc_numa_maps.numa_kb["N#{nid}"] || 0)
     end
     total_anon_kb = proc_numa_maps.numa_kb['anon'] + 1
     log "QEMU numa #{proc_numa_maps.total_numa_kb >> 10}M"
