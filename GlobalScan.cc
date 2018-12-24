@@ -44,7 +44,7 @@ void GlobalScan::main_loop()
     interval = option.initial_interval;
 
   create_threads();
-  for (unsigned nround = 0; nround <= max_round; ++nround)
+  for (nround = 0; nround <= max_round; ++nround)
   {
     reload_conf();
     collect();
@@ -268,6 +268,10 @@ void GlobalScan::update_dram_free_anon_bytes()
   }
 
   dram_hot_target = dram_free_anon_bytes / 2;
+
+  if (option.exit_on_exceeded)
+    // make sure to exit within 16 rounds of scan
+    dram_hot_target += dram_hot_target * nround / 16;
 }
 
 void GlobalScan::walk_once()

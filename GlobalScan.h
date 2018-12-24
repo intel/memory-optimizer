@@ -76,6 +76,7 @@ class GlobalScan
   private:
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;
+    unsigned int nround;
     int nr_walks;
     int nr_acceptable_scans;
     float interval;
