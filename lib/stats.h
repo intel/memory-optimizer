@@ -44,7 +44,7 @@ int find_map(M& map, const K& key, V&& value)
 template<class T>
 inline int percent(T n, T total)
 {
-  return (n * 100) / total;
+  return ((n + 1) * 100) / (total + 1);
 }
 
 static inline float tv_secs(struct timeval& t1, struct timeval& t2)
