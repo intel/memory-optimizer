@@ -63,9 +63,9 @@ class GlobalScan
     bool exit_on_stabilized();
     bool exit_on_exceeded();
 
-    unsigned long accept_hot_bytes()   { return dram_free_anon_bytes * 3 / 4; }
-    unsigned long target_young_bytes() { return dram_free_anon_bytes * 2 / 3; }
-    unsigned long target_hot_bytes()   { return dram_free_anon_bytes / 2; }
+    unsigned long accept_hot_bytes()   { return dram_hot_target * 12 / 8; }
+    unsigned long target_young_bytes() { return dram_hot_target * 10 / 8; }
+    unsigned long target_hot_bytes()   { return dram_hot_target; }
 
     unsigned long get_dram_free_anon_bytes();
     unsigned long get_dram_anon_bytes();
@@ -85,6 +85,7 @@ class GlobalScan
     unsigned long top_bytes;
     unsigned long all_bytes;
     unsigned long dram_free_anon_bytes;
+    unsigned long dram_hot_target;
 
     ProcessCollection process_collection;
     std::vector<std::shared_ptr<EPTMigrate>> idle_ranges;

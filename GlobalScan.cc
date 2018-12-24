@@ -267,6 +267,8 @@ void GlobalScan::update_dram_free_anon_bytes()
   } else {
     dram_free_anon_bytes = get_dram_free_anon_bytes();
   }
+
+  dram_hot_target = dram_free_anon_bytes / 2;
 }
 
 void GlobalScan::walk_once()
