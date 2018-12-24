@@ -92,10 +92,14 @@ bool GlobalScan::exit_on_exceeded()
   if (!option.exit_on_exceeded)
     return false;
 
-  if (get_dram_anon_bytes() >= dram_free_anon_bytes)
-      return true;
+  unsigned long bytes = get_dram_anon_bytes();
+  if (bytes < dram_free_anon_bytes)
+    return false;
 
-  return false;
+  printf("exit_on_exceeded: %'luK : %'luK = %d%%\n",
+         bytes >> 10, dram_free_anon_bytes >> 10,
+         percent(bytes, dram_free_anon_bytes));
+  return true;
 }
 
 int GlobalScan::collect()
