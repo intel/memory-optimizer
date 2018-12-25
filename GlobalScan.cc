@@ -412,6 +412,8 @@ void GlobalScan::update_interval(bool finished)
   interval = real_interval * ratio;
   if (interval < 0.000001)
     interval = 0.000001;
+  if (interval > 100)
+    interval = 100;
 
   if (finished && nr_walks < option.max_walks / 4) {
     printd("interval %f x1.2 due to low nr_walks %d\n",
