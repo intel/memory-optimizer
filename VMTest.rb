@@ -359,8 +359,8 @@ class VMTest
   end
 
   def run_type_migration?(run_type)
-    return true if (:migration == run_type || :one_way_migration == run_type)
-    return false
+    run_type == :migration ||
+    run_type == :one_way_migration
   end
 
   def run_one(run_type)
