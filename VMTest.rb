@@ -109,15 +109,20 @@ class VMTest
     end
   end
 
-  def spawn_qemu(one_way)
+  def spawn_qemu(type)
     env = {
-      "interleave" => (one_way ? @pmem_nodes : @all_nodes).join(','),
+      # "interleave" => (one_way ? @pmem_nodes : @all_nodes).join(','),
       "qemu_cmd" => @qemu_cmd,
       "qemu_smp" => @qemu_smp,
       "qemu_mem" => @qemu_mem,
       "qemu_ssh" => @qemu_ssh,
       "qemu_log" => @qemu_log,
     }
+
+    qemu_nodes = @all_nodes
+    qemu_nodes = @pmem_nodes if :one_way_migration == type
+    qemu_nodes = @dram_nodes if :dram_baseline == type
+    env["interleave"] = qemu_nodes.join(',')
 
     cmd = File.join(@conf_dir, @qemu_script)
     log "env " + env.map { |k,v| "#{k}=#{v}" }.join(' ') + " " + cmd
@@ -353,9 +358,15 @@ class VMTest
     return true
   end
 
-  def run_one(should_migrate = false)
+  def run_type_migration?(run_type)
+    return true if (:migration == run_type || :one_way_migration == run_type)
+    return false
+  end
+
+  def run_one(run_type)
     path_params = @workload_params.map { |k,v| "#{k}=#{v}" }.join('#')
-    path_params += '.' + @migrate_script if should_migrate
+    path_params += '.' + "#{run_type}"
+    path_params += '.' + @migrate_script if run_type_migration?(run_type)
     log_dir = File.join(@ratio_dir, path_params)
     log_file = File.join(log_dir, 'log')
     @workload_log = File.join(log_dir, @workload_script + ".log")
@@ -370,9 +381,9 @@ class VMTest
     @logger = Logger.new(log_file)
 
     puts "less #{log_file}"
-    log "Running test with params #{@workload_params} should_migrate=#{should_migrate}"
+    log "Running test with params #{@workload_params} run_type=#{run_type}"
 
-    spawn_qemu(should_migrate && @scheme["one_way_migrate"])
+    spawn_qemu(run_type)
     wait_vm
 
     rsync_workload
@@ -380,7 +391,7 @@ class VMTest
 
     system("rm", "-f", @usemem_pid_file)
 
-    if should_migrate
+    if run_type_migration?(run_type)
       wait_workload_startup
       spawn_migrate
       eat_mem_loop
@@ -390,7 +401,7 @@ class VMTest
 
     Process.wait workload_pid
 
-    if should_migrate
+    if run_type_migration?(run_type)
       kill_wait @migrate_pid
     end
 
@@ -483,11 +494,31 @@ class VMTest
     end
   end
 
+  # run type:
+  #   one_way_migration
+  #   migration
+  #   baseline
+  #   dram_baseline
+  #
   def run_group
     @scheme["workload_params"].each do |params|
       @workload_params = params
-      run_one unless @scheme["skip_baseline_run"]
-      run_one should_migrate: true unless (@dram_nodes.empty? || @scheme["skip_migration_run"])
+      # run_one unless @scheme["skip_baseline_run"]
+      run_one :baseline unless @scheme["skip_baseline_run"]
+      run_one :dram_baseline unless (@scheme["skip_baseline_run"] || @dram_nodes.empty?)
+
+      # run_one should_migrate: true unless (@dram_nodes.empty? || @scheme["skip_migration_run"])
+      if (@dram_nodes.empty? || @scheme["skip_migration_run"]) then
+        next
+      end
+
+      # all migration start from here
+      if @scheme["one_way_migrate"] then
+        run_one :one_way_migration
+      else
+        run_one :migration
+      end
+
     end
   end
 
