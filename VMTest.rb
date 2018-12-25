@@ -504,13 +504,12 @@ class VMTest
     @scheme["workload_params"].each do |params|
       @workload_params = params
       # run_one unless @scheme["skip_baseline_run"]
-      run_one :baseline unless @scheme["skip_baseline_run"]
-      run_one :dram_baseline unless (@scheme["skip_baseline_run"] || @dram_nodes.empty?)
+      run_one :baseline      unless @scheme["skip_baseline_run"]
+      run_one :dram_baseline unless @scheme["skip_baseline_run"] || @dram_nodes.empty?
 
-      # run_one should_migrate: true unless (@dram_nodes.empty? || @scheme["skip_migration_run"])
-      if (@dram_nodes.empty? || @scheme["skip_migration_run"]) then
-        next
-      end
+      # should skip migrate?
+      next if @dram_nodes.empty?
+      next if @scheme["skip_migration_run"]
 
       # all migration start from here
       if @scheme["one_way_migrate"] then
