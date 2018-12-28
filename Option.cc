@@ -28,7 +28,7 @@ std::unordered_map<std::string, MigrateWhat> Option::migrate_name_map = {
 std::unordered_map<std::string, Placement> Option::placement_name_map = {
   {"none", PLACEMENT_NONE},
   {"dram", PLACEMENT_DRAM},
-  {"aep", PLACEMENT_AEP},
+  {"pmem", PLACEMENT_PMEM},
 };
 
 int Option::set_dram_percent(int dp)

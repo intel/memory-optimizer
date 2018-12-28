@@ -11,4 +11,4 @@ policies:
       migration: cold       # hot or both
 
     - name: zsh             # process name filter
-      placement: dram       # or aep
+      placement: dram       # or pmem

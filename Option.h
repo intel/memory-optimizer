@@ -26,8 +26,8 @@ typedef enum {
 
 typedef enum {
   PLACEMENT_NONE,
-  PLACEMENT_DRAM,
-  PLACEMENT_AEP,
+  PLACEMENT_DRAM,   // skip scan, assuming mlock'ed in DRAM
+  PLACEMENT_PMEM,   // no effect for now
   PLACEMENT_END,
 } Placement;
 
