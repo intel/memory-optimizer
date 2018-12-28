@@ -26,7 +26,7 @@ require_relative "ProcNumaMaps"
 #         - run workload in qemu
 #         - run usemem to consume DRAM pages
 #         - run sys-refs to migrate hot pages to DRAM, creating LRU pressure so
-#           that kernel will migrate cold pages to AEP.  sys-refs will auto
+#           that kernel will migrate cold pages to PMEM. sys-refs will auto
 #           exit when all hot pages are roughly in DRAM with this patch.
 
 class VMTest

@@ -27,7 +27,7 @@ kvm=(
 	# DRAM numa node
 	-object memory-backend-ram,size=32G,host-nodes=0,policy=bind,id=node0
 	-numa node,cpus=0-31,nodeid=0,memdev=node0
-	# AEP numa node
+	# PMEM numa node
 	-object memory-backend-ram,size=64G,host-nodes=2,policy=bind,id=node1
 	-numa node,cpus=32-63,nodeid=1,memdev=node1
 	-net nic,vlan=0,macaddr=00:00:00:00:00:00,model=virtio
