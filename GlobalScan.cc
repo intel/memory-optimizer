@@ -21,12 +21,22 @@
 #include "GlobalScan.h"
 #include "OptionParser.h"
 
+using namespace std;
 extern OptionParser option;
 
 const float GlobalScan::MIN_INTERVAL = 0.001;
 const float GlobalScan::MAX_INTERVAL = 10;
 
 #define HUGE_PAGE_SHIFT 21
+
+static string get_current_date()
+{
+  time_t now = time(0);
+  char tmp[64];
+
+  strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S", localtime(&now));
+  return tmp;
+}
 
 GlobalScan::GlobalScan() : conf_reload_flag(0)
 {
@@ -159,7 +169,7 @@ void GlobalScan::walk_multi()
   for (auto& m: idle_ranges)
     m->prepare_walks(option.max_walks);
 
-  printf("\nStarting page table scans:\n");
+  printf("\nStarting page table scans: %s\n", get_current_date().c_str());
   printf("%7s  %8s  %23s  %23s  %15s\n", "nr_scan", "interval", "young", "top hot", "all");
   printf("====================================================================================\n");
 
@@ -185,6 +195,7 @@ void GlobalScan::walk_multi()
   }
 
   update_interval(1);
+  printf("End of page table scans: %s\n", get_current_date().c_str());
 }
 
 void GlobalScan::count_refs()
@@ -358,6 +369,7 @@ void GlobalScan::migrate()
 
   job.intent = JOB_MIGRATE;
 
+  printf("\nStarting migration: %s\n", get_current_date().c_str());
   gettimeofday(&ts_begin, NULL);
   for (auto& m: idle_ranges)
   {
@@ -375,6 +387,7 @@ void GlobalScan::migrate()
     job = done_queue.pop();
   }
   gettimeofday(&ts_end, NULL);
+  printf("\nEnd of migration: %s\n", get_current_date().c_str());
 
   proc_vmstat.show_numa_stats(&numa_collection);
   show_migrate_speed(tv_secs(ts_begin, ts_end));
