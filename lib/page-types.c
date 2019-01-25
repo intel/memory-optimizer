@@ -69,8 +69,13 @@ static const char * const page_flag_names[] = {
 	[KPF_THP]		= "t:thp",
 	[KPF_BALLOON]		= "o:balloon",
 	[KPF_PGTABLE]		= "g:pgtable",
+
+#ifdef KPF_ZERO_PAGE
 	[KPF_ZERO_PAGE]		= "z:zero_page",
+#endif
+#ifdef KPF_IDLE
 	[KPF_IDLE]              = "i:idle_page",
+#endif
 
 	[KPF_RESERVED]		= "r:reserved",
 	[KPF_MLOCKED]		= "m:mlocked",
