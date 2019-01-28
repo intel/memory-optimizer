@@ -11,9 +11,13 @@
 require 'yaml'
 require 'open3'
 require 'logger'
+require 'fileutils'
 require_relative "ProcVmstat"
 require_relative "ProcStatus"
 require_relative "ProcNumaMaps"
+require_relative "emon"
+require_relative "aepwatch"
+require_relative "utility"
 
 # Basic test scheme:
 #
@@ -184,7 +188,8 @@ class VMTest
 
   def wait_workload_startup
     if @workload_script =~ /sysbench/
-      wait_log_message(@workload_log, "Threads started")
+      #wait for huge memory allocation in VM
+      wait_log_message(@workload_log, "Threads started", 1800)
       # sysbench has allocated all memory at this point, so RSS here can be
       # immediately used by eat_mem(). This avoids dependency on some previous
       # run to tell qemu RSS.
@@ -391,8 +396,22 @@ class VMTest
 
     system("rm", "-f", @usemem_pid_file)
 
+    wait_workload_startup
+
+    emon = Emon.new
+    emon.set_emon_install("/opt/intel/sep")
+    emon.set_event_file("/opt/intel/edp/Architecture Specific/CascadeLake/CLX-2S/clx-2s-events.txt")
+    # emon.set_event_file("/opt/intel/edp/Architecture Specific/Skylake/SKX-2S/skx-2s-events.txt")
+    emon.set_output_dir(log_dir)
+
+    aepwatch = Aepwatch.new
+    aepwatch.set_install("/opt/intel/ipmwatch")
+    aepwatch.set_output_dir(log_dir)
+
+    emon.start
+    aepwatch.start
+
     if run_type_migration?(run_type)
-      wait_workload_startup
       spawn_migrate
       eat_mem_loop
     elsif @dram_nodes.size * @ratio > @pmem_nodes.size # if cannot rely on interleaving in baseline test
@@ -400,6 +419,9 @@ class VMTest
     end
 
     Process.wait workload_pid
+
+    emon.stop
+    aepwatch.stop
 
     if run_type_migration?(run_type)
       kill_wait @migrate_pid
@@ -409,6 +431,33 @@ class VMTest
     usemem_pids.each do |pid| Process.kill 'KILL', pid.to_i rescue warn "WARNING: failed to kill usemem" end
 
     stop_qemu
+    run_parser(log_dir)
+  end
+
+  def run_parser(emon_log_dir)
+    #edp parser
+    ruby_edp_parser = File.join(FileUtils.getwd(), "..", "edp.rb")
+    edp_parser = {
+      :cmd => "/usr/bin/ruby " + ruby_edp_parser + " " + emon_log_dir,
+      :out => File.join(emon_log_dir, "edp-parser.out"),
+      :err => File.join(emon_log_dir, "edp-parser.err"),
+      :wait => true,
+      :pid => nil,
+      :cwd => nil,
+    }
+    new_proc(edp_parser)
+
+    #aep-watch parser
+    ruby_aepwatch_parser = File.join(FileUtils.getwd(), "..", "aepwatch_parser.rb")
+    aepwatch_parser = {
+      :cmd => "/usr/bin/ruby " + ruby_aepwatch_parser + " " + emon_log_dir,
+      :out => File.join(emon_log_dir, "aepwatch_parser.out"),
+      :err => File.join(emon_log_dir, "aepwatch_parser.err"),
+      :wait => true,
+      :pid => nil,
+      :cwd => nil,
+    }
+    new_proc(aepwatch_parser)
   end
 
   def setup_nodes(ratio)
