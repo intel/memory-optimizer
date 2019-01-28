@@ -18,6 +18,7 @@ def new_proc(item)
     item[:pid] = Process.spawn(item[:cmd],
                                :out => [item[:out], 'w'],
                                :err => [item[:err], 'w'],
-                               :chdir => item[:cwd])
-    Process.wait item[:pid] if item[:wait]
+                               :chdir => item[:cwd]) rescue nil
+
+    Process.wait item[:pid] if item[:wait] and item[:pid]
 end
