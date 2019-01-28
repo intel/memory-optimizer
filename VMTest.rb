@@ -398,18 +398,21 @@ class VMTest
 
     wait_workload_startup
 
-    if @scheme["emon_collect"]
+    has_emon = File.exists?(@scheme["emon_base_dir"].to_s)
+    has_aepwatch = File.exists?(@scheme["aepwatch_base_dir"].to_s)
+    if has_emon
+      emon_install_base_dir = @scheme["emon_base_dir"].to_s
       emon = Emon.new
-      emon.set_emon_install("/opt/intel/sep")
+      emon.set_emon_install(emon_install_base_dir)
       emon.set_event_file("/opt/intel/edp/Architecture Specific/CascadeLake/CLX-2S/clx-2s-events.txt")
       # emon.set_event_file("/opt/intel/edp/Architecture Specific/Skylake/SKX-2S/skx-2s-events.txt")
       emon.set_output_dir(log_dir)
       emon.start
     end
-
-    if @scheme["aepwatch_collect"]
+    if has_aepwatch
+      aepwatch_install_base_dir = @scheme["aepwatch_base_dir"].to_s
       aepwatch = Aepwatch.new
-      aepwatch.set_install("/opt/intel/ipmwatch")
+      aepwatch.set_install(aepwatch_install_base_dir)
       aepwatch.set_output_dir(log_dir)
       aepwatch.start
     end
@@ -423,11 +426,11 @@ class VMTest
 
     Process.wait workload_pid
 
-    if @scheme["emon_collect"]
+    if has_emon
       emon.stop
     end
 
-    if @scheme["aepwatch_collect"]
+    if has_aepwatch
       aepwatch.stop
     end
 
@@ -439,35 +442,35 @@ class VMTest
     usemem_pids.each do |pid| Process.kill 'KILL', pid.to_i rescue warn "WARNING: failed to kill usemem" end
 
     stop_qemu
-    run_parser(log_dir)
+    run_parser(log_dir, has_emon, has_aepwatch)
   end
 
-  def run_parser(emon_log_dir)
+  def run_parser(emon_log_dir, has_emon, has_aepwatch)
     #edp parser
-    ruby_edp_parser = File.join(FileUtils.getwd(), "..", "edp.rb")
-    edp_parser = {
-      :cmd => "/usr/bin/ruby " + ruby_edp_parser + " " + emon_log_dir,
-      :out => File.join(emon_log_dir, "edp-parser.out"),
-      :err => File.join(emon_log_dir, "edp-parser.err"),
-      :wait => true,
-      :pid => nil,
-      :cwd => nil,
-    }
-    if @scheme["emon_collect"]
+    if has_emon
+      ruby_edp_parser = File.join(@project_dir, "edp.rb")
+      edp_parser = {
+        :cmd => "/usr/bin/ruby " + ruby_edp_parser + " " + emon_log_dir,
+        :out => File.join(emon_log_dir, "edp-parser.out"),
+        :err => File.join(emon_log_dir, "edp-parser.err"),
+        :wait => true,
+        :pid => nil,
+        :cwd => nil,
+      }
       new_proc(edp_parser)
     end
 
     #aep-watch parser
-    ruby_aepwatch_parser = File.join(FileUtils.getwd(), "..", "aepwatch_parser.rb")
-    aepwatch_parser = {
-      :cmd => "/usr/bin/ruby " + ruby_aepwatch_parser + " " + emon_log_dir,
-      :out => File.join(emon_log_dir, "aepwatch_parser.out"),
-      :err => File.join(emon_log_dir, "aepwatch_parser.err"),
-      :wait => true,
-      :pid => nil,
-      :cwd => nil,
-    }
-    if @scheme["aepwatch_collect"]
+    if has_aepwatch
+      ruby_aepwatch_parser = File.join(@project_dir, "aepwatch_parser.rb")
+      aepwatch_parser = {
+        :cmd => "/usr/bin/ruby " + ruby_aepwatch_parser + " " + emon_log_dir,
+        :out => File.join(emon_log_dir, "aepwatch_parser.out"),
+        :err => File.join(emon_log_dir, "aepwatch_parser.err"),
+        :wait => true,
+        :pid => nil,
+        :cwd => nil,
+      }
       new_proc(aepwatch_parser)
     end
   end
