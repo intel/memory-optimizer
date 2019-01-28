@@ -398,18 +398,21 @@ class VMTest
 
     wait_workload_startup
 
-    emon = Emon.new
-    emon.set_emon_install("/opt/intel/sep")
-    emon.set_event_file("/opt/intel/edp/Architecture Specific/CascadeLake/CLX-2S/clx-2s-events.txt")
-    # emon.set_event_file("/opt/intel/edp/Architecture Specific/Skylake/SKX-2S/skx-2s-events.txt")
-    emon.set_output_dir(log_dir)
+    if @scheme["emon_collect"]
+      emon = Emon.new
+      emon.set_emon_install("/opt/intel/sep")
+      emon.set_event_file("/opt/intel/edp/Architecture Specific/CascadeLake/CLX-2S/clx-2s-events.txt")
+      # emon.set_event_file("/opt/intel/edp/Architecture Specific/Skylake/SKX-2S/skx-2s-events.txt")
+      emon.set_output_dir(log_dir)
+      emon.start
+    end
 
-    aepwatch = Aepwatch.new
-    aepwatch.set_install("/opt/intel/ipmwatch")
-    aepwatch.set_output_dir(log_dir)
-
-    emon.start
-    aepwatch.start
+    if @scheme["aepwatch_collect"]
+      aepwatch = Aepwatch.new
+      aepwatch.set_install("/opt/intel/ipmwatch")
+      aepwatch.set_output_dir(log_dir)
+      aepwatch.start
+    end
 
     if run_type_migration?(run_type)
       spawn_migrate
@@ -420,8 +423,13 @@ class VMTest
 
     Process.wait workload_pid
 
-    emon.stop
-    aepwatch.stop
+    if @scheme["emon_collect"]
+      emon.stop
+    end
+
+    if @scheme["aepwatch_collect"]
+      aepwatch.stop
+    end
 
     if run_type_migration?(run_type)
       kill_wait @migrate_pid
@@ -445,7 +453,9 @@ class VMTest
       :pid => nil,
       :cwd => nil,
     }
-    new_proc(edp_parser)
+    if @scheme["emon_collect"]
+      new_proc(edp_parser)
+    end
 
     #aep-watch parser
     ruby_aepwatch_parser = File.join(FileUtils.getwd(), "..", "aepwatch_parser.rb")
@@ -457,7 +467,9 @@ class VMTest
       :pid => nil,
       :cwd => nil,
     }
-    new_proc(aepwatch_parser)
+    if @scheme["aepwatch_collect"]
+      new_proc(aepwatch_parser)
+    end
   end
 
   def setup_nodes(ratio)
