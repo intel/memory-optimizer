@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+require_relative 'utility'
 
 class Emon
 
@@ -27,16 +28,6 @@ class Emon
     File.join(@output_dir, file)
   end
 
-  def run(item)
-    return if item[:skip]
-
-    puts "Running cmd: #{item[:cmd]}"
-    item[:pid] = Process.spawn(item[:cmd],
-                               :out => [item[:out], 'w'],
-                               :err => [item[:err], 'w'])
-    Process.wait item[:pid] if item[:wait]
-  end
-
   def load_kernel_module()
     cmds = [
       {
@@ -55,7 +46,7 @@ class Emon
       }
     ]
 
-    cmds.each do |cmd| run(cmd) end
+    cmds.each do |cmd| new_proc(cmd) end
   end
 
   def start()
@@ -84,19 +75,21 @@ class Emon
     ]
 
     system("mkdir", "-p", @output_dir)
-    load_kernel_module
-    cmds.each do |cmd| run(cmd) end
+    # change to manually
+    # load_kernel_module
+    cmds.each do |cmd| new_proc(cmd) end
   end
 
   def stop()
+    sleep 5
     cmd = {
       :cmd => "emon -stop",
-      :out => output_file("stop.out"),
-      :err => output_file("stop.err"),
+      :out => output_file("emon-stop.out"),
+      :err => output_file("emon-stop.err"),
       :wait => true,
       :pid => nil,
       }
-    run(cmd)
+    new_proc(cmd)
   end
 end
 
