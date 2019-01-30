@@ -145,7 +145,7 @@ set title "AEP average time (dclk) with less than 36 entries in RPQ / with less 
 plot \
 file using 2:(column(224)) every ::2 title "AEP average time (dclk) with < 36 entries in RPQ" with lines linecolor rgb color1 linewidth 5,\
 file using 2:(column(246)) every ::2 title "AEP average time (dclk) >= 30 entries in WPQ" with lines linecolor rgb color2 linewidth 5,\
-file using 2:(column(250)) every ::2 title "AEP average time (dclk) with < 30 entries in WPQ" with lines linecolor rgb color2 linewidth 5,\
+file using 2:(column(250)) every ::2 title "AEP average time (dclk) with < 30 entries in WPQ" with lines linecolor rgb color3 linewidth 5,\
 
 set ytics format "% h" rotate by 25 offset 10,0 font ",28"
 set title "AEP average entries in WPQ/in WPQ when NOT empty"
