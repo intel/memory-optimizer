@@ -66,14 +66,13 @@ class Emon
         :pid => nil,
       },
       {
-        :cmd => @emon_bin + " -i " + @event_file,
+        :cmd => @emon_bin + " -i " + "\"" + @event_file + "\"",
         :out => output_file("emon.dat"),
         :err => output_file("emon.err"),
         :wait => false,
         :pid => nil,
       }
     ]
-
     system("mkdir", "-p", @output_dir)
     # change to manually
     # load_kernel_module
