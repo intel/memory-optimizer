@@ -18,39 +18,6 @@ nr_node=$(numactl -H | head -n1 | cut -f2 -d' ')
 DRAM_NODE=0
 PMEM_NODE=$((nr_node / 2))
 
-# task-refs params on thp=never
-setup_migration_thp_never_hot()
-{
-	loop=15
-	#interval=$(echo "0.5 * $mem_gb" | bc)
-	interval=0.01
-}
-
-setup_migration_thp_never_cold()
-{
-	loop=10
-	interval=$(echo "0.5 * $mem_gb" | bc)
-	interval=0.5
-}
-
-setup_migration_thp_always_hot()
-{
-	loop=20
-	#interval=$(echo "0.01 * $mem_gb" | bc)
-	interval=1
-	interval=0.1
-	interval=0.01
-	interval=3
-	interval=0.00001
-}
-
-setup_migration_thp_always_cold()
-{
-	loop=20
-	interval=$(echo "0.01 * $mem_gb" | bc)
-	interval=0.5
-}
-
 setup_sys()
 {
 	echo $thp > /sys/kernel/mm/transparent_hugepage/enabled
@@ -67,11 +34,6 @@ run_migrations()
 	local what=$1
 	local i
 
-	setup_migration_thp_${thp}_${what}
-	hot_min_refs=6
-	hot_min_refs=$((loop-1))
-	hot_min_refs=$((loop))
-
 	for i in $(seq 300)
 	do
 		sleep 1
@@ -87,8 +49,8 @@ run_migrations()
 		stdbuf -oL
 		$project_dir/sys-refs
 		#-vv
-		-l 6
-		-s 10
+		#-l 6
+		#-s 10
 		#-i $interval
 		-d $dram_percent
 		-m $what
@@ -96,37 +58,12 @@ run_migrations()
 		#-p $sysbench_pid
 	)
 
-        task_refs_cmd=(
-		#strace
-                $project_dir/task-refs
-		#-vv
-                -i $interval
-                -d $dram_percent
-                -m $what
-		#-m none
-                -p $sysbench_pid
-        )
-
 	#cat /proc/$sysbench_pid/smaps
 
-	if ((1)); then
-		#echo sysbench_pid: $sysbench_pid
-		echo "${sys_refs_cmd[@]}"
-		/usr/bin/time -v "${sys_refs_cmd[@]}"
-		#| stdbuf -i0 -oL grcat $project_dir/tests/grc-conf.sys-refs
-		return
-	fi
-
-	for i in 2 1 1
-	do
-		sleep $i
-		echo
-		#echo $project_dir/task-refs -l $loop -i $interval -m $what -H $hot_min_refs -p $sysbench_pid
-		#time $project_dir/task-refs -l $loop -i $interval -m $what -H $hot_min_refs -p $sysbench_pid
-		echo "${task_refs_cmd[@]}"
-		/usr/bin/time -v "${task_refs_cmd[@]}"
-		cat refs-count-$sysbench_pid
-	done
+	#echo sysbench_pid: $sysbench_pid
+	echo "${sys_refs_cmd[@]}"
+	/usr/bin/time -v "${sys_refs_cmd[@]}"
+	#| stdbuf -i0 -oL grcat $project_dir/tests/grc-conf.sys-refs
 }
 
 run_test()
@@ -222,10 +159,7 @@ else
 	mem=1G
 	memory_scope=local
 fi
-dram_percent=25
-dram_percent=45
-dram_percent=55
-dram_percent=99
+dram_percent=20
 
 # sysbench params
 time=1800
