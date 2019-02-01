@@ -13,6 +13,11 @@ tests_dir=$(dirname $script_dir)
 project_dir=$(dirname $tests_dir)
 cd "$tests_dir" || exit
 
+nr_node=$(numactl -H | head -n1 | cut -f2 -d' ')
+
+DRAM_NODE=0
+PMEM_NODE=$((nr_node / 2))
+
 # task-refs params on thp=never
 setup_migration_thp_never_hot()
 {
@@ -184,12 +189,12 @@ run_tests()
 {
 	setup_sys
 
-	run_test h "--preferred=1"
-	#run_test h "-m1"
-	run_test 0 "-m0"
-	run_test 1 "-m1"
+	run_test h "--preferred=$PMEM_NODE"
+	#run_test h "-m$PMEM_NODE"
+	run_test $DRAM_NODE "-m$DRAM_NODE"
+	run_test $PMEM_NODE "-m$PMEM_NODE"
 	# run_test i "-i all"
-	#run_test c "-m0"
+	#run_test c "-m$DRAM_NODE"
 }
 
 log_dir=$script_dir/$(basename $0)-$(date +'%Y%m%d_%H%M%S')
