@@ -146,11 +146,15 @@ void ProcVmstat::show_numa_stats(NumaNodeCollection* numa_collection)
     anon_kb *= PAGE_SIZE >> 10;
     printf("%'15lu  %2d%%  anon node %d\n", anon_kb, percent(anon_kb, total_anon_kb), nid);
 
-    if (!numa_collection)
+    if (!numa_collection) {
+      ++nid;
       continue;
+    }
     numa_obj = numa_collection->get_node(nid);
-    if (!numa_obj)
+    if (!numa_obj) {
+      ++nid;
       continue;
+    }
 
     switch (numa_obj->type()) {
       case NUMA_NODE_DRAM:
