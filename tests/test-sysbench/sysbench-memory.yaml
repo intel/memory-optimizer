@@ -1,5 +1,6 @@
 options:
   dump_options: false
+  exit_on_exceeded: 1
   exit_on_stabilized: 1
 
 policies:
