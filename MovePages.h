@@ -82,7 +82,7 @@ class MovePages
     void show_status_count(Formatter* fmt);
     void show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum);
     void account_stats(MoveStats *stats);
-    void calc_target_nodes(std::vector<void *>& addrs, long size);
+    void calc_target_nodes(void **addrs, long size);
     int  get_target_node(NumaNode* node_obj);
     bool is_node_in_target_set(int node_id);
     long find_last_good(std::vector<int>& status, long end_pos);

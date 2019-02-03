@@ -155,7 +155,7 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
   for (unsigned long i = 0; i < nr_pages; i += batch_size) {
     unsigned long size = std::min(batch_size, nr_pages - i);
 
-    status.resize(nr_pages);
+    status.resize(size);
 
     // locate pages
     ret = move_pages(&addrs[i], size, true);
@@ -164,7 +164,7 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
       break;
     }
 
-    calc_target_nodes(addrs, size);
+    calc_target_nodes(&addrs[i], size);
     clear_status_count();
     calc_status_count();
     account_stats(stats);
@@ -283,7 +283,7 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
   }
 }
 
-void MovePages::calc_target_nodes(std::vector<void *>& addrs, long size)
+void MovePages::calc_target_nodes(void **addrs, long size)
 {
   NumaNode* numa_obj;
   int last_good_index;
