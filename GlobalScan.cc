@@ -54,17 +54,21 @@ void GlobalScan::main_loop()
     interval = option.initial_interval;
 
   create_threads();
+  exceed_pids.clear();
+
   for (nround = 0; nround <= max_round; ++nround)
   {
     reload_conf();
     collect();
+
+    if (idle_ranges.empty())
+      break;
+
     walk_multi();
     count_refs();
     migrate();
     count_migrate_stats();
     if (exit_on_stabilized())
-      break;
-    if (exit_on_exceeded())
       break;
 
     double sleep_time = std::max(option.sleep_secs, 2 * interval);
@@ -129,12 +133,22 @@ int GlobalScan::collect()
   if (err)
     return err;
 
-  for (auto &kv: process_collection.get_proccesses())
+  for (auto &kv: process_collection.get_proccesses()) {
+    pid_t pid = kv.first;
+
+    if (check_exit_on_exceeded(pid)) {
+      printf("The dram percent of pid %d exceeded %d%%!\n",
+             pid, option.dram_percent);
+      continue;
+    }
+
     for (auto &m: kv.second->get_ranges()) {
       m->set_throttler(&throttler);
       m->set_numacollection(&numa_collection);
       idle_ranges.push_back(m);
     }
+  }
+
   return 0;
 }
 
@@ -338,6 +352,13 @@ int GlobalScan::consumer_job(Job& job)
       break;
     case JOB_MIGRATE:
       job.migration->migrate();
+
+      if (option.dram_percent &&
+          job.migration->dram_percent >= option.dram_percent ) {
+        printd("The dram percent of pid %d exceeded %d%%!\n",
+               job.migration->get_pid(), option.dram_percent);
+        exceed_pids.push_back(job.migration->get_pid());
+      }
       break;
     case JOB_QUIT:
       printd("consumer_loop quit job\n");
@@ -361,6 +382,20 @@ void GlobalScan::consumer_loop()
   }
 }
 
+bool GlobalScan::check_exit_on_exceeded(pid_t pid)
+{
+  if (!option.exit_on_exceeded || !option.dram_percent)
+    return false;
+
+  std::vector<pid_t>::iterator iter;
+
+  iter = find(exceed_pids.begin(), exceed_pids.end(), pid);
+  if (iter != exceed_pids.end())
+    return true;
+  else
+    return false;
+}
+
 void GlobalScan::migrate()
 {
   timeval ts_begin, ts_end;
@@ -373,6 +408,13 @@ void GlobalScan::migrate()
   gettimeofday(&ts_begin, NULL);
   for (auto& m: idle_ranges)
   {
+      pid_t pid = m->get_pid();
+      if (check_exit_on_exceeded(pid)) {
+        printd("The dram percent of pid %d exceeded %d%%!\n",
+               pid, option.dram_percent);
+        continue;
+      }
+
       job.migration = m;
       if (option.max_threads) {
         work_queue.push(job);

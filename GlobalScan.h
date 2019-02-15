@@ -62,6 +62,7 @@ class GlobalScan
     void reload_conf();
     bool exit_on_stabilized();
     bool exit_on_exceeded();
+    bool check_exit_on_exceeded(pid_t pid);
 
     unsigned long accept_hot_bytes()   { return dram_hot_target * 12 / 8; }
     unsigned long target_young_bytes() { return dram_hot_target * 10 / 8; }
@@ -100,6 +101,8 @@ class GlobalScan
     NumaNodeCollection numa_collection;
     ProcVmstat proc_vmstat;
     Sysfs sysfs;
+
+    std::vector<pid_t> exceed_pids;
 };
 
 #endif
