@@ -40,6 +40,8 @@ struct MigrateStats: public MoveStats
 class EPTMigrate : public EPTScan
 {
   public:
+    int dram_percent;
+
     EPTMigrate();
 
     int migrate();
