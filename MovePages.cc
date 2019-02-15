@@ -281,6 +281,9 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
                total_pmem_kb,
                percent(total_pmem_kb, total_kb));
   }
+
+  dram_kb = total_dram_kb;
+  pmem_kb = total_pmem_kb;
 }
 
 void MovePages::calc_target_nodes(void **addrs, long size)

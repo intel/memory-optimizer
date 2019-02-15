@@ -58,6 +58,9 @@ struct MoveStats
 class MovePages
 {
   public:
+    unsigned long dram_kb;
+    unsigned long pmem_kb;
+
     MovePages();
     ~MovePages() {};
 
