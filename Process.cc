@@ -83,6 +83,15 @@ int Process::split_ranges()
   return 0;
 }
 
+void Process::set_policy(Policy* pol)
+{
+  policy = *pol;
+
+  // pass policy to all VMAs
+  for (auto &migration: idle_ranges)
+    migration->set_policy(*pol);
+}
+
 bool Process::match_policy(Policy& policy)
 {
   if (policy.pid >= 0) {
@@ -98,6 +107,15 @@ bool Process::match_policy(Policy& policy)
   }
 
   return false;
+}
+
+Policy* Process::match_policies(PolicySet& policies)
+{
+    for (Policy &policy: policies)
+      if (match_policy(policy))
+        return &policy;
+
+    return NULL;
 }
 
 
@@ -146,21 +164,17 @@ int ProcessCollection::collect(PolicySet& policies)
     if (err)
       continue;
 
-    for (Policy &policy: policies) {
-      if (!p->match_policy(policy))
-        continue;
+    Policy* policy = p->match_policies(policies);
+    if (!policy)
+      continue;
 
-      err = p->split_ranges();
-      if (err)
-        continue;
+    err = p->split_ranges();
+    if (err)
+      continue;
 
-      // set policy to the process's all VMAs
-      for (auto &migration: p->idle_ranges) {
-        migration->set_policy(policy);
-      }
+    p->set_policy(policy);
 
-      proccess_hash[pid] = p;
-    }
+    proccess_hash[pid] = p;
   }
 
   return 0;

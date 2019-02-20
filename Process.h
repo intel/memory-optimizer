@@ -28,13 +28,16 @@ class Process
     int load(pid_t n);
     int split_ranges();
     IdleRanges& get_ranges() { return idle_ranges; }
+    void set_policy(Policy* pol);
     bool match_policy(Policy& policy);
+    Policy* match_policies(PolicySet& policies);
 
   private:
     void add_range(unsigned long start, unsigned long end);
 
   public:
     pid_t      pid;
+    Policy     policy;
     ProcStatus proc_status;
     ProcMaps   proc_maps;
     IdleRanges idle_ranges;
