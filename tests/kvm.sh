@@ -19,6 +19,7 @@
 [[ $qemu_log ]] && qemu_log=file:$qemu_log
 [[ $qemu_log ]] || qemu_log=stdio
 [[ $interleave ]] && numactl="numactl --interleave=$interleave"
+[[ $qemu_numactl ]] && numactl="numactl $qemu_numactl"
 
 kvm=(
 	$numactl
