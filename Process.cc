@@ -184,9 +184,9 @@ void ProcessCollection::dump()
 {
     printf("dump process collection start:\n");
     for (auto &iter: proccess_hash) {
-        printf("pid: %d, name: %s\n",
+        printf("pid: %5d, name: %s\n",
                iter.first,
                iter.second->proc_status.get_name().c_str());
     }
-    printf("dump proces collection end.\n");
+    printf("dump process collection end.\n");
 }
