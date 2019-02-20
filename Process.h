@@ -50,8 +50,7 @@ class ProcessCollection
     void dump();
 
   private:
-    int filter_by_policy(std::shared_ptr<Process> process,
-                         Policy &policy);
+    bool match_policy(std::shared_ptr<Process> process, Policy &policy);
 
   private:
     ProcPid pids;

@@ -129,7 +129,7 @@ int ProcessCollection::collect(PolicySet& policies)
       continue;
 
     for (Policy &policy: policies) {
-      if (!filter_by_policy(p, policy))
+      if (!match_policy(p, policy))
         continue;
 
       err = p->split_ranges();
@@ -148,8 +148,8 @@ int ProcessCollection::collect(PolicySet& policies)
   return 0;
 }
 
-int ProcessCollection::filter_by_policy(std::shared_ptr<Process> process,
-                                        Policy &policy)
+bool ProcessCollection::match_policy(std::shared_ptr<Process> process,
+                                     Policy &policy)
 {
   if (policy.pid >= 0) {
     if (policy.pid == process->pid)
