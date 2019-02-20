@@ -83,6 +83,24 @@ int Process::split_ranges()
   return 0;
 }
 
+bool Process::match_policy(Policy& policy)
+{
+  if (policy.pid >= 0) {
+    if (policy.pid == pid)
+      return true;
+  }
+
+  if (!policy.name.empty()) {
+    if (!policy.name.compare(proc_status.get_name())) {
+      printd("find policy for %s\n", policy.name.c_str());
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
 int ProcessCollection::collect()
 {
   int err;
@@ -129,7 +147,7 @@ int ProcessCollection::collect(PolicySet& policies)
       continue;
 
     for (Policy &policy: policies) {
-      if (!match_policy(p, policy))
+      if (!p->match_policy(policy))
         continue;
 
       err = p->split_ranges();
@@ -147,25 +165,6 @@ int ProcessCollection::collect(PolicySet& policies)
 
   return 0;
 }
-
-bool ProcessCollection::match_policy(std::shared_ptr<Process> process,
-                                     Policy &policy)
-{
-  if (policy.pid >= 0) {
-    if (policy.pid == process->pid)
-      return true;
-  }
-
-  if (!policy.name.empty()) {
-    if (!policy.name.compare(process->proc_status.get_name())) {
-      printd("find policy for %s\n", policy.name.c_str());
-      return true;
-    }
-  }
-
-  return false;
-}
-
 
 void ProcessCollection::dump()
 {

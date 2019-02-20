@@ -28,6 +28,7 @@ class Process
     int load(pid_t n);
     int split_ranges();
     IdleRanges& get_ranges() { return idle_ranges; }
+    bool match_policy(Policy& policy);
 
   private:
     void add_range(unsigned long start, unsigned long end);
@@ -48,9 +49,6 @@ class ProcessCollection
     int collect(PolicySet& policies);
     ProcessHash& get_proccesses() { return proccess_hash; }
     void dump();
-
-  private:
-    bool match_policy(std::shared_ptr<Process> process, Policy &policy);
 
   private:
     ProcPid pids;
