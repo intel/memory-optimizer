@@ -57,6 +57,7 @@ void Option::dump()
   printf("exit_on_stabilized = %d\n", exit_on_stabilized);
   printf("exit_on_exceeded = %d\n", (int)exit_on_exceeded);
   printf("dump_options = %d\n", (int)dump_options);
+  printf("dump_processes = %d\n", (int)dump_processes);
   printf("hot_min_refs = %d\n", hot_min_refs);
   printf("cold_max_refs = %d\n", cold_max_refs);
   printf("max_threads = %d\n", max_threads);

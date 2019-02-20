@@ -127,7 +127,7 @@ int GlobalScan::collect()
   else
     err = process_collection.collect(option.get_policies());
 
-  if (option.debug_level >= 2)
+  if (option.dump_processes || option.debug_level >= 2)
     process_collection.dump();
 
   if (err)

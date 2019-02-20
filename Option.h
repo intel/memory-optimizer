@@ -136,6 +136,7 @@ public:
   int exit_on_stabilized = 0; // percent moved
   bool exit_on_exceeded = false; // when exceed dram_percent
   bool dump_options = false;
+  bool dump_processes = false;
 
   int hugetlb = 0;
   int thp = 0;
