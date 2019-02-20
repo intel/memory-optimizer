@@ -127,6 +127,7 @@ class VMTest
     qemu_nodes = @pmem_nodes if :one_way_migration == type
     qemu_nodes = @dram_nodes if :dram_baseline == type
     env["interleave"] = qemu_nodes.join(',')
+    env["qemu_numactl"] = @scheme["qemu_numactl"] if @scheme["qemu_numactl"]
 
     cmd = File.join(@conf_dir, @qemu_script)
     log "env " + env.map { |k,v| "#{k}=#{v}" }.join(' ') + " " + cmd
@@ -277,7 +278,7 @@ class VMTest
   end
 
   def eat_mem(is_squeeze = false)
-    return if @scheme["one_way_migrate"]
+    return if @scheme["one_way_migrate"] || @scheme["no_eatmem"]
     proc_vmstat = ProcVmstat.new
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
@@ -326,7 +327,15 @@ class VMTest
 
   def spawn_migrate
     dram_percent = 100 / (@ratio + 1)
-    cmd = "/usr/bin/time -v stdbuf -oL #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@migrate_config}"
+
+    if @scheme["migrate_numactl"]
+      migrate_numactl = "numactl " + @scheme["migrate_numactl"]
+    else
+      migrate_numactl = ""
+    end
+
+    cmd = "/usr/bin/time -v stdbuf -oL #{migrate_numactl} #{@project_dir}/#{@scheme['migrate_cmd']} --dram #{dram_percent} -c #{@migrate_config}"
+
     log cmd + " > " + @migrate_log
     File.open(@migrate_log, 'w') do |f| f.puts cmd end
     @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'a'])
@@ -338,7 +347,7 @@ class VMTest
   end
 
   def eat_mem_loop
-    return if @scheme["one_way_migrate"]
+    return if @scheme["one_way_migrate"] || @scheme["no_eatmem"]
     5.times do |i| eat_mem; sleep i end
     rounds = 2
     percent = 50
@@ -483,6 +492,16 @@ class VMTest
   end
 
   def setup_nodes(ratio)
+
+    # in one_way_migration, we just use the nodes information
+    # from configuration file, no more calculation needed.
+    if @scheme["one_way_migrate"]
+      @dram_nodes = @scheme["dram_nodes"]
+      @pmem_nodes = @scheme["pmem_nodes"]
+      @all_nodes = @dram_nodes + @pmem_nodes
+      return
+    end
+
     # this func assumes d <= p
     d = @scheme["dram_nodes"].size
     p = @scheme["pmem_nodes"].size
@@ -574,7 +593,7 @@ class VMTest
       @workload_params = params
       # run_one unless @scheme["skip_baseline_run"]
       run_one :baseline      unless @scheme["skip_baseline_run"]
-      run_one :dram_baseline unless @scheme["skip_baseline_run"] || @dram_nodes.empty?
+      run_one :dram_baseline unless @scheme["skip_dram_baseline_run"] || @dram_nodes.empty?
 
       # should skip migrate?
       next if @dram_nodes.empty?
