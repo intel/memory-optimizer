@@ -51,9 +51,6 @@ class VMTest
 
   def initialize
     @project_dir = __dir__
-    @tests_dir = File.join @project_dir, 'tests'
-    @guest_workspace = "~/test"
-    @host_workspace = File.join(@tests_dir, "log")
   end
 
   def setup_params
@@ -610,8 +607,13 @@ class VMTest
   end
 
   def run_all(scheme_file)
+    @tests_dir = File.join @project_dir, 'tests'    
     @scheme = YAML.load_file(scheme_file)
     @conf_dir = File.dirname(File.realpath scheme_file)
+
+    @host_workspace = File.join(@conf_dir, "log")
+    @guest_workspace = "~/test"
+    
     @time_dir = File.join(@host_workspace, Time.now.strftime("%F.%T"))
     setup_params
     setup_sys
