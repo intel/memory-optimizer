@@ -1,6 +1,6 @@
 PREFIX := /usr/local
 BIN := ${PREFIX}/bin
-LIBJEVENTS_DIR = ../../pmu-tools/jevents
+LIBJEVENTS_DIR = ../pmu-tools/jevents
 PMEM2DRAM_DIR = ../../pmem2dram
 CXXFLAGS := -g -Wall -O2 -std=c++11 -MMD -Wno-unused-result \
 	-I${LIBJEVENTS_DIR} -I${PMEM2DRAM_DIR}
@@ -11,7 +11,6 @@ DEPS := $(patsubst %.o,%.d,${OBJ})
 LIBJEVENTS = ${LIBJEVENTS_DIR}/libjevents.a
 
 all: hmd
-	[ -f ../Makefile ] && RHMD=t make -C ..
 
 install: hmd
 	install -d ${BIN}

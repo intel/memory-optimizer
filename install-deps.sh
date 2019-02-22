@@ -64,3 +64,6 @@ cd vm-scalability && make usemem && sudo cp usemem /usr/local/bin/
 git clone https://github.com/akopytov/sysbench
 cd sysbench && ./autogen.sh && ./configure && make && sudo cp src/sysbench /usr/local/bin/
 EOF
+
+rm -rf pmu-tools
+git clone https://github.com/andikleen/pmu-tools.git
