@@ -1,0 +1,17 @@
+options:
+  dump_options: true
+#  initial_interval: 5
+  max_threads: 1
+  #  interval: 5
+  exit_on_exceeded: 1
+  # exit_on_stabilized: 1
+policies:
+#  - name: usemem
+#    placement: dram
+#  - name: sysbench
+#    migration: hot
+#    dump_distribution: true
+  - name: qemu-system-x86
+    migration: hot
+    dump_distribution: true
+    
