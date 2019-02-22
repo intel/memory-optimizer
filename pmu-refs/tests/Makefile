@@ -1,3 +1,12 @@
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright (c) 2019 Intel Corporation
+#
+# Authors: Huang Ying <ying.huang@intel.com>
+#          Jin Yao <yao.jin@intel.com>
+#
+
 PREFIX := /usr/local
 BIN := ${PREFIX}/bin
 CXXFLAGS := -g -Wall -O2 -std=c++11 -MMD -Wno-unused-result
