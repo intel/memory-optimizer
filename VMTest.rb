@@ -330,6 +330,11 @@ class VMTest
     log cmd + " > " + @migrate_log
     File.open(@migrate_log, 'w') do |f| f.puts cmd end
     @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'a'])
+
+    cmd = "pidof #{@migrate_script} > #{@migrate_pid_file}"
+    system(*cmd)
+    pid = File.read(@migrate_pid_file)
+    @migrate_pid = pid.to_i
   end
 
   def eat_mem_loop
@@ -378,6 +383,7 @@ class VMTest
     @migrate_log  = File.join(log_dir, @migrate_script  + ".log")
     @qemu_log     = File.join(log_dir, @qemu_script     + ".log")
     @usemem_pid_file = File.join(log_dir, "usemem.pid")
+    @migrate_pid_file = File.join(log_dir, "migrate.pid")
 
     # Avoid this dependency in old RHEL
     #   require "FileUtils"
@@ -395,6 +401,7 @@ class VMTest
     workload_pid = spawn_workload
 
     system("rm", "-f", @usemem_pid_file)
+    system("rm", "-f", @migrate_pid_file)
 
     wait_workload_startup
 
