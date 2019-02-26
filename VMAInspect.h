@@ -25,7 +25,8 @@ class VMAInspect
     ~VMAInspect() {};
 
     int dump_task_nodes(pid_t i, Formatter* m);
-    int dump_vma_nodes(proc_maps_entry& vma, MovePagesStatusCount& status_sum);
+    int dump_vma_nodes(Formatter* m, int is_split_vma,
+                       proc_maps_entry& vma, MovePagesStatusCount& status_sum);
     void set_numa_collection(NumaNodeCollection* new_numa_collection) {
       numa_collection = new_numa_collection;
       locator.set_numacollection(new_numa_collection);
@@ -36,11 +37,10 @@ class VMAInspect
 
   private:
     void fill_addrs(std::vector<void *>& addrs, unsigned long start);
-    void dump_node_percent(int slot);
+    void dump_node_percent(Formatter* fmt, int slot);
 
   private:
     pid_t pid;
-    Formatter* fmt;
     MovePages locator;
     NumaNodeCollection* numa_collection;
 };

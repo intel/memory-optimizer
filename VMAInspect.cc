@@ -29,10 +29,13 @@ void VMAInspect::fill_addrs(std::vector<void *>& addrs, unsigned long start)
     }
 }
 
-void VMAInspect::dump_node_percent(int slot)
+void VMAInspect::dump_node_percent(Formatter* fmt, int slot)
 {
   auto status_count = locator.get_status_count();
   size_t dram_nodes_size = 0;
+
+  if (!fmt)
+    return;
 
   if (numa_collection) {
     for (auto node: numa_collection->get_dram_nodes())
@@ -46,7 +49,8 @@ void VMAInspect::dump_node_percent(int slot)
   fmt->print("\n");
 }
 
-int VMAInspect::dump_vma_nodes(proc_maps_entry& vma, MovePagesStatusCount& status_sum)
+int VMAInspect::dump_vma_nodes(Formatter* fmt, int is_split_vma,
+                               proc_maps_entry& vma, MovePagesStatusCount& status_sum)
 {
   unsigned long nr_pages;
   int err = 0;
@@ -59,10 +63,11 @@ int VMAInspect::dump_vma_nodes(proc_maps_entry& vma, MovePagesStatusCount& statu
   int nr_slots = 1;
   unsigned long slot_pages = nr_pages;
 
-  if (total_mb >= (1<<10)) {
-    fmt->print("\nDRAM page distribution across 10 VMA slots: ");
-    fmt->print("(pid=%d vma_mb=%'lu)\n", pid, total_mb);
-
+  if (total_mb >= (1<<10) && is_split_vma) {
+    if (fmt) {
+      fmt->print("\nDRAM page distribution across 10 VMA slots: ");
+      fmt->print("(pid=%d vma_mb=%'lu)\n", pid, total_mb);
+    }
     nr_slots = 10;
     slot_pages = nr_pages / nr_slots;
   }
@@ -85,9 +90,9 @@ int VMAInspect::dump_vma_nodes(proc_maps_entry& vma, MovePagesStatusCount& statu
     locator.calc_status_count();
     // only show when it's bigger than 1G
     if (nr_slots != 1)
-      dump_node_percent(i);
+      dump_node_percent(fmt, i);
 
-    locator.add_status_count(status_sum);
+    locator.add_status_count_to(status_sum);
   }
 
   return err;
@@ -97,23 +102,20 @@ int VMAInspect::dump_task_nodes(pid_t i, Formatter* m)
 {
   ProcMaps proc_maps;
   int err = 0;
+  MovePagesStatusCount status_sum;
+  auto maps = proc_maps.load(i);
 
   pid = i;
-  fmt = m;
-
-  auto maps = proc_maps.load(pid);
-
-  MovePagesStatusCount status_sum;
   for (auto &vma: maps) {
-    err = dump_vma_nodes(vma, status_sum);
+    err = dump_vma_nodes(m, true, vma, status_sum);
     if (err)
       break;
   }
 
   if (!err) {
-    fmt->print("\nAnonymous page distribution across NUMA nodes in pid %d:\n", pid);
-    locator.set_pid(pid);
-    locator.show_status_count(fmt, status_sum);
+      m->print("\nAnonymous page distribution across NUMA nodes in pid %d:\n", pid);
+      locator.set_pid(pid);
+      locator.show_status_count(m, status_sum);
   }
 
   return err;
