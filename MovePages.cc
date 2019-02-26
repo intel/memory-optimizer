@@ -167,8 +167,8 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
     calc_target_nodes(&addrs[i], size);
     clear_status_count();
     calc_status_count();
-    account_stats(stats);
-    add_status_count(status_sum);
+    account_stats_count(stats);
+    add_status_count_to(status_sum);
 
     if (debug_level() >= 3)
       dump_target_nodes();
@@ -186,7 +186,7 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
   return ret;
 }
 
-void MovePages::account_stats(MoveStats *stats)
+void MovePages::account_stats_count(MoveStats *stats)
 {
   unsigned long skip_kb = 0;
   unsigned long move_kb = 0;
@@ -218,7 +218,7 @@ void MovePages::calc_status_count()
     inc_count(status_count, i);
 }
 
-void MovePages::add_status_count(MovePagesStatusCount& status_sum)
+void MovePages::add_status_count_to(MovePagesStatusCount& status_sum)
 {
   for (auto &kv : status_count)
     add_count(status_sum, kv.first, kv.second);
@@ -234,16 +234,11 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
   unsigned long total_kb = 0;
   unsigned long total_dram_kb = 0;
   unsigned long total_pmem_kb = 0;
-  NumaNode* numa_obj;
 
-  for (auto &kv : status_sum)
-    // skip invalid pages
-    if (kv.first >= 0)
-      total_kb += kv.second;
-  total_kb <<= page_shift - 10;
+  calc_memory_state(status_sum,
+                    total_kb, total_dram_kb, total_pmem_kb);
 
-  for (auto &kv : status_sum)
-  {
+  for (auto &kv : status_sum) {
     int nid = kv.first;
     unsigned long kb = kv.second << (page_shift - 10);
 
@@ -251,13 +246,45 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
       fmt->print("%'15lu  %2d%%  node %d\n", kb, percent(kb, total_kb), nid);
     else if (debug_level())
       fmt->print("%'15lu  %2d%%  %s\n", kb, percent(kb, total_kb), strerror(-nid));
+  }
 
+  if (numa_collection) {
+    fmt->print("Anon DRAM nodes size for pid %d : %'15lu  %2d%%\n",
+               pid,
+               total_dram_kb,
+               percent(total_dram_kb, total_kb));
+    fmt->print("Anon PMEM nodes size for pid %d : %'15lu  %2d%%\n",
+               pid,
+               total_pmem_kb,
+               percent(total_pmem_kb, total_kb));
+  }
+}
+
+void MovePages::calc_memory_state(MovePagesStatusCount& status_sum,
+                                  unsigned long& total_kb,
+                                  unsigned long& total_dram_kb,
+                                  unsigned long& total_pmem_kb)
+{
+  NumaNode* numa_obj;
+  unsigned long kb = 0;
+  int nid = 0;
+
+  total_kb = 0;
+  total_dram_kb = 0;
+  total_pmem_kb = 0;
+
+  for (auto &kv : status_sum) {
+    nid = kv.first;
+    kb = kv.second << (page_shift - 10);
+
+    // skip invalid pages
     if (!numa_collection || nid < 0)
       continue;
     numa_obj = numa_collection->get_node(nid);
     if (!numa_obj)
       continue;
 
+    total_kb += kb;
     switch(numa_obj->type()) {
       case NUMA_NODE_DRAM:
         total_dram_kb += kb;
@@ -271,19 +298,7 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
     }
   }
 
-  if (numa_collection) {
-    fmt->print("Anon DRAM nodes size for pid %d : %'15lu  %2d%%\n",
-               pid,
-               total_dram_kb,
-               percent(total_dram_kb, total_kb));
-    fmt->print("Anon PMEM nodes size for pid %d : %'15lu  %2d%%\n",
-               pid,
-               total_pmem_kb,
-               percent(total_pmem_kb, total_kb));
-  }
-
-  dram_kb = total_dram_kb;
-  pmem_kb = total_pmem_kb;
+  total_kb <<= page_shift - 10;
 }
 
 void MovePages::calc_target_nodes(void **addrs, long size)

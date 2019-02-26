@@ -81,15 +81,19 @@ class MovePages
     MovePagesStatusCount& get_status_count()  { return status_count; }
     void clear_status_count()                 { status_count.clear(); }
     void calc_status_count();
-    void add_status_count(MovePagesStatusCount& status_sum);
+    void add_status_count_to(MovePagesStatusCount& status_sum);
     void show_status_count(Formatter* fmt);
     void show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum);
-    void account_stats(MoveStats *stats);
+    void account_stats_count(MoveStats *stats);
     void calc_target_nodes(void **addrs, long size);
     int  get_target_node(NumaNode* node_obj);
     bool is_node_in_target_set(int node_id);
     long find_last_good(std::vector<int>& status, long end_pos);
     void dump_target_nodes(void);
+    void calc_memory_state(MovePagesStatusCount& status_sum,
+                           unsigned long& total_kb,
+                           unsigned long& total_dram_kb,
+                           unsigned long& total_pmem_kb);
 
   private:
     pid_t pid;
