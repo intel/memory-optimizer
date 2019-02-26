@@ -31,10 +31,10 @@ class VMAInspect
       numa_collection = new_numa_collection;
       locator.set_numacollection(new_numa_collection);
     }
-
-    unsigned long get_dram_kb() { return locator.dram_kb; };
-    unsigned long get_pmem_kb() { return locator.pmem_kb; };
-
+    int calc_memory_state(pid_t i,
+                          unsigned long &total_kb,
+                          unsigned long &total_dram_kb,
+                          unsigned long &total_pmem_kb);
   private:
     void fill_addrs(std::vector<void *>& addrs, unsigned long start);
     void dump_node_percent(Formatter* fmt, int slot);

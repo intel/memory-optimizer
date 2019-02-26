@@ -120,3 +120,32 @@ int VMAInspect::dump_task_nodes(pid_t i, Formatter* m)
 
   return err;
 }
+
+
+int VMAInspect::calc_memory_state(pid_t i,
+                                  unsigned long &total_kb,
+                                  unsigned long &total_dram_kb,
+                                  unsigned long &total_pmem_kb)
+{
+  ProcMaps proc_maps;
+  int err = 0;
+  MovePagesStatusCount status_sum;
+  auto maps = proc_maps.load(i);
+
+  pid = i;
+  for (auto &vma: maps) {
+    err = dump_vma_nodes(NULL, false, vma, status_sum);
+    if (err)
+      break;
+  }
+
+  if (!err) {
+      locator.set_pid(pid);
+      locator.calc_memory_state(status_sum,
+                                total_kb,
+                                total_dram_kb,
+                                total_pmem_kb);
+  }
+
+  return err;
+}
