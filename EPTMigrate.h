@@ -22,6 +22,7 @@
 #include "ProcVmstat.h"
 #include "ProcIdlePages.h"
 #include "EPTScan.h"
+#include "PidContext.h"
 
 class BandwidthLimit;
 class NumaNodeCollection;
@@ -54,6 +55,9 @@ class EPTMigrate : public EPTScan
       numa_collection = new_numa_collection;
       migrator.set_numacollection(new_numa_collection);
     }
+
+    void set_pid_context(PidContext *new_context)
+    { context = new_context; }
 
     static void reset_sys_migrate_stats();
     void count_migrate_stats();
@@ -92,6 +96,7 @@ class EPTMigrate : public EPTScan
     NumaNodeCollection* numa_collection;
 
     Formatter fmt;
+    PidContext *context = NULL;
 };
 
 #endif

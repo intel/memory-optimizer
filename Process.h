@@ -18,6 +18,7 @@
 #include "ProcMaps.h"
 #include "ProcStatus.h"
 #include "Option.h"
+#include "PidContext.h"
 
 class EPTMigrate;
 typedef std::vector<std::shared_ptr<EPTMigrate>> IdleRanges;
@@ -41,6 +42,7 @@ class Process
     ProcStatus proc_status;
     ProcMaps   proc_maps;
     IdleRanges idle_ranges;
+    PidContext context;
 };
 
 typedef std::unordered_map<pid_t, std::shared_ptr<Process>> ProcessHash;

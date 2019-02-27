@@ -29,6 +29,7 @@ void Process::add_range(unsigned long start, unsigned long end)
   p = std::make_shared<EPTMigrate>();
   p->set_pid(pid);
   p->set_va_range(start, end);
+  p->set_pid_context(&context);
   idle_ranges.push_back(p);
 
   printdd("pid=%d add_range %lx-%lx=%lx\n", pid, start, end, end - start);
@@ -149,6 +150,7 @@ int ProcessCollection::collect()
       continue;
 
     proccess_hash[pid] = p;
+    p->context.set_pid(pid);
   }
 
   return 0;
@@ -182,6 +184,7 @@ int ProcessCollection::collect(PolicySet& policies)
     p->set_policy(policy);
 
     proccess_hash[pid] = p;
+    p->context.set_pid(pid);
   }
 
   return 0;
