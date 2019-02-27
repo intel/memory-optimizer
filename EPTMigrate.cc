@@ -202,11 +202,6 @@ int EPTMigrate::select_top_pages(ProcIdlePageType type)
 int EPTMigrate::migrate()
 {
   int err = 0;
-  VMAInspect vma_inspector;
-
-  unsigned long dram_kb = 0;
-  unsigned long pmem_kb = 0;
-  unsigned long total_kb = 0;
 
   // Assume PLACEMENT_DRAM processes will mlock themselves to LRU_UNEVICTABLE.
   // Just need to skip them in user space migration.
@@ -230,15 +225,11 @@ int EPTMigrate::migrate()
     migrate_stats.show(fmt, MIGRATE_HOT);
   }
 
-  vma_inspector.set_numa_collection(numa_collection);
-  vma_inspector.dump_task_nodes(pid, &fmt);
-
-  vma_inspector.calc_memory_state(pid, total_kb, dram_kb, pmem_kb);
-  dram_percent = percent(dram_kb, total_kb);
-  printd("dram_kb: 0x%lx, pmem_kb: 0x%lx\n"
-         "total_kb: 0x%lx, dram percent: %d\n",
-          dram_kb, pmem_kb,
-          total_kb, dram_percent);
+  if (policy.dump_distribution) {
+    VMAInspect vma_inspector;
+    vma_inspector.set_numa_collection(numa_collection);
+    vma_inspector.dump_task_nodes(pid, &fmt);
+  }
 
   if (!fmt.empty())
     std::cout << fmt.str();
@@ -268,7 +259,8 @@ long EPTMigrate::do_move_pages(ProcIdlePageType type)
   migrator.set_batch_size(1024);
   migrator.set_migration_type(type);
 
-  ret = migrator.locate_move_pages(addrs,
+  ret = migrator.locate_move_pages(context,
+                                   addrs,
                                    &migrate_stats);
 
   return ret;
