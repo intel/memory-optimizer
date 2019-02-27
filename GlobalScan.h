@@ -63,6 +63,7 @@ class GlobalScan
     bool exit_on_stabilized();
     bool exit_on_exceeded();
     bool check_exit_on_exceeded(pid_t pid);
+    void update_pid_context();
 
     unsigned long accept_hot_bytes()   { return dram_hot_target * 12 / 8; }
     unsigned long target_young_bytes() { return dram_hot_target * 10 / 8; }
@@ -73,6 +74,7 @@ class GlobalScan
 
     unsigned long calc_migrated_bytes();
     void show_migrate_speed(float delta_time);
+    bool is_all_migration_done();
 
   private:
     static const float MIN_INTERVAL;
@@ -101,8 +103,6 @@ class GlobalScan
     NumaNodeCollection numa_collection;
     ProcVmstat proc_vmstat;
     Sysfs sysfs;
-
-    std::vector<pid_t> exceed_pids;
 };
 
 #endif
