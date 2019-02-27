@@ -60,21 +60,21 @@ void GlobalScan::main_loop()
   {
     reload_conf();
     collect();
-
     update_pid_context();
-
-    // todo: Add a option to control this,
-    // because we may want this run as a daemon.
-    if (is_all_migration_done()) {
-        printf("exit because all migration done.\n");
-        break;
-    }
     walk_multi();
     count_refs();
     migrate();
     count_migrate_stats();
+
     if (exit_on_stabilized())
       break;
+
+    // todo: Add a option to control this,
+    // because we may want this run as a daemon.
+    if (is_all_migration_done()) {
+      printf("exit because all migration done.\n");
+      break;
+    }
 
     double sleep_time = std::max(option.sleep_secs, 2 * interval);
     if (sleep_time > 10 * interval)
