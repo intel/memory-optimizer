@@ -42,9 +42,9 @@ struct MoveStats
     void clear();
     void add(MoveStats *s);
     void account(MovePagesStatusCount& status_count, int page_shift, int target_node);
-    void save_move_states(std::vector<int>& status,
-                          std::vector<int>& target_nodes,
-                          std::vector<int>& status_after_move,
+    void save_move_states(int status,
+                          int target_nodes,
+                          int status_after_move,
                           unsigned long page_shift);
     void show_move_state(Formatter& fmt);
     unsigned long get_moved_bytes();
@@ -85,7 +85,6 @@ class MovePages
     void clear_status_count()                 { status_count.clear(); }
     void calc_status_count();
     void add_status_count_to(MovePagesStatusCount& status_sum);
-    void show_status_count(Formatter* fmt);
     void show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum);
     void account_stats_count(MoveStats *stats);
     void calc_target_nodes(void **addrs, long size);
@@ -100,11 +99,11 @@ class MovePages
   private:
     bool is_exceed_dram_quota(PidContext* pid_context);
     void dec_dram_quota(PidContext* pid_context, long dec_value);
-    long calc_moved_size(std::vector<int>& status,
-                         std::vector<int>& target_nodes,
-                         std::vector<int>& status_after_move,
-                         unsigned long page_shift);
-  private:
+    long calc_and_save_state(MoveStats* stats,
+                             std::vector<int>& status,
+                             std::vector<int>& target_nodes,
+                             std::vector<int>& status_after_move);
+        private:
     pid_t pid;
     int flags;
 

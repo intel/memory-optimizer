@@ -36,25 +36,21 @@ void MoveStats::add(MoveStats* s)
   move_kb += s->move_kb;
 }
 
-void MoveStats::save_move_states(std::vector<int>& status,
-                                 std::vector<int>& target_nodes,
-                                 std::vector<int>& status_after_move,
+void MoveStats::save_move_states(int status,
+                                 int target_nodes,
+                                 int status_after_move,
                                  unsigned long page_shift)
 {
   int key;
 
-  for (size_t i = 0; i < status.size(); ++i) {
+  // let's what will return if negative value in
+  //if (status[i] < 0)
+  //  return
 
-    // let's what will return if negative value in
-    //if (status[i] < 0)
-    //  continue;
-    key = box_movestate(status[i],
-                        target_nodes[i],
-                        status_after_move[i]);
-    add_count(move_page_status, key, 1 << page_shift);
-  }
-
-  return;
+  key = box_movestate(status,
+                      target_nodes,
+                      status_after_move);
+  add_count(move_page_status, key, 1 << page_shift);
 }
 
 void MoveStats::show_move_state(Formatter& fmt)
@@ -177,10 +173,9 @@ long MovePages::locate_move_pages(PidContext *pid_context,
 
     ret = move_pages(&addrs[i], size, false);
     if (ret >= 0) {
-      stats->save_move_states(status, target_nodes,
-                              status_after_move, page_shift);
-      moved_size = calc_moved_size(status, target_nodes,
-                                   status_after_move, page_shift);
+      moved_size = calc_and_save_state(stats,
+                                       status, target_nodes,
+                                       status_after_move);
       dec_dram_quota(pid_context, moved_size >> 10);
     }
     if (ret) {
@@ -228,11 +223,6 @@ void MovePages::add_status_count_to(MovePagesStatusCount& status_sum)
 {
   for (auto &kv : status_count)
     add_count(status_sum, kv.first, kv.second);
-}
-
-void MovePages::show_status_count(Formatter* fmt)
-{
-  show_status_count(fmt, status_count);
 }
 
 void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_sum)
@@ -416,19 +406,24 @@ void MovePages::dec_dram_quota(PidContext* pid_context, long dec_value)
     pid_context->sub_dram_quota(dec_value);
 }
 
-long MovePages::calc_moved_size(std::vector<int>& status,
-                                std::vector<int>& target_nodes,
-                                std::vector<int>& status_after_move,
-                                unsigned long page_shift)
+long MovePages::calc_and_save_state(MoveStats* stats,
+                                    std::vector<int>& status,
+                                    std::vector<int>& target_nodes,
+                                    std::vector<int>& status_after_move)
 {
   long moved_bytes = 0;
 
   for (size_t i = 0; i < status.size(); ++i) {
-      if (MoveStats::is_page_moved(status[i],
-                                   target_nodes[i],
-                                   status_after_move[i]))
-          moved_bytes += 1 << page_shift;
+    stats->save_move_states(status[i],
+                            target_nodes[i],
+                            status_after_move[i],
+                            page_shift);
+    if (MoveStats::is_page_moved(status[i],
+                                 target_nodes[i],
+                                 status_after_move[i]))
+      moved_bytes += (1 << page_shift);
   }
 
   return moved_bytes;
+
 }
