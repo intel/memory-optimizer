@@ -19,6 +19,7 @@
 #include "Formatter.h"
 #include "BandwidthLimit.h"
 #include "Numa.h"
+#include "PidContext.h"
 
 void MoveStats::clear()
 {
@@ -79,11 +80,7 @@ unsigned long MoveStats::get_moved_bytes()
     key = i.first;
     unbox_movestate(key, from, to, result);
 
-    if (from < 0)
-      continue;
-
-    if (from != to
-        && to == result)
+    if (is_page_moved(from, to, result))
       moved_bytes += i.second;
   }
 
@@ -145,15 +142,21 @@ long MovePages::move_pages(void **addrs, unsigned long count, bool is_locate)
   return ret;
 }
 
-long MovePages::locate_move_pages(std::vector<void *>& addrs,
+long MovePages::locate_move_pages(PidContext *pid_context,
+                                  std::vector<void *>& addrs,
                                   MoveStats *stats)
 {
   unsigned long nr_pages = addrs.size();
+  long moved_size = 0;
   long ret = 0;
-  MovePagesStatusCount status_sum;
 
   for (unsigned long i = 0; i < nr_pages; i += batch_size) {
     unsigned long size = std::min(batch_size, nr_pages - i);
+
+    if (is_exceed_dram_quota(pid_context)) {
+      printf("pid %d: skip migration for dram ratio exceed.\n", pid_context->get_pid());
+      return 0;
+    }
 
     status.resize(size);
 
@@ -168,15 +171,18 @@ long MovePages::locate_move_pages(std::vector<void *>& addrs,
     clear_status_count();
     calc_status_count();
     account_stats_count(stats);
-    add_status_count_to(status_sum);
 
     if (debug_level() >= 3)
       dump_target_nodes();
 
     ret = move_pages(&addrs[i], size, false);
-    if (ret >= 0)
+    if (ret >= 0) {
       stats->save_move_states(status, target_nodes,
                               status_after_move, page_shift);
+      moved_size = calc_moved_size(status, target_nodes,
+                                   status_after_move, page_shift);
+      dec_dram_quota(pid_context, moved_size >> 10);
+    }
     if (ret) {
       fprintf(stderr, "WARNING: move pages failed %ld\n", ret);
       continue;
@@ -394,4 +400,35 @@ void MovePages::dump_target_nodes(void)
   for (size_t i = 0; i < end; ++i) {
     printf("%d -> %d\n", status[i], target_nodes[i]);
   }
+}
+
+bool MovePages::is_exceed_dram_quota(PidContext* pid_context)
+{
+  if (!pid_context)
+    return false;
+  return pid_context->get_dram_quota() <= 0;
+}
+
+void MovePages::dec_dram_quota(PidContext* pid_context, long dec_value)
+{
+    if (!pid_context)
+      return;
+    pid_context->sub_dram_quota(dec_value);
+}
+
+long MovePages::calc_moved_size(std::vector<int>& status,
+                                std::vector<int>& target_nodes,
+                                std::vector<int>& status_after_move,
+                                unsigned long page_shift)
+{
+  long moved_bytes = 0;
+
+  for (size_t i = 0; i < status.size(); ++i) {
+      if (MoveStats::is_page_moved(status[i],
+                                   target_nodes[i],
+                                   status_after_move[i]))
+          moved_bytes += 1 << page_shift;
+  }
+
+  return moved_bytes;
 }

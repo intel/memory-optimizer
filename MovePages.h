@@ -25,7 +25,7 @@ class NumaNode;
 
 typedef std::unordered_map<int, unsigned long> MovePagesStatusCount;
 class NumaNodeCollection;
-
+class PidContext;
 
 struct MoveStats
 {
@@ -48,6 +48,9 @@ struct MoveStats
                           unsigned long page_shift);
     void show_move_state(Formatter& fmt);
     unsigned long get_moved_bytes();
+
+    static bool is_page_moved(int from, int to, int move_state)
+    { return from >= 0 && from != to && to == move_state; }
 
   private:
     int box_movestate(int status, int target_node, int result);
@@ -72,7 +75,7 @@ class MovePages
     void set_migration_type(ProcIdlePageType new_type) { type = new_type; }
     long move_pages(std::vector<void *>& addrs, bool is_locate);
     long move_pages(void **addrs, unsigned long count, bool is_locate);
-    long locate_move_pages(std::vector<void *>& addrs,
+    long locate_move_pages(PidContext* pid_context, std::vector<void *>& addrs,
                            MoveStats *stats);
     void set_numacollection(NumaNodeCollection* new_collection)
     { numa_collection = new_collection; }
@@ -94,7 +97,13 @@ class MovePages
                            unsigned long &total_kb,
                            unsigned long &total_dram_kb,
                            unsigned long &total_pmem_kb);
-
+  private:
+    bool is_exceed_dram_quota(PidContext* pid_context);
+    void dec_dram_quota(PidContext* pid_context, long dec_value);
+    long calc_moved_size(std::vector<int>& status,
+                         std::vector<int>& target_nodes,
+                         std::vector<int>& status_after_move,
+                         unsigned long page_shift);
   private:
     pid_t pid;
     int flags;
