@@ -42,7 +42,7 @@ class VMAInspect
   private:
     pid_t pid;
     MovePages locator;
-    NumaNodeCollection* numa_collection;
+    NumaNodeCollection* numa_collection = NULL;
 };
 
 #endif
