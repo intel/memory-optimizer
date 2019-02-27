@@ -91,9 +91,9 @@ class MovePages
     long find_last_good(std::vector<int>& status, long end_pos);
     void dump_target_nodes(void);
     void calc_memory_state(MovePagesStatusCount& status_sum,
-                           unsigned long& total_kb,
-                           unsigned long& total_dram_kb,
-                           unsigned long& total_pmem_kb);
+                           unsigned long &total_kb,
+                           unsigned long &total_dram_kb,
+                           unsigned long &total_pmem_kb);
 
   private:
     pid_t pid;

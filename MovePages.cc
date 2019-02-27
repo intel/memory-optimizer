@@ -260,10 +260,10 @@ void MovePages::show_status_count(Formatter* fmt, MovePagesStatusCount& status_s
   }
 }
 
-void MovePages::calc_memory_state(MovePagesStatusCount& status_sum,
-                                  unsigned long& total_kb,
-                                  unsigned long& total_dram_kb,
-                                  unsigned long& total_pmem_kb)
+void MovePages::calc_memory_state(MovePagesStatusCount &status_sum,
+                                  unsigned long &total_kb,
+                                  unsigned long &total_dram_kb,
+                                  unsigned long &total_pmem_kb)
 {
   NumaNode* numa_obj;
   unsigned long kb = 0;
@@ -297,8 +297,6 @@ void MovePages::calc_memory_state(MovePagesStatusCount& status_sum,
         break;
     }
   }
-
-  total_kb <<= page_shift - 10;
 }
 
 void MovePages::calc_target_nodes(void **addrs, long size)
