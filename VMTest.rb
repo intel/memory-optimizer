@@ -387,7 +387,7 @@ class VMTest
     log_file = File.join(log_dir, 'log')
     @workload_log = File.join(log_dir, @workload_script + ".log")
     @migrate_log  = File.join(log_dir, @migrate_script  + ".log")
-    @qemu_log     = File.join(log_dir, @qemu_script     + ".log")
+    @qemu_log     = File.join(log_dir, File.basename(@qemu_script) + ".log")
     @usemem_pid_file = File.join(log_dir, "usemem.pid")
     @migrate_pid_file = File.join(log_dir, "migrate.pid")
 
