@@ -1,0 +1,29 @@
+dram_nodes:
+- 0
+- 1
+pmem_nodes:
+- 2
+- 3
+ratios: # PMEM:DRAM
+- 0     # pure DRAM
+- 1
+- 2     # 2:1 PMEM:DRAM
+- 4
+- 999   # pure PMEM
+one_way_migrate: true
+transparent_hugepage: always
+qemu_cmd: qemu-system-x86_64
+qemu_script: ../vm/kvm-image.sh
+workload_script: run-sysbench-memory.sh
+workload_params:
+- &params
+  time: 1200
+  threads: 1
+  memory_block_size: 8G
+  memory_scope: local
+  rand_type: gaussian
+  memory_oper: read
+- <<: *params
+  memory_oper: write
+migrate_cmd: sys-refs
+migrate_config: config/sysbench-memory-thp-1t.yaml
