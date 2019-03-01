@@ -503,9 +503,11 @@ class VMTest
     d = @scheme["dram_nodes"].size
     p = @scheme["pmem_nodes"].size
 
-    # d, p, ratio: 2, 4, 4 => 1, 4, 4
-    if d * ratio > p
-      d = p / ratio   # pure PMEM if (ratio > p)
+    if @scheme["one_way_migrate"] == false
+      # d, p, ratio: 2, 4, 4 => 1, 4, 4
+      if d * ratio > p
+        d = p / ratio   # pure PMEM if (ratio > p)
+      end
     end
 
     # In 2 socket system w/o fake NUMA, there will be 2 DRAM nodes and 2 PMEM nodes.
@@ -518,9 +520,11 @@ class VMTest
       end
     end
 
-    # d, p, ratio: 2, 4, 1 => 2, 2, 1
-    if d > 0
-      p = d * ratio   # pure DRAM if (ratio == 0)
+    if @scheme["one_way_migrate"] == false
+      # d, p, ratio: 2, 4, 1 => 2, 2, 1
+      if d > 0
+        p = d * ratio   # pure DRAM if (ratio == 0)
+      end
     end
 
     # When there are no enough NUMA nodes, performance can more comparable for
