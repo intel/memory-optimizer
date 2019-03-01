@@ -337,9 +337,12 @@ class VMTest
     File.open(@migrate_log, 'w') do |f| f.puts cmd end
     @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'a'])
 
+    sleep 10
     cmd = "pidof #{@migrate_script} > #{@migrate_pid_file}"
     system(*cmd)
     pid = File.read(@migrate_pid_file)
+    log "migrate_pid = #{pid}"
+    puts "migrate_pid = #{pid}"
     @migrate_pid = pid.to_i
   end
 
