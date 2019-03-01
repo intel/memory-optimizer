@@ -8,6 +8,7 @@
  */
 
 #include "lib/debug.h"
+#include "lib/memparse.h"
 #include "Process.h"
 #include "ProcMaps.h"
 #include "ProcStatus.h"
@@ -36,7 +37,10 @@ void Process::add_range(unsigned long start, unsigned long end)
 int Process::split_ranges()
 {
   unsigned long rss_anon = proc_status.get_number("RssAnon") << 10;
-  unsigned long max_bytes = option.split_rss_size;
+  unsigned long max_bytes = 0;
+
+  if (option.split_rss_size.c_str())
+    max_bytes = memparse(option.split_rss_size.c_str(), 0);
 
   if(option.hugetlb)
     rss_anon = proc_status.get_number("HugetlbPages") << 10;

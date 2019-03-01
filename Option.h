@@ -142,7 +142,7 @@ public:
   int thp = 0;
 
   int max_threads = 0;
-  unsigned long split_rss_size = 0; // no split task address space
+  std::string split_rss_size; // no split task address space
 
   float bandwidth_mbps = 0;
   MigrateWhat migrate_what = MIGRATE_HOT;
