@@ -38,6 +38,9 @@ int Process::split_ranges()
   unsigned long rss_anon = proc_status.get_number("RssAnon") << 10;
   unsigned long max_bytes = option.split_rss_size;
 
+  if(option.hugetlb)
+    rss_anon = proc_status.get_number("HugetlbPages") << 10;
+
   if (rss_anon <= 0)
     return 0;
 
