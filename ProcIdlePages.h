@@ -65,6 +65,7 @@ extern unsigned long pagetype_size[IDLE_PAGE_TYPE_MAX];
 extern const char* pagetype_name[IDLE_PAGE_TYPE_MAX];
 extern int pagetype_shift[IDLE_PAGE_TYPE_MAX];
 extern int pagetype_index[];
+extern int pagetype_batchsize[IDLE_PAGE_TYPE_MAX];
 
 typedef std::unordered_map<unsigned long, uint8_t> page_refs_map;
 

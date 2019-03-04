@@ -69,6 +69,22 @@ int pagetype_shift[IDLE_PAGE_TYPE_MAX] = {
   [PMD_HOLE]          = 21,
 };
 
+int pagetype_batchsize[IDLE_PAGE_TYPE_MAX] = {
+  [PTE_ACCESSED]      = 1024, // total 4M per batch
+  [PMD_ACCESSED]      = 128,  // total 256M per batch
+  [PUD_PRESENT]       = 2,    // total 2G per batch
+
+  [PTE_DIRTY]         = 1024,
+  [PMD_DIRTY]         = 128,
+
+  [PTE_IDLE]          = 1024,
+  [PMD_IDLE]          = 128,
+  [PMD_IDLE_PTES]     = 128,
+
+  [PTE_HOLE]          = 1024,
+  [PMD_HOLE]          = 128,
+};
+
 
 const char* pagetype_name[IDLE_PAGE_TYPE_MAX] = {
   [PTE_ACCESSED]      = "4K_accessed",
