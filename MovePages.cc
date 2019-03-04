@@ -21,6 +21,8 @@
 #include "Numa.h"
 #include "PidContext.h"
 
+int MoveStats::default_failed = -128;
+
 void MoveStats::clear()
 {
   to_move_kb = 0;
@@ -68,7 +70,7 @@ void MoveStats::show_move_state(Formatter& fmt)
 
 unsigned long MoveStats::get_moved_bytes()
 {
-  unsigned long moved_bytes = 0;
+  unsigned long total_moved = 0;
   int from, to, result;
   int key;
 
@@ -77,10 +79,10 @@ unsigned long MoveStats::get_moved_bytes()
     unbox_movestate(key, from, to, result);
 
     if (is_page_moved(from, to, result))
-      moved_bytes += i.second;
+      total_moved += i.second;
   }
 
-  return moved_bytes;
+  return total_moved;
 }
 
 int MoveStats::box_movestate(int status, int target_node, int result)
@@ -109,10 +111,14 @@ MovePages::MovePages() :
 
 long MovePages::move_pages(std::vector<void *>& addrs, bool is_locate)
 {
-  return move_pages(&addrs[0], addrs.size(), is_locate);
+  if (is_locate)
+      return move_pages(&addrs[0], status, addrs.size(), is_locate);
+  else
+      return move_pages(&addrs[0], status_after_move, addrs.size(), is_locate);
 }
 
-long MovePages::move_pages(void **addrs, unsigned long count, bool is_locate)
+long MovePages::move_pages(void **addrs, std::vector<int> &move_status,
+                           unsigned long count, bool is_locate)
 {
   std::vector<int> nodes;
   const int *pnodes;
@@ -121,19 +127,19 @@ long MovePages::move_pages(void **addrs, unsigned long count, bool is_locate)
   if (!is_locate) {
     // move pages
     pnodes = &target_nodes[0];
-    status_after_move.resize(count);
-    ret = ::move_pages(pid, count, addrs, pnodes, &status_after_move[0], flags);
+    move_status.resize(count, MoveStats::default_failed);
+    ret = ::move_pages(pid, count, addrs, pnodes, &move_status[0], flags);
   } else {
     // locate pages
     pnodes = NULL;
-    status.resize(count);
-    ret = ::move_pages(pid, count, addrs, pnodes, &status[0], flags);
+    move_status.resize(count);
+    ret = ::move_pages(pid, count, addrs, pnodes, &move_status[0], flags);
   }
 
   if (ret < 0)
-    perror("WARNING: move_pages");
+    perror("WARNING: move_pages failed");
   else if (ret > 0)
-    fprintf(stderr, "WARNING: move_pages failed %ld\n", ret);
+    fprintf(stderr, "WARNING: move_pages return: %ld\n", ret);
 
   return ret;
 }
@@ -154,10 +160,8 @@ long MovePages::locate_move_pages(PidContext *pid_context,
       return 0;
     }
 
-    status.resize(size);
-
     // locate pages
-    ret = move_pages(&addrs[i], size, true);
+    ret = move_pages(&addrs[i], status, size, true);
     if (ret) {
       fprintf(stderr, "WARNING: locate pages failed %ld\n", ret);
       break;
@@ -171,17 +175,23 @@ long MovePages::locate_move_pages(PidContext *pid_context,
     if (debug_level() >= 3)
       dump_target_nodes();
 
-    ret = move_pages(&addrs[i], size, false);
-    if (ret >= 0) {
-      moved_size = calc_and_save_state(stats,
-                                       status, target_nodes,
-                                       status_after_move);
-      dec_dram_quota(pid_context, moved_size >> 10);
-    }
-    if (ret) {
-      fprintf(stderr, "WARNING: move pages failed %ld\n", ret);
-      continue;
-    }
+    ret = move_pages(&addrs[i], status_after_move, size, false);
+
+    /*
+     * Get page location again because move_pages() API leave "status"
+     * array untouched but the pages actually moved successfully when
+     * it return value > 0 (for example 1 and 2), this is a workaround
+     * here before we investigate what happened in kernel part.
+     */
+    if (ret > 0)
+      move_pages(&addrs[i], status_after_move, size, true);
+
+    // Because we filled the status_after_move to default negative value
+    // so we can call below part safely
+    moved_size = calc_and_save_state(stats,
+                                     status, target_nodes,
+                                     status_after_move);
+    dec_dram_quota(pid_context, moved_size >> 10);
   }
 
   return ret;

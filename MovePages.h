@@ -49,9 +49,12 @@ struct MoveStats
     void show_move_state(Formatter& fmt);
     unsigned long get_moved_bytes();
 
+    static int default_failed;
     static bool is_page_moved(int from, int to, int move_state)
     { return from >= 0 && from != to && to == move_state; }
 
+    static bool is_page_move_failed(int from, int to, int move_state)
+    { return from >= 0 && from != to && move_state < 0; }
   private:
     int box_movestate(int status, int target_node, int result);
    void unbox_movestate(int key,
@@ -74,7 +77,8 @@ class MovePages
     void set_throttler(BandwidthLimit* new_throttler) { throttler = new_throttler; }
     void set_migration_type(ProcIdlePageType new_type) { type = new_type; }
     long move_pages(std::vector<void *>& addrs, bool is_locate);
-    long move_pages(void **addrs, unsigned long count, bool is_locate);
+    long move_pages(void **addrs, std::vector<int> &move_status,
+                    unsigned long count, bool is_locate);
     long locate_move_pages(PidContext* pid_context, std::vector<void *>& addrs,
                            MoveStats *stats);
     void set_numacollection(NumaNodeCollection* new_collection)
