@@ -10,11 +10,11 @@
 
 cd "$(dirname "$0")"
 
-./run-vm-tests.rb scheme-sysbench-memory-kunpeng-32t.yaml
+../run-vm-tests.rb scheme-sysbench-memory-kunpeng-32t.yaml
 sleep 10
-./run-vm-tests.rb scheme-sysbench-memory-kunpeng-16t.yaml
+../run-vm-tests.rb scheme-sysbench-memory-kunpeng-16t.yaml
 sleep 10
-./run-vm-tests.rb scheme-sysbench-memory-kunpeng-4t.yaml
+../run-vm-tests.rb scheme-sysbench-memory-kunpeng-4t.yaml
 sleep 10
-./run-vm-tests.rb scheme-sysbench-memory-kunpeng-1t.yaml
+../run-vm-tests.rb scheme-sysbench-memory-kunpeng-1t.yaml
 
