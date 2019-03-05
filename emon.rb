@@ -82,7 +82,7 @@ class Emon
   def stop()
     sleep 5
     cmd = {
-      :cmd => "emon -stop",
+      :cmd => @emon_bin + " -stop",
       :out => output_file("emon-stop.out"),
       :err => output_file("emon-stop.err"),
       :wait => true,
