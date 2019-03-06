@@ -407,8 +407,11 @@ void PmuNode::calc_dram_count_avg(NumaNodeCollection *numa_nodes)
 
 void PmuNode::print_statistics(void)
 {
-  printf("node %d imc read %lld KB/s, write %lld KB/s\n",
-         nid_, read_KBps_, write_KBps_);
+  if (hmd_config.imc_counting) {
+    printf("node %d imc read %lld KB/s, write %lld KB/s\n",
+           nid_, read_KBps_, write_KBps_);
+  }
+
   printf("node %d memory accesses: %llu, avg: %llu\n",
          nid_, dram_count_, dram_count_avg_);
 }
@@ -478,6 +481,9 @@ void PmuState::open_imc_events(void)
 {
   int cpu;
 
+  if (!hmd_config.imc_counting)
+    return;
+
   timestamp_ = rdclock();
 
   for (auto& node: nodes_) {
@@ -491,6 +497,9 @@ void PmuState::open_imc_events(void)
 
 void PmuState::close_imc_events(void)
 {
+  if (!hmd_config.imc_counting)
+    return;
+
   for (auto& node: nodes_) {
     node->close_imc_events();
   }
@@ -609,6 +618,9 @@ void PmuState::read_dram_count(void)
 void PmuState::read_imc_count()
 {
   unsigned long curr_ts, ts_diff;
+
+  if (!hmd_config.imc_counting)
+    return;
 
   curr_ts = rdclock();
   ts_diff = curr_ts - timestamp_;

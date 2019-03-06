@@ -39,6 +39,7 @@ struct hmd_config hmd_config = {
   .cmsk_achash_threshold = 8,
   .aging_method = CMSK_AGING_CLEAR,
   .hash_mode = false,
+  .imc_counting = false,
 
   .numa = {
     .numa_dram_list = "0",

@@ -167,6 +167,7 @@ void PMUMemoryOptimizer::usage(const char *program)
           "	--dram-remote-event EVENT	DRAM remote PMU event to count\n"
           "	--imc-dram-read-event EVENT	Event for IMC read bandwidth\n"
           "	--imc-dram-write-event EVENT	Event for IMC write bandwidth\n"
+          "	--imc-counting			enable imc counting (i.e. memory bandwidth)\n"
           "	--sample-period-min COUNT	minimum perf sample period\n"
           "	--physical-address		sample physical addresses\n"
           "	-u|--cpu-list CPU_LIST		target CPU list to monitor\n"
@@ -216,6 +217,7 @@ enum {
   OPT_IMC_DRAM_WRITE_EVENT,
   OPT_FILTER_ADDR_RANGE,
   OPT_FILTER_RESET_INTERVALS,
+  OPT_IMC_COUNTING,
 };
 
 static const struct option options[] = {
@@ -246,6 +248,7 @@ static const struct option options[] = {
   { "pmem-dram-map", 1, NULL, OPT_PMEM_DRAM_MAP },
   { "filter-addr-range", 1, NULL, OPT_FILTER_ADDR_RANGE },
   { "filter-reset-intervals", 1, NULL, OPT_FILTER_RESET_INTERVALS },
+  { "imc-counting", 0, NULL, OPT_IMC_COUNTING },
   { "show-only", 0, NULL, OPT_SHOW_ONLY },
   { "verbose", 0, NULL, 'v' },
   { "help", 0, NULL, 'h' },
@@ -447,6 +450,9 @@ void PMUMemoryOptimizer::parse_options(int ac, char *av[])
         break;
       case OPT_FILTER_RESET_INTERVALS:
         hmd_config.arfilter_reset_intervals = parse_long_option(optarg, av);
+        break;
+      case OPT_IMC_COUNTING:
+        hmd_config.imc_counting = true;
         break;
       case OPT_SHOW_ONLY:
         hmd_config.show_only = 1;

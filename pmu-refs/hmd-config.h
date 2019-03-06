@@ -47,6 +47,7 @@ struct hmd_config {
   int cmsk_achash_threshold;
   int aging_method;
   bool hash_mode;
+  bool imc_counting;
 
   NumaHWConfig numa;
 
