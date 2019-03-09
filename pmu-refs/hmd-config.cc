@@ -24,7 +24,6 @@ struct hmd_config hmd_config = {
   .imc_dram_write = "cas_count_write",
   .target_pid = -1,
   .sample_period_min = 1000,
-  .phy_addr = false,
   .cpumask = NULL,
   .expected_samples = 20000,
   .expected_samples_margin_percent = 20,

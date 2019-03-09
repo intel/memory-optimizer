@@ -169,7 +169,6 @@ void PMUMemoryOptimizer::usage(const char *program)
           "	--imc-dram-write-event EVENT	Event for IMC write bandwidth\n"
           "	--imc-counting			enable imc counting (i.e. memory bandwidth)\n"
           "	--sample-period-min COUNT	minimum perf sample period\n"
-          "	--physical-address		sample physical addresses\n"
           "	-u|--cpu-list CPU_LIST		target CPU list to monitor\n"
           "	-p|--pid PID			target process ID to monitor\n"
           "	-g|--granularity-order ORDER	address granularity in order (page, huge page, etc.)\n"
@@ -202,7 +201,6 @@ enum {
   OPT_DRAM_LOCAL_EVENT,
   OPT_DRAM_REMOTE_EVENT,
   OPT_SAMPLE_PERIOD_MIN,
-  OPT_PHYSICAL_ADDRESS,
   OPT_UNIT_INTERVAL,
   OPT_INTERVAL_MAX,
   OPT_EXPECTED_SAMPLES,
@@ -228,7 +226,6 @@ static const struct option options[] = {
   { "imc-dram-read-event", 1, NULL, OPT_IMC_DRAM_READ_EVENT },
   { "imc-dram-write-event", 1, NULL, OPT_IMC_DRAM_WRITE_EVENT },
   { "sample-period-min", 1, NULL, OPT_SAMPLE_PERIOD_MIN },
-  { "physical-address", 0, NULL, OPT_PHYSICAL_ADDRESS },
   { "cpu-list", 1, NULL, 'u' },
   { "pid", 1, NULL, 'p' },
   { "granularity-order", 1, NULL, 'g' },
@@ -385,9 +382,6 @@ void PMUMemoryOptimizer::parse_options(int ac, char *av[])
         break;
       case OPT_SAMPLE_PERIOD_MIN:
         hmd_config.sample_period_min = parse_long_option(optarg, av);
-        break;
-      case OPT_PHYSICAL_ADDRESS:
-        hmd_config.phy_addr = true;
         break;
       case 'u':
         hmd_config.cpumask = numa_parse_cpustring(optarg);

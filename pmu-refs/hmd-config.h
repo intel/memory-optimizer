@@ -33,7 +33,6 @@ struct hmd_config {
   const char *imc_dram_write;
   int target_pid;
   int sample_period_min;
-  bool phy_addr;
   struct bitmask *cpumask;
   int expected_samples;
   int expected_samples_margin_percent;

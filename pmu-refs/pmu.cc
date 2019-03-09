@@ -104,8 +104,7 @@ void PmuCpu::setup_pmem_attrs(PmuEventAttrs& attrs, int sample_period)
     attr->exclude_kernel = 1;
     attr->disabled = 1;
     attr->precise_ip = 1;
-    attr->sample_type = hmd_config.phy_addr ? PERF_SAMPLE_PHYS_ADDR :
-                        PERF_SAMPLE_ADDR | PERF_SAMPLE_TID;
+    attr->sample_type = PERF_SAMPLE_ADDR | PERF_SAMPLE_TID;
   }
 }
 
@@ -146,7 +145,7 @@ bool PmuCpu::read_pmem_samples_fd(struct perf_fd *fd, struct sample_stats *st,
                                   PmuPmemSampleProcessor *processor)
 {
   struct perf_iter iter;
-  unsigned int sample_size = hmd_config.phy_addr ? 16 : 24;
+  unsigned int sample_size = 24;
   bool full = false;
   u64 val;
   u64 pid = 1;
@@ -177,31 +176,27 @@ bool PmuCpu::read_pmem_samples_fd(struct perf_fd *fd, struct sample_stats *st,
       continue;
     }
 
-    if (hmd_config.phy_addr) {
-      val = perf_hdr_payload(hdr)[0];
-    } else {
-      pid = perf_hdr_payload(hdr)[0];
-      val = perf_hdr_payload(hdr)[1];
+    pid = perf_hdr_payload(hdr)[0];
+    val = perf_hdr_payload(hdr)[1];
 
-      /* Filter out kernel samples, which can happen due to OOO skid */
-      if ((s64)val <= 0)
-        continue;
+    /* Filter out kernel samples, which can happen due to OOO skid */
+    if ((s64)val <= 0)
+      continue;
 
-      /*
-       * struct perf_sample_data {
-       *	...
-       *	struct {
-       *		u32	pid;
-       *		u32	tid;
-       *	} tid_entry;
-       *	...
-       * }
-       */
-      tid = pid >> 32;
-      pid &= 0xffffffff;
-      if (!pid)
-        continue;
-    }
+    /*
+     * struct perf_sample_data {
+     *	...
+     *	struct {
+     *		u32	pid;
+     *		u32	tid;
+     *	} tid_entry;
+     *	...
+     * }
+     */
+    tid = pid >> 32;
+    pid &= 0xffffffff;
+    if (!pid)
+      continue;
     full = processor->on_pmu_pmem_sample(val, pid, tid, cpuid_);
     if (full)
       break;
