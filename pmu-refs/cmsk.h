@@ -43,6 +43,7 @@ struct achash_item
 /* Address/count Hash */
 struct achash
 {
+  bool hash_mode;
   unsigned int threshold;
   unsigned int size_order;
   unsigned int size;
@@ -56,7 +57,6 @@ struct achash
 /* Top-K frequent items with Cout-Min-Sketch */
 struct cmsk
 {
-  bool hash_mode;
   int aging_method;
   unsigned int interval;
   unsigned int no;

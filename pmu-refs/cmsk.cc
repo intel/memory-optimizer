@@ -153,8 +153,13 @@ static unsigned int achash_new_item(struct achash *achash,
   item->addr = addr;
   item->pid = pid;
   item->next = 0;
-  item->count = achash->threshold;
-  achash->samples += achash->threshold;
+  if (achash->hash_mode) {
+    item->count = 1;
+    achash->samples++;
+  } else {
+    item->count = achash->threshold;
+    achash->samples += achash->threshold;
+  }
 
   return ++achash->len;
 }
@@ -281,7 +286,7 @@ void cmsk_fini(struct cmsk *cmsk)
 
 void cmsk_clear(struct cmsk *cmsk)
 {
-  if (!cmsk->hash_mode)
+  if (!cmsk->achash.hash_mode)
     cms_clear(&cmsk->cms);
   else
     cmsk->cms.total = 0;
@@ -295,7 +300,7 @@ bool cmsk_update(struct cmsk *cmsk, unsigned long item1, unsigned long item2)
   struct cms *cms = &cmsk->cms;
   struct achash *achash = &cmsk->achash;
 
-  if (cmsk->hash_mode) {
+  if (achash->hash_mode) {
     h = hash(item1, item2, cms->depth - 1);
     cms->total++;
     return achash_update(achash, item1, item2, h);
@@ -328,10 +333,14 @@ void cmsk_sort(struct cmsk *cmsk)
   achash_sort(&cmsk->achash);
 
   threshold = achash->threshold;
-  if (!cmsk->hash_mode)
+  if (!achash->hash_mode)
     threshold += cms_error(cms);
-  if (achash->items[len - 1].count < threshold)
+  if (achash->items[len - 1].count < threshold) {
+    unsigned int i, olen = achash->len;
     achash->len = achash_bsearch(achash, len - 1, threshold - 1);
+    for (i = achash->len; i < olen; i++)
+      achash->samples -= achash->items[i].count;
+  }
 }
 
 static int achash_cmp_pid(const void *a, const void *b)

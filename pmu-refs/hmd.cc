@@ -496,7 +496,7 @@ int PMUMemoryOptimizer::main(int argc, char *argv[])
   pmu_state_.open_pmem_events();
   pmu_state_.open_dram_events();
 
-  cmsk_.hash_mode = hmd_config.hash_mode;
+  cmsk_.achash.hash_mode = hmd_config.hash_mode;
   cmsk_.cms.width_order = hmd_config.cmsk_cms_width_order;
   cmsk_.cms.depth = 4;
   cmsk_.achash.threshold = hmd_config.cmsk_achash_threshold;
