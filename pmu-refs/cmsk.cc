@@ -249,6 +249,13 @@ static void achash_print(struct achash *achash, unsigned int total)
     printf("hot weight > %d: %.2f%%\n", n, samples * 100.0 / total);
     size = nsize;
   }
+
+  printf("hot pages:\n");
+  for (i = 0; i < std::min(8U, achash->len); i++) {
+    auto item = &achash->items[i];
+    printf("  %lx %lu: %lu, %.2f%%\n", item->addr, item->pid, item->count,
+           double(item->count) * 100 / total);
+  }
 }
 
 int cmsk_init(struct cmsk *cmsk)
