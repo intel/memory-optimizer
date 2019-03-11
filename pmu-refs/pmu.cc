@@ -510,17 +510,11 @@ void PmuState::begin_interval(void)
 
 void PmuState::setup_pmem_sample_period(int sample_period)
 {
-  int prev_period = pmem_sample_period_;
-
   for (auto& cpu: cpus_) {
     cpu->setup_pmem_sample_period(sample_period);
   }
 
   pmem_sample_period_ = sample_period;
-
-  if (hmd_config.verbose)
-    printf("Adjust sample period: %d -> %d\n",
-           prev_period, sample_period);
 }
 
 void PmuState::adjust_sample_period_commit(void)
@@ -689,6 +683,7 @@ void PmuState::print_statistics(void)
     node->print_statistics();
   }
 
+  printf("sample period: %d\n", pmem_sample_period_);
   printf("%s: %ld samples, %ld others, %lu lost, %ld throttled, %ld skipped\n",
          hmd_config.pmem_pmu_events[PET_LOCAL],
          stats_.samples,
