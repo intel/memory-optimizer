@@ -337,13 +337,17 @@ class VMTest
     File.open(@migrate_log, 'w') do |f| f.puts cmd end
     @migrate_pid = Process.spawn(cmd, [:out, :err]=>[@migrate_log, 'a'])
 
-    sleep 10
+    sleep 5
     cmd = "pidof #{@migrate_script} > #{@migrate_pid_file}"
     system(*cmd)
     pid = File.read(@migrate_pid_file)
-    log "migrate_pid = #{pid}"
-    puts "migrate_pid = #{pid}"
-    @migrate_pid = pid.to_i
+    if pid == ""
+      @migrate_pid = -1
+      puts "#{@scheme['migrate_cmd']} had exited!"
+    else
+      log "migrate_pid = #{pid}"
+      @migrate_pid = pid.to_i
+    end
   end
 
   def eat_mem_loop
@@ -450,7 +454,7 @@ class VMTest
       aepwatch.stop
     end
 
-    if run_type_migration?(run_type)
+    if run_type_migration?(run_type) && (@migrate_pid != -1)
       kill_wait @migrate_pid
     end
 
