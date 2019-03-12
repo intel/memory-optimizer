@@ -225,7 +225,7 @@ int EPTMigrate::migrate()
     migrate_stats.show(fmt, MIGRATE_HOT);
   }
 
-  if (policy.dump_distribution) {
+  if (policy.dump_distribution && migrate_stats.move_kb) {
     VMAInspect vma_inspector;
     vma_inspector.set_numa_collection(numa_collection);
     vma_inspector.dump_task_nodes(pid, &fmt);
