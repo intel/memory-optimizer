@@ -49,6 +49,7 @@ struct hmd_config hmd_config = {
   .dram_watermark_percent = 10,
 
   .move_pages_max = 1024,
+  .dram_count_multiple = 10,
 
   .show_only = 0,
   .verbose = 0,

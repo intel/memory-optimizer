@@ -53,6 +53,7 @@ struct hmd_config {
   int dram_watermark_percent;
 
   int move_pages_max;
+  int dram_count_multiple;
 
   int show_only;
   int verbose;

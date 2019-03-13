@@ -184,6 +184,7 @@ void PMUMemoryOptimizer::usage(const char *program)
           "	-a|--aging-method METHOD	the aging method to use: clear or half\n"
           "	--hash-mode			do statistics with hash only, without cms\n"
           "	-m|--move-pages-max COUNT	maximum page count to move for each interval\n"
+          "	--dram-count-multiple MULTIPLE  times to enlarge dram count before comparison\n"
           "	--dram-list LIST		DRAM node list\n"
           "	--pmem-list LIST		PMEM node list\n"
           "	--pmem-dram-map MAP		map from PMEM node to nearest DRAM node\n"
@@ -207,6 +208,7 @@ enum {
   OPT_EXPECTED_SAMPLES_MARGIN_PERCENT,
   OPT_HASH_SIZE_ORDER,
   OPT_HASH_MODE,
+  OPT_DRAM_COUNT_MULTIPLE,
   OPT_DRAM_LIST,
   OPT_PMEM_LIST,
   OPT_PMEM_DRAM_MAP,
@@ -240,6 +242,7 @@ static const struct option options[] = {
   { "aging-method", 1, NULL, 'a' },
   { "hash-mode", 0, NULL, OPT_HASH_MODE },
   { "move-pages-max", 1, NULL, 'm' },
+  { "dram-count-multiple", 1, NULL, OPT_DRAM_COUNT_MULTIPLE },
   { "dram-list", 1, NULL, OPT_DRAM_LIST },
   { "pmem-list", 1, NULL, OPT_PMEM_LIST },
   { "pmem-dram-map", 1, NULL, OPT_PMEM_DRAM_MAP },
@@ -429,6 +432,9 @@ void PMUMemoryOptimizer::parse_options(int ac, char *av[])
         break;
       case 'm':
         hmd_config.move_pages_max = parse_long_option(optarg, av);
+        break;
+      case OPT_DRAM_COUNT_MULTIPLE:
+        hmd_config.dram_count_multiple = parse_long_option(optarg, av);
         break;
       case OPT_DRAM_LIST:
         hmd_config.numa.numa_dram_list = optarg;

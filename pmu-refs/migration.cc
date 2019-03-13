@@ -89,7 +89,8 @@ bool MigrationState::is_page_hot_in_target_dram_node(
     int sample_count, int target_node)
 {
   return sample_count * pmu_state_->get_pmem_sample_period() >=
-      pmu_state_->get_node(target_node)->get_dram_count_avg();
+      pmu_state_->get_node(target_node)->get_dram_count_avg() *
+      hmd_config.dram_count_multiple;
 }
 
 void MigrationState::filter()
