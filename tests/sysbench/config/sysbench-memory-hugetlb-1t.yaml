@@ -1,0 +1,12 @@
+options:
+  dump_options: true
+  hugetlb: 1
+  initial_interval: 1
+  exit_on_exceeded: 1
+policies:
+#  - name: sysbench
+#    migration: hot
+#    dump_distribution: true
+  - name: qemu-system-x86
+    migration: hot
+    dump_distribution: true
