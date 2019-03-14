@@ -66,6 +66,7 @@ void Option::dump()
   printf("migrate_what = %d\n", migrate_what);
   printf("output_file = %s\n", output_file.c_str());
   printf("config_file = %s\n", config_file.c_str());
+  printf("daemon = %d\n", (int)daemon);
 
   for (size_t i = 0; i < policies.size(); ++i) {
       printf("policy %ld:\n", i);

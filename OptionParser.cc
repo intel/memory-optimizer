@@ -119,18 +119,17 @@ int OptionParser::parse_option(YAML::Node &&option_node)
 #undef OP_GET_VALUE
 
       std::string str_val;
-      if (get_value(iter, "dump_options", str_val)) {
-        Option::parse_name_map(bool_name_map, str_val, dump_options, 2);
-        continue;
+#define OP_GET_BOOL_VALUE(name, member, max_val)              \
+      if (get_value(iter, name, str_val)) { \
+        Option::parse_name_map(bool_name_map, str_val, member, max_val); \
+        continue; \
       }
-      if (get_value(iter, "dump_processes", str_val)) {
-        Option::parse_name_map(bool_name_map, str_val, dump_processes, 2);
-        continue;
-      }
-      if (get_value(iter, "exit_on_exceeded", str_val)) {
-        Option::parse_name_map(bool_name_map, str_val, exit_on_exceeded, 2);
-        continue;
-      }
+
+      OP_GET_BOOL_VALUE("dump_options", dump_options, 2);
+      OP_GET_BOOL_VALUE("dump_processes", dump_processes, 2);
+      OP_GET_BOOL_VALUE("exit_on_exceeded", exit_on_exceeded, 2);
+      OP_GET_BOOL_VALUE("daemon", daemon, 2);
+#undef OP_GET_BOOL_VALUE
 
       YAML::Node sub_node;
       if (get_value(iter, "numa_nodes", sub_node)) {
