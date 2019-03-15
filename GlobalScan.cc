@@ -46,7 +46,8 @@ GlobalScan::GlobalScan() : conf_reload_flag(0)
 void GlobalScan::main_loop()
 {
   unsigned max_round = option.nr_loops;
-  if (!max_round)
+
+  if (!max_round || option.daemon)
     max_round = UINT_MAX;
 
   if (option.interval)
@@ -66,15 +67,11 @@ void GlobalScan::main_loop()
     migrate();
     count_migrate_stats();
 
-    if (exit_on_stabilized())
+    if (!option.daemon && exit_on_stabilized())
       break;
 
-    // todo: Add a option to control this,
-    // because we may want this run as a daemon.
-    if (is_all_migration_done()) {
-      printf("exit because all migration done.\n");
+    if (!option.daemon && is_all_migration_done())
       break;
-    }
 
     double sleep_time = std::max(option.sleep_secs, 2 * interval);
     if (sleep_time > 10 * interval)
@@ -528,5 +525,7 @@ bool GlobalScan::is_all_migration_done()
     if (i.second->context.get_dram_quota() > 0)
       return false;
   }
+
+  printf("exit because all migration done.\n");
   return true;
 }
