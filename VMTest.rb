@@ -496,16 +496,6 @@ class VMTest
   end
 
   def setup_nodes(ratio)
-
-    # in one_way_migration, we just use the nodes information
-    # from configuration file, no more calculation needed.
-    if @scheme["one_way_migrate"]
-      @dram_nodes = @scheme["dram_nodes"]
-      @pmem_nodes = @scheme["pmem_nodes"]
-      @all_nodes = @dram_nodes + @pmem_nodes
-      return
-    end
-
     # this func assumes d <= p
     d = @scheme["dram_nodes"].size
     p = @scheme["pmem_nodes"].size
