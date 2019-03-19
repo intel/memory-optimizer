@@ -53,4 +53,5 @@ struct hmd_config hmd_config = {
 
   .show_only = 0,
   .verbose = 0,
+  .runtime = 0,
 };

@@ -192,6 +192,7 @@ void PMUMemoryOptimizer::usage(const char *program)
           "	--filter-reset-intervals COUNT	maximum filter reset interval in unit count\n"
           "	--show-only			show statistics only, don't move pages\n"
           "	-v|--verbose			verbose mode\n"
+          "	--runtime RUNTIME               maximum run time in seconds\n"
           "	-h|--help			show this message\n",
           program);
   exit(1);
@@ -218,6 +219,7 @@ enum {
   OPT_FILTER_ADDR_RANGE,
   OPT_FILTER_RESET_INTERVALS,
   OPT_IMC_COUNTING,
+  OPT_RUNTIME,
 };
 
 static const struct option options[] = {
@@ -251,6 +253,7 @@ static const struct option options[] = {
   { "imc-counting", 0, NULL, OPT_IMC_COUNTING },
   { "show-only", 0, NULL, OPT_SHOW_ONLY },
   { "verbose", 0, NULL, 'v' },
+  { "runtime", 1, NULL, OPT_RUNTIME },
   { "help", 0, NULL, 'h' },
   { NULL , 0, NULL, 0 }
 };
@@ -460,6 +463,9 @@ void PMUMemoryOptimizer::parse_options(int ac, char *av[])
       case 'v':
         hmd_config.verbose = 1;
         break;
+      case OPT_RUNTIME:
+        hmd_config.runtime = parse_long_option(optarg, av);
+        break;
       case 'h':
       default:
         usage(av[0]);
@@ -487,6 +493,7 @@ int PMUMemoryOptimizer::main(int argc, char *argv[])
 {
   bool full;
   int i, arfilter_reset_intervals;
+  unsigned long end = 0;
 
   arfilter_.clear();
   parse_options(argc, argv);
@@ -511,6 +518,9 @@ int PMUMemoryOptimizer::main(int argc, char *argv[])
   cmsk_init(&cmsk_);
 
   migration_state_.init(&pmu_state_, &numa_nodes_, &arfilter_);
+
+  if (hmd_config.runtime)
+    end = rdclock() + hmd_config.runtime * NS_PER_SEC;
 
   while (!interrupted) {
     cmsk_age(&cmsk_);
@@ -553,6 +563,8 @@ int PMUMemoryOptimizer::main(int argc, char *argv[])
       }
       migrate_pages();
     }
+    if (hmd_config.runtime && rdclock() > end)
+      break;
   }
 
   pmu_state_.close_imc_events();

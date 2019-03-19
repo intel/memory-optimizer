@@ -57,6 +57,7 @@ struct hmd_config {
 
   int show_only;
   int verbose;
+  int runtime;
 
   int arfilter_reset_intervals;
 
