@@ -60,9 +60,8 @@ class ProcNumaMaps
   end
 
   def show_numa_placement
-    sum = numa_kb['anon']
+    sum = total_numa_kb
     return unless sum && sum > 0
-    sum += 1
 
     numa_kb.each do |k, v|
       next unless k =~ /^N\d+$/
