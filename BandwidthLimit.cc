@@ -46,7 +46,7 @@ void BandwidthLimit::add_and_sleep(unsigned long bytes)
   if (allow_bytes < 0) {
     float sleep_time;
     sleep_time = ((-allow_bytes) / bwlimit_byteps) * 1000000;
-    printf("thread will sleep %f microseconds\n", sleep_time);
+    //printf("thread will sleep %f microseconds\n", sleep_time);
     usleep(sleep_time);
   }
 }
