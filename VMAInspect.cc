@@ -113,9 +113,9 @@ int VMAInspect::dump_task_nodes(pid_t i, Formatter* m)
   }
 
   if (!err) {
-      m->print("\nAnonymous page distribution across NUMA nodes in pid %d:\n", pid);
-      locator.set_pid(pid);
-      locator.show_status_count(m, status_sum);
+    m->print("\nAnonymous page distribution across NUMA nodes in pid %d:\n", pid);
+    locator.set_pid(pid);
+    locator.show_status_count(m, status_sum);
   }
 
   return err;

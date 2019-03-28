@@ -405,7 +405,9 @@ void GlobalScan::migrate()
   gettimeofday(&ts_end, NULL);
   printf("\nEnd of migration: %s\n", get_current_date().c_str());
 
-  proc_vmstat.show_numa_stats(&numa_collection);
+  if (option.show_numa_stats)
+    proc_vmstat.show_numa_stats(&numa_collection);
+
   show_migrate_speed(tv_secs(ts_begin, ts_end));
 }
 

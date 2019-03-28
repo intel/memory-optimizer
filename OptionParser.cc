@@ -129,6 +129,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_BOOL_VALUE("dump_processes", dump_processes, 2);
       OP_GET_BOOL_VALUE("exit_on_exceeded", exit_on_exceeded, 2);
       OP_GET_BOOL_VALUE("daemon", daemon, 2);
+      OP_GET_BOOL_VALUE("show_numa_stats", show_numa_stats, 2);
 #undef OP_GET_BOOL_VALUE
 
       YAML::Node sub_node;
