@@ -70,12 +70,20 @@ void GlobalScan::main_loop()
     if (!option.daemon && exit_on_stabilized())
       break;
 
-    if (!option.daemon && is_all_migration_done())
+    if (!option.daemon && is_all_migration_done()) {
+      printf("exit because all migration done.\n");
       break;
+    }
 
     double sleep_time = std::max(option.sleep_secs, 2 * interval);
-    if (sleep_time > 10 * interval)
-        sleep_time = 10 * interval;
+
+    if (is_all_migration_done()) {
+      sleep_time = 20;
+      printf("changed sleep_time to %f for all migration done.\n", sleep_time);
+    }
+    else if (sleep_time > 10 * interval)
+      sleep_time = 10 * interval;
+
     printf("\nSleeping for %.2f seconds\n", sleep_time);
     usleep(sleep_time * 1000000);
   }
@@ -525,7 +533,5 @@ bool GlobalScan::is_all_migration_done()
     if (i.second->context.get_dram_quota() > 0)
       return false;
   }
-
-  printf("exit because all migration done.\n");
   return true;
 }
