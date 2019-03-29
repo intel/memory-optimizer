@@ -251,8 +251,11 @@ numa_node_type NumaNodeCollection::get_node_type(T& map, std::string &type_str)
 
 int NumaNodeCollection::create_node(int node_id, numa_node_type type)
 {
-  if(type >= NUMA_NODE_END)
+  if (type >= NUMA_NODE_END)
     return -2;
+
+  if ((size_t)node_id >= node_map_.size())
+    return -3;
 
   NumaNode *new_node;
   new_node = new NumaNode(node_id, type);

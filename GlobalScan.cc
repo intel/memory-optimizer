@@ -33,9 +33,13 @@ const float GlobalScan::MAX_INTERVAL = 10;
 static string get_current_date()
 {
   time_t now = time(0);
-  char tmp[64];
+  char tmp[64] = {"unknown time"};
+  struct tm* loc_time;
 
-  strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S", localtime(&now));
+  loc_time = localtime(&now);
+  if (loc_time)
+    strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S", loc_time);
+
   return tmp;
 }
 

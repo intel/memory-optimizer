@@ -361,6 +361,12 @@ void ProcIdlePages::parse_idlepages(proc_maps_entry& vma,
     ProcIdlePageType type = (ProcIdlePageType)PIP_TYPE(read_buf[i]);
     int nr = PIP_SIZE(read_buf[i]);
 
+    if (type >= IDLE_PAGE_TYPE_MAX) {
+      printf("WARNING: skip wrong page type from kernel: %d\n",
+             (int)type);
+      continue;
+    }
+
     if (va >= end) {
       // This can happen infrequently when VMA changed. The new pages can be
       // simply ignored -- they arrive too late to have accurate accounting.

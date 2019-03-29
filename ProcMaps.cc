@@ -41,8 +41,8 @@ static int parse_proc_maps(pid_t pid, std::vector<proc_maps_entry>& maps)
                  &e.end,
                  e.perms,
                  &e.offset,
-                 &e.dev_major,
-                 &e.dev_minor,
+                 (unsigned int*)&e.dev_major,
+                 (unsigned int*)&e.dev_minor,
                  &e.ino,
                  &path_index);
 
