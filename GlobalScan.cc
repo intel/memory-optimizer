@@ -240,6 +240,7 @@ unsigned long GlobalScan::get_dram_anon_bytes(bool is_include_free_page)
 {
     unsigned long dram_anon = 0;
     unsigned long pages;
+    unsigned long pages_4k = 0;
 
     if (option.hugetlb)
       sysfs.load_hugetlb();
@@ -254,7 +255,11 @@ unsigned long GlobalScan::get_dram_anon_bytes(bool is_include_free_page)
         dram_anon += pages << HUGE_PAGE_SHIFT;
       } else if (option.thp) {
         pages = proc_vmstat.vmstat(nid, "nr_anon_transparent_hugepages");
+        if (is_include_free_page)
+          pages_4k = proc_vmstat.vmstat(nid, "nr_free_pages");
+
         dram_anon += pages << HUGE_PAGE_SHIFT;
+        dram_anon += pages_4k << PAGE_SHIFT;
       } else {
         pages = proc_vmstat.vmstat(nid, "nr_active_anon") +
                 proc_vmstat.vmstat(nid, "nr_inactive_anon");
