@@ -247,12 +247,9 @@ unsigned long GlobalScan::get_dram_anon_bytes(bool is_include_free_page)
     for(auto node: numa_collection.get_dram_nodes()) {
       int nid = node->id();
       if (option.hugetlb) {
-
-        if (is_include_free_page)
-          pages = sysfs.hugetlb(nid, "free_hugepages");
-        else
-          pages = sysfs.hugetlb(nid, "nr_hugepages")
-                  - sysfs.hugetlb(nid, "free_hugepages");
+        pages = sysfs.hugetlb(nid, "nr_hugepages");
+        if (!is_include_free_page)
+          pages -= sysfs.hugetlb(nid, "free_hugepages");
 
         dram_anon += pages << HUGE_PAGE_SHIFT;
       } else if (option.thp) {
@@ -261,7 +258,6 @@ unsigned long GlobalScan::get_dram_anon_bytes(bool is_include_free_page)
       } else {
         pages = proc_vmstat.vmstat(nid, "nr_active_anon") +
                 proc_vmstat.vmstat(nid, "nr_inactive_anon");
-
         if (is_include_free_page)
           pages += proc_vmstat.vmstat(nid, "nr_free_pages");
 
