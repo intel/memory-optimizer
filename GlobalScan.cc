@@ -120,7 +120,7 @@ bool GlobalScan::exit_on_exceeded()
   if (!option.exit_on_exceeded)
     return false;
 
-  unsigned long bytes = get_dram_anon_bytes();
+  unsigned long bytes = get_dram_anon_bytes(false);
   if (bytes < dram_free_anon_bytes)
     return false;
 
@@ -236,7 +236,7 @@ void GlobalScan::count_migrate_stats()
     m->count_migrate_stats();
 }
 
-unsigned long GlobalScan::get_dram_anon_bytes()
+unsigned long GlobalScan::get_dram_anon_bytes(bool is_include_free_page)
 {
     unsigned long dram_anon = 0;
     unsigned long pages;
@@ -247,8 +247,13 @@ unsigned long GlobalScan::get_dram_anon_bytes()
     for(auto node: numa_collection.get_dram_nodes()) {
       int nid = node->id();
       if (option.hugetlb) {
-        pages = sysfs.hugetlb(nid, "nr_hugepages") -
-                sysfs.hugetlb(nid, "free_hugepages");
+
+        if (is_include_free_page)
+          pages = sysfs.hugetlb(nid, "free_hugepages");
+        else
+          pages = sysfs.hugetlb(nid, "nr_hugepages")
+                  - sysfs.hugetlb(nid, "free_hugepages");
+
         dram_anon += pages << HUGE_PAGE_SHIFT;
       } else if (option.thp) {
         pages = proc_vmstat.vmstat(nid, "nr_anon_transparent_hugepages");
@@ -256,6 +261,10 @@ unsigned long GlobalScan::get_dram_anon_bytes()
       } else {
         pages = proc_vmstat.vmstat(nid, "nr_active_anon") +
                 proc_vmstat.vmstat(nid, "nr_inactive_anon");
+
+        if (is_include_free_page)
+          pages += proc_vmstat.vmstat(nid, "nr_free_pages");
+
         dram_anon += pages << PAGE_SHIFT;
       }
     }
@@ -282,16 +291,6 @@ bool GlobalScan::should_stop_walk()
   return false;
 }
 
-unsigned long GlobalScan::get_dram_free_anon_bytes()
-{
-    unsigned long dram_anon_capacity = 0;
-
-    for (auto node: numa_collection.get_dram_nodes())
-      dram_anon_capacity += proc_vmstat.anon_capacity(node->id());
-
-    return dram_anon_capacity << PAGE_SHIFT;
-}
-
 void GlobalScan::update_dram_free_anon_bytes()
 {
   proc_vmstat.clear();
@@ -299,7 +298,7 @@ void GlobalScan::update_dram_free_anon_bytes()
   if (option.dram_percent) {
     dram_free_anon_bytes = option.dram_percent * all_bytes / 100;
   } else {
-    dram_free_anon_bytes = get_dram_free_anon_bytes();
+    dram_free_anon_bytes = get_dram_free_and_anon_bytes();
   }
 
   dram_hot_target = dram_free_anon_bytes / 2;

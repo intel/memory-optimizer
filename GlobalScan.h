@@ -69,8 +69,10 @@ class GlobalScan
     unsigned long target_young_bytes() { return dram_hot_target * 10 / 8; }
     unsigned long target_hot_bytes()   { return dram_hot_target; }
 
-    unsigned long get_dram_free_anon_bytes();
-    unsigned long get_dram_anon_bytes();
+    unsigned long get_dram_free_and_anon_bytes()
+    { return get_dram_anon_bytes(true) << PAGE_SHIFT; }
+
+    unsigned long get_dram_anon_bytes(bool is_include_free);
 
     unsigned long calc_migrated_bytes();
     void show_migrate_speed(float delta_time);
