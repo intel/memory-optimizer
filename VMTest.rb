@@ -501,7 +501,7 @@ class VMTest
     p = @scheme["pmem_nodes"].size
 
     # d, p, ratio: 2, 4, 4 => 1, 4, 4
-    if d * ratio > p
+    if d * ratio > p && !@scheme["skip_baseline_run"]
       d = p / ratio   # pure PMEM if (ratio > p)
     end
 
