@@ -495,13 +495,21 @@ class VMTest
     end
   end
 
-  def setup_nodes(ratio)
-    # this func assumes d <= p
-    d = @scheme["dram_nodes"].size
-    p = @scheme["pmem_nodes"].size
+  def adjust_nodes_pure(d, p, ratio)
+    d = 0 if ratio == 999 # pure AEP
+    p = 0 if ratio == 0   # pure DRAM
+    [d, p]
+  end
+
+  # The baseline tests have to select d and p, so that d:p == 1:ratio
+  # in order to make use of the interleaved NUMA policy.
+  #
+  # When baseline tests are enabled, in order to make results comparable,
+  # the migration tests shall use the same NUMA nodes selected here.
+  def adjust_nodes_baseline(d, p, ratio)
 
     # d, p, ratio: 2, 4, 4 => 1, 4, 4
-    if d * ratio > p && !@scheme["skip_baseline_run"]
+    if d * ratio > p
       d = p / ratio   # pure PMEM if (ratio > p)
     end
 
@@ -537,6 +545,20 @@ class VMTest
         p /= d
         d = 1
       end
+    end
+
+    [d, p]
+  end
+
+  def setup_nodes(ratio)
+    # this func assumes d <= p
+    d = @scheme["dram_nodes"].size
+    p = @scheme["pmem_nodes"].size
+
+    if @scheme["skip_baseline_run"]
+      d, p = adjust_nodes_pure(d, p, ratio)
+    else
+      d, p = adjust_nodes_baseline(d, p, ratio)
     end
 
     # dram_nodes/pmem_nodes in scheme are physically available nodes
