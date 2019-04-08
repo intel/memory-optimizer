@@ -27,11 +27,16 @@ using PmuEventAttrs = std::vector<std::unique_ptr<struct perf_event_attr>>;
 
 struct sample_stats {
   long samples, others, throttled, skipped, lost;
+  unsigned int nr_sample_cpu_max;
 };
 
 class PmuPmemSampleProcessor {
  public:
   virtual bool on_pmu_pmem_sample(u64 value, int pid, int tid, int cpu) = 0;
+};
+
+struct pmu_cpu_stats {
+  unsigned int nr_sample;
 };
 
 class PmuCpu
@@ -59,6 +64,16 @@ class PmuCpu
   void disable_dram_events(void);
   void read_dram_count(u64 *local_count, u64 *remote_count);
 
+  const pmu_cpu_stats& get_stats(void)
+  {
+    return stats_;
+  }
+
+  void reset_stats(void)
+  {
+    memset(&stats_, 0, sizeof(stats_));
+  }
+
  private:
   bool read_pmem_samples_fd(struct perf_fd *fd, struct sample_stats *st,
                             PmuPmemSampleProcessor *processor);
@@ -68,6 +83,7 @@ class PmuCpu
   std::vector<perf_fd> dram_fds_;
   std::vector<u64> dram_counts_;
   int cpuid_;
+  pmu_cpu_stats stats_ {};
 };
 
 class PmuNode
@@ -135,6 +151,11 @@ class PmuState
     pmem_sample_processor_ = processor;
   }
 
+  const struct sample_stats& get_stats(void)
+  {
+    return stats_;
+  }
+
   void cpus_init(void);
   void nodes_init(void);
   void open_pmem_events(void);
@@ -160,6 +181,9 @@ class PmuState
 
   const std::vector<PmuCpu *>& get_cpus() const { return cpus_; }
   const std::vector<PmuNode *>& get_nodes() const { return nodes_; }
+
+ private:
+  void update_stats(void);
 
  private:
   std::vector<PmuCpu *> cpus_;

@@ -148,10 +148,14 @@ int MigrationState::move_pages(int pid,
                                const std::vector<unsigned long>& hot_pages,
                                const std::vector<int>& sample_counts)
 {
+  int moved;
+
   pid_ = pid;
   len_ = hot_pages.size();
   std::copy(hot_pages.begin(), hot_pages.end(), hot_pages_.begin());
   std::copy(sample_counts.begin(), sample_counts.end(), sample_counts_.begin());
 
-  return __move_pages();
+  moved = __move_pages();
+  stats_.nr_moved_page += moved;
+  return moved;
 }

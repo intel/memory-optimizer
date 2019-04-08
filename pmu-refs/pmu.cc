@@ -171,6 +171,8 @@ bool PmuCpu::read_pmem_samples_fd(struct perf_fd *fd, struct sample_stats *st,
       continue;
     }
     st->samples++;
+    stats_.nr_sample++;
+
     if (hdr->size != sample_size) {
       printf("unexpected sample size %d\n", hdr->size);
       continue;
@@ -506,6 +508,10 @@ void PmuState::begin_interval(void)
   for (auto& node: nodes_) {
     node->reset_dram_count();
   }
+
+  for (auto& cpu: cpus_) {
+    cpu->reset_stats();
+  }
 }
 
 void PmuState::setup_pmem_sample_period(int sample_period)
@@ -535,6 +541,18 @@ bool PmuState::pmem_samples_enough(void)
 void PmuState::begin_interval_unit(void)
 {
   pmem_samples_unit_begin_ = stats_.samples;
+}
+
+void PmuState::update_stats(void)
+{
+  stats_.nr_sample_cpu_max = 0;
+
+  for (auto& cpu: cpus_) {
+    const pmu_cpu_stats& stats = cpu->get_stats();
+
+    if (stats.nr_sample > stats_.nr_sample_cpu_max)
+      stats_.nr_sample_cpu_max = stats.nr_sample;
+  }
 }
 
 bool PmuState::read_pmem_samples(int interval_ms)
@@ -574,6 +592,8 @@ end_measure:
     if (!full)
       full = cpu->read_pmem_samples(nullptr, &stats_, pmem_sample_processor_);
   }
+
+  update_stats();
 
   return full;
 }

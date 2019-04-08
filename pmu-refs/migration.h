@@ -17,6 +17,10 @@ class NumaNodeCollection;
 struct cmsk;
 class AddressRangeFilter;
 
+struct migration_stats {
+  unsigned int nr_moved_page;
+};
+
 class MigrationState
 {
   int pid_;
@@ -30,6 +34,7 @@ class MigrationState
   PmuState *pmu_state_;
   NumaNodeCollection *numa_nodes_;
   AddressRangeFilter *arfilter_;
+  struct migration_stats stats_ {};
 
   int get_current_nodes();
   void get_target_nodes();
@@ -42,6 +47,16 @@ class MigrationState
 	    AddressRangeFilter *filter);
   int move_pages(int pid, const std::vector<unsigned long>& hot_pages,
                  const std::vector<int>& sample_counts);
+
+  const migration_stats& get_stats(void)
+  {
+    return stats_;
+  }
+
+  void begin_interval(void)
+  {
+    memset(&stats_, 0, sizeof(stats_));
+  }
 };
 
 #endif /* __MIGRATION__HH__ */

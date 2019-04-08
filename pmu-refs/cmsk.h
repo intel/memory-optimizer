@@ -54,6 +54,11 @@ struct achash
   std::vector<struct achash_item> items;
 };
 
+struct cmsk_stats
+{
+  unsigned int nr_hot_page;
+};
+
 /* Top-K frequent items with Cout-Min-Sketch */
 struct cmsk
 {
@@ -62,6 +67,7 @@ struct cmsk
   unsigned int no;
   struct cms cms;
   struct achash achash;
+  struct cmsk_stats stats;
 };
 
 int cmsk_init(struct cmsk *cmsk);

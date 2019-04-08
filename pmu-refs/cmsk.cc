@@ -267,6 +267,7 @@ int cmsk_init(struct cmsk *cmsk)
 {
   int ret;
 
+  memset(&cmsk->stats, 0, sizeof(struct cmsk_stats));
   cmsk->no = cmsk->interval;
   ret = cms_init(&cmsk->cms);
   if (ret)
@@ -327,8 +328,10 @@ void cmsk_sort(struct cmsk *cmsk)
   struct cms *cms = &cmsk->cms;
   unsigned int threshold, len = achash->len;
 
-  if (!len)
+  if (!len) {
+    cmsk->stats.nr_hot_page = 0;
     return;
+  }
 
   achash_sort(&cmsk->achash);
 
@@ -341,6 +344,8 @@ void cmsk_sort(struct cmsk *cmsk)
     for (i = achash->len; i < olen; i++)
       achash->samples -= achash->items[i].count;
   }
+
+  cmsk->stats.nr_hot_page = achash->len;
 }
 
 static int achash_cmp_pid(const void *a, const void *b)

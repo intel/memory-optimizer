@@ -527,6 +527,8 @@ int PMUMemoryOptimizer::main(int argc, char *argv[])
 
     full = false;
     pmu_state_.begin_interval();
+    migration_state_.begin_interval();
+
     pmu_state_.adjust_sample_period_commit();
     pmu_state_.enable_dram_events();
 
