@@ -1,0 +1,63 @@
+qemu_script: kvm.sh
+qemu_smp: cpus=24
+qemu_mem: 256G
+
+dram_nodes:
+#- 0
+- 1
+pmem_nodes:
+#- 2
+- 3
+
+qemu_numactl: "-C 24 -m 3"
+migrate_numactl: "-C 24 -m 1"
+
+ratios: # PMEM:DRAM
+#- 0     # pure DRAM
+#- 1
+#- 2     # 2:1 PMEM:DRAM
+- 3
+- 4
+#  - 999   # pure PMEM
+
+workload_script: run-sysbench-memory-1t.sh
+
+workload_params:
+- &params
+  time: 60
+  threads: 1
+  memory_block_size: 244224M
+  memory_scope: global
+  rand_type: gaussian
+  gaussian_stddev: 25.7 # 10%
+  memory_oper: read
+- <<: *params
+  gaussian_stddev: 12.8 # 20%
+  memory_oper: read
+- <<: *params
+  gaussian_stddev: 6.43 # 40%
+  memory_oper: read
+- <<: *params
+  gaussian_stddev: 4.28 # 60%
+  memory_oper: read
+- <<: *params
+  gaussian_stddev: 25.7
+  memory_oper: write
+- <<: *params
+  gaussian_stddev: 12.8
+  memory_oper: write
+- <<: *params
+  gaussian_stddev: 6.43
+  memory_oper: write
+- <<: *params
+  gaussian_stddev: 4.28
+  memory_oper: write
+
+migrate_cmd: sys-refs
+migrate_config: sys-refs-sysbench-memory-1t.yaml
+
+skip_baseline_run: true
+skip_dram_baseline_run: true
+one_way_migrate: true
+emon_base_dir: "/opt/intel/sep"
+aepwatch_base_dir: "/opt/intel/ipmwatch"
