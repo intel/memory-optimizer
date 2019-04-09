@@ -1,6 +1,6 @@
 qemu_script: kvm.sh
 qemu_smp: cpus=24
-qemu_mem: 308G
+qemu_mem: 256G
 
 dram_nodes:
 #- 0
