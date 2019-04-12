@@ -128,6 +128,7 @@ static int achash_init(struct achash *achash)
   achash->samples = 0;
   achash->items.resize(achash->size);
   achash->buckets.resize(achash->size);
+  achash->hist.resize(achash->hist_max);
 
   return 0;
 }
@@ -141,6 +142,31 @@ static void achash_clear(struct achash *achash)
   achash->len = 0;
   achash->samples = 0;
   std::fill(achash->buckets.begin(), achash->buckets.end(), 0);
+  std::fill(achash->hist.begin(), achash->hist.end(), 0);
+}
+
+static inline int hist_index(struct achash *achash, unsigned int count)
+{
+  int index = count;
+
+  if (index >= achash->hist_max)
+    index = achash->hist_max - 1;
+
+  return index;
+}
+
+static void hist_inc(struct achash *achash, unsigned int count)
+{
+  int index = hist_index(achash, count);
+
+  achash->hist[index]++;
+}
+
+static void hist_dec(struct achash *achash, unsigned int count)
+{
+  int index = hist_index(achash, count);
+
+  achash->hist[index]--;
 }
 
 static unsigned int achash_new_item(struct achash *achash,
@@ -156,6 +182,7 @@ static unsigned int achash_new_item(struct achash *achash,
   if (achash->hash_mode) {
     item->count = 1;
     achash->samples++;
+    hist_inc(achash, 1);
   } else {
     item->count = achash->threshold;
     achash->samples += achash->threshold;
@@ -187,6 +214,8 @@ static bool achash_update(struct achash *achash, unsigned long addr,
     if (item->addr == addr && item->pid == pid) {
       item->count++;
       achash->samples++;
+      hist_inc(achash, item->count);
+      hist_dec(achash, item->count - 1);
       return false;
     }
     num = item->next;
@@ -228,6 +257,21 @@ static unsigned int achash_bsearch(struct achash *achash, unsigned int end,
       start = mid + 1;
     }
   }
+}
+
+void hist_print(struct achash *achash)
+{
+  unsigned int hist_total = 0;
+
+  for (int i = achash->hist_max - 1; i >= 0; i--) {
+    if (!achash->hist[i])
+      continue;
+
+    hist_total += achash->hist[i] * i;
+    printf("hist-%d: %u\n", i, achash->hist[i]);
+  }
+
+  printf("hist total: %u\n", hist_total);
 }
 
 static void achash_print(struct achash *achash, unsigned int total)

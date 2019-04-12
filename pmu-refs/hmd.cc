@@ -193,6 +193,7 @@ void PMUMemoryOptimizer::usage(const char *program)
           "	--show-only			show statistics only, don't move pages\n"
           "	-v|--verbose			verbose mode\n"
           "	--runtime RUNTIME               maximum run time in seconds\n"
+          "	--hist-max NUM                  maximum histogram number\n"
           "	-h|--help			show this message\n",
           program);
   exit(1);
@@ -220,6 +221,7 @@ enum {
   OPT_FILTER_RESET_INTERVALS,
   OPT_IMC_COUNTING,
   OPT_RUNTIME,
+  OPT_HIST_MAX,
 };
 
 static const struct option options[] = {
@@ -254,6 +256,7 @@ static const struct option options[] = {
   { "show-only", 0, NULL, OPT_SHOW_ONLY },
   { "verbose", 0, NULL, 'v' },
   { "runtime", 1, NULL, OPT_RUNTIME },
+  { "hist-max", 1, NULL, OPT_HIST_MAX },
   { "help", 0, NULL, 'h' },
   { NULL , 0, NULL, 0 }
 };
@@ -466,6 +469,9 @@ void PMUMemoryOptimizer::parse_options(int ac, char *av[])
       case OPT_RUNTIME:
         hmd_config.runtime = parse_long_option(optarg, av);
         break;
+      case OPT_HIST_MAX:
+        hmd_config.cmsk_achash_hist_max = parse_long_option(optarg, av);
+        break;
       case 'h':
       default:
         usage(av[0]);
@@ -514,6 +520,7 @@ int PMUMemoryOptimizer::main(int argc, char *argv[])
   cmsk_.cms.depth = 4;
   cmsk_.achash.threshold = hmd_config.cmsk_achash_threshold;
   cmsk_.achash.size_order = hmd_config.cmsk_achash_size_order;
+  cmsk_.achash.hist_max = hmd_config.cmsk_achash_hist_max;
 
   cmsk_init(&cmsk_);
 

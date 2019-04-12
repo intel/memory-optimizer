@@ -54,4 +54,5 @@ struct hmd_config hmd_config = {
   .show_only = 0,
   .verbose = 0,
   .runtime = 0,
+  .cmsk_achash_hist_max = 256,
 };

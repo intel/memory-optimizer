@@ -58,6 +58,7 @@ struct hmd_config {
   int show_only;
   int verbose;
   int runtime;
+  int cmsk_achash_hist_max;
 
   int arfilter_reset_intervals;
 

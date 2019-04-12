@@ -52,6 +52,8 @@ struct achash
   unsigned int samples;
   std::vector<unsigned> buckets;
   std::vector<struct achash_item> items;
+  std::vector<unsigned int> hist;
+  int hist_max;
 };
 
 struct cmsk_stats
