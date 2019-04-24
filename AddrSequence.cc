@@ -339,6 +339,7 @@ int AddrSequence::save_into_cluster(AddrCluster& cluster,
 
   cluster.deltas[index].delta = (uint8_t)delta;
   cluster.deltas[index].payload = n;
+  cluster.deltas[index].nid = -1;
 
   if (n) {
       top_bytes += pagesize;
