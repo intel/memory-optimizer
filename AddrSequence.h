@@ -14,10 +14,12 @@
 #include <vector>
 #include <memory>
 
+
 struct DeltaPayload
 {
   uint8_t delta;    // in pagesize unit
   uint8_t payload;  // stores refs count
+  uint8_t nid;
 }__attribute__((packed));
 
 struct AddrCluster
@@ -61,6 +63,9 @@ class AddrSequence
     // call me before starting each walk
     int rewind();
 
+    // just reset internal walk_iter and find_iter
+    int prepare_update();
+
     // n=0: [addr]=0 if not already set
     // n=1: [addr]=1 if not already set, [addr]++ if already there
     //
@@ -73,12 +78,13 @@ class AddrSequence
     // will do ++payload
     // will ignore addresses not already there
     int inc_payload(unsigned long addr, int n);
+    int update_type(unsigned long addr, uint8_t type);
     int smooth_payloads();
 
     // for sequential visiting
     bool prepare_get();
-    int get_first(unsigned long& addr, uint8_t& payload);
-    int get_next(unsigned long& addr, uint8_t& payload);
+    int get_first(unsigned long& addr, uint8_t& payload, uint8_t& nid);
+    int get_next(unsigned long& addr, uint8_t& payload, uint8_t& nid);
 
 #ifdef ADDR_SEQ_SELF_TEST
     int self_test();
@@ -125,10 +131,14 @@ class AddrSequence
 
     int in_append_period() { return nr_walks < 2; }
 
-    int  do_walk(walk_iterator& iter, unsigned long& addr, uint8_t& payload);
+    int  do_walk(walk_iterator& iter,
+                 unsigned long& addr, uint8_t& payload, uint8_t& nid);
     void do_walk_move_next(walk_iterator& iter);
     void do_walk_update_payload(walk_iterator& iter,
                                 unsigned addr, uint8_t payload);
+    void do_walk_update_nid(walk_iterator& iter,
+                            unsigned addr, uint8_t nid);
+
     bool do_walk_continue(int rc) { return rc >=0 && rc != END_OF_SEQUENCE; }
 
     void do_walk_update_current_ptr(walk_iterator& iter) {

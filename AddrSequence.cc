@@ -68,6 +68,16 @@ int AddrSequence::rewind()
   return 0;
 }
 
+// just reset internal walk_iter and find_iter
+int AddrSequence::prepare_update()
+{
+  reset_iterator(find_iter, 0);
+  reset_iterator(walk_iter, 0);
+  last_cluster_end = 0;
+
+  return 0;
+}
+
 int AddrSequence::inc_payload(unsigned long addr, int n)
 {
   int ret_value;
@@ -80,14 +90,51 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
   return ret_value;
 }
 
+int AddrSequence::update_type(unsigned long addr, uint8_t nid)
+{
+  int rc = 0;
+  unsigned long next_addr;
+  uint8_t unused_payload;
+  uint8_t unused_nid;
+
+  // only allow to update nid in update  period
+  if (in_append_period())
+    return -1;
+
+  for (;;) {
+      rc = do_walk(find_iter, next_addr,
+                   unused_payload, unused_nid);
+
+      if (!do_walk_continue(rc))
+          break;
+
+      if (next_addr == addr) {
+          do_walk_update_nid(find_iter, addr, nid);
+          return 0;
+      } else if (next_addr > addr) {
+          return ADDR_NOT_FOUND;
+      }
+
+      do_walk_move_next(find_iter);
+  }
+
+  //in update stage, the addr not exist is a graceful error
+  //so we change to return positive ADDR_NOT_FOUND
+  if (rc == END_OF_SEQUENCE)
+    rc = ADDR_NOT_FOUND;
+
+  return rc;
+}
+
 int AddrSequence::update_addr(unsigned long addr, int n)
 {
   int rc = 0;
   unsigned long next_addr;
   uint8_t unused_payload;
+  uint8_t unused_nid;
 
   for (;;) {
-      rc = do_walk(find_iter, next_addr, unused_payload);
+      rc = do_walk(find_iter, next_addr, unused_payload, unused_nid);
 
       if (!do_walk_continue(rc))
           break;
@@ -139,18 +186,18 @@ bool AddrSequence::prepare_get()
   return !is_empty;
 }
 
-int AddrSequence::get_first(unsigned long& addr, uint8_t& payload)
+int AddrSequence::get_first(unsigned long& addr, uint8_t& payload, uint8_t& nid)
 {
   if (!prepare_get())
     return -1;
-  return get_next(addr, payload);
+  return get_next(addr, payload, nid);
 }
 
-int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
+int AddrSequence::get_next(unsigned long& addr, uint8_t& payload, uint8_t& nid)
 {
   int rc;
 
-  rc = do_walk(walk_iter, addr, payload);
+  rc = do_walk(walk_iter, addr, payload, nid);
   if (do_walk_continue(rc))
     do_walk_move_next(walk_iter);
 
@@ -158,7 +205,7 @@ int AddrSequence::get_next(unsigned long& addr, uint8_t& payload)
 }
 
 int AddrSequence::do_walk(walk_iterator& iter,
-                          unsigned long& addr, uint8_t& payload)
+                          unsigned long& addr, uint8_t& payload, uint8_t& nid)
 {
   if (iter.cluster_iter == iter.cluster_iter_end)
     return END_OF_SEQUENCE;
@@ -168,6 +215,7 @@ int AddrSequence::do_walk(walk_iterator& iter,
   delta_sum = iter.delta_sum + iter.cur_delta_ptr[iter.delta_index].delta;
   addr = iter.cur_cluster_ptr->start + (delta_sum << pageshift);
   payload = iter.cur_delta_ptr[iter.delta_index].payload;
+  nid = iter.cur_delta_ptr[iter.delta_index].nid;
 
   return 0;
 }
@@ -201,6 +249,13 @@ void AddrSequence::do_walk_update_payload(walk_iterator& iter,
     top_bytes += pagesize;
   young_bytes += pagesize;
 }
+
+void AddrSequence::do_walk_update_nid(walk_iterator& iter,
+                                      unsigned addr, uint8_t nid)
+{
+  iter.cur_delta_ptr[iter.delta_index].nid = nid;
+}
+
 
 int AddrSequence::append_addr(unsigned long addr, int n)
 {
@@ -356,6 +411,7 @@ int AddrSequence::do_self_test_compare(unsigned long pagesize, bool is_perf)
 {
   unsigned long addr;
   uint8_t payload = 0;
+  uint8_t nid;
 
   cout << "addr_clusters.size = " << addr_clusters.size() << endl;
   cout << "buf_pool.size = " << buf_pool.size() << endl;
@@ -366,14 +422,14 @@ int AddrSequence::do_self_test_compare(unsigned long pagesize, bool is_perf)
   }
 
   if (is_perf) {
-    while (!get_next(addr, payload))
+    while (!get_next(addr, payload, nid))
         ;
     return 0;
   }
 
   for (auto& kv: test_map)
   {
-    int err = get_next(addr, payload);
+    int err = get_next(addr, payload, nid);
     if (err < 0)
       return err;
 
@@ -501,6 +557,7 @@ int test_static()
   int rc;
   unsigned long addr;
   uint8_t  payload;
+  uint8_t  nid;
 
   as.set_pageshift(12);
   rc = as.inc_payload(0x1000, 0);
@@ -540,10 +597,10 @@ int test_static()
   rc = as.inc_payload(0x40000, 1); //should not update
   rc = as.inc_payload(0x40000, 1); //should not update
 
-  rc = as.get_first(addr, payload);
+  rc = as.get_first(addr, payload, nid);
   while (!rc) {
     printf("addr = %lx, payload = %u\n", addr, payload);
-    rc = as.get_next(addr, payload);
+    rc = as.get_next(addr, payload, nid);
   }
 
   as.clear();
