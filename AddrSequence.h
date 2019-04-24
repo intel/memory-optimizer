@@ -78,7 +78,7 @@ class AddrSequence
     // will do ++payload
     // will ignore addresses not already there
     int inc_payload(unsigned long addr, int n);
-    int update_type(unsigned long addr, uint8_t type);
+    int update_nodeid(unsigned long addr, uint8_t nid);
     int smooth_payloads();
 
     // for sequential visiting

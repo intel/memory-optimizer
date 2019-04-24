@@ -72,7 +72,6 @@ int AddrSequence::rewind()
 int AddrSequence::prepare_update()
 {
   reset_iterator(find_iter, 0);
-  reset_iterator(walk_iter, 0);
   last_cluster_end = 0;
 
   return 0;
@@ -90,7 +89,7 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
   return ret_value;
 }
 
-int AddrSequence::update_type(unsigned long addr, uint8_t nid)
+int AddrSequence::update_nodeid(unsigned long addr, uint8_t nid)
 {
   int rc = 0;
   unsigned long next_addr;
