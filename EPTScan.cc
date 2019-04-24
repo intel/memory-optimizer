@@ -215,3 +215,62 @@ int EPTScan::save_counts(std::string filename)
   return err;
 }
 
+int EPTScan::get_memory_type_range(void** addrs, unsigned long count,
+                                   AddrSequence& addrobj)
+{
+  std::vector<int> addr_locate;
+  MovePages locator;
+  int ret;
+
+  if (0 == count)
+    return 0;
+
+  locator.set_pid(pid);
+  ret = locator.move_pages(addrs, addr_locate, count, true);
+  if (ret < 0) {
+    fprintf(stderr, "get_memory_type_range failed. return: %d\n", ret);
+    return ret;
+  }
+
+  for (unsigned long i = 0; i < count; ++i) {
+    addrobj.update_nodeid((unsigned long)addrs[i], addr_locate[i]);
+  }
+
+  return ret;
+}
+
+int EPTScan::get_memory_type()
+{
+  int rc;
+  unsigned long addr;
+  uint8_t unused_count;
+  uint8_t nid;
+
+  std::vector<void*> addr_set;
+
+  for (auto& each : pagetype_refs) {
+    AddrSequence& page_refs = each.page_refs;
+
+    addr_set.clear();
+    page_refs.prepare_update();
+
+    rc = page_refs.get_first(addr, unused_count, nid);
+    while(!rc) {
+
+      addr_set.push_back((void*)addr);
+      if (addr_set.size() >= 1024) {
+        get_memory_type_range(&addr_set[0], addr_set.size(), page_refs);
+        addr_set.clear();
+      }
+
+      rc = page_refs.get_next(addr, unused_count, nid);
+    }
+
+    // handle the remain unaligned part
+    if (addr_set.size()) {
+      get_memory_type_range(&addr_set[0], addr_set.size(), page_refs);
+    }
+  }
+
+  return  0;
+}

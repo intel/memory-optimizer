@@ -12,6 +12,9 @@
 #include <string>
 
 #include "ProcIdlePages.h"
+#include "Numa.h"
+#include "AddrSequence.h"
+#include "MovePages.h"
 
 class EPTScan: public ProcIdlePages
 {
@@ -27,12 +30,24 @@ class EPTScan: public ProcIdlePages
     void count_refs();
     static int save_counts(std::string filename);
 
+    void set_numacollection(NumaNodeCollection* new_numa_collection) {
+      numa_collection = new_numa_collection;
+    }
+
+    int get_memory_type();
+    int get_memory_type_range(void** addrs, unsigned long count,
+                              AddrSequence& addrobj);
+
   private:
     bool should_stop();
     void count_refs_one(ProcIdleRefs& prc);
 
   private:
     static std::vector<unsigned long> sys_refs_count[MAX_ACCESSED + 1];
+
+  protected:
+     NumaNodeCollection* numa_collection = NULL;
+
 };
 
 #endif
