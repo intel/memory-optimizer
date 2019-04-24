@@ -51,11 +51,6 @@ class EPTMigrate : public EPTScan
     void set_throttler(BandwidthLimit* new_throttler)
     { migrator.set_throttler(new_throttler); }
 
-    void set_numacollection(NumaNodeCollection* new_numa_collection) {
-      numa_collection = new_numa_collection;
-      migrator.set_numacollection(new_numa_collection);
-    }
-
     void set_pid_context(PidContext *new_context)
     { context = new_context; }
 
@@ -93,7 +88,6 @@ class EPTMigrate : public EPTScan
 
     MigrateStats migrate_stats;
     MovePages migrator;
-    NumaNodeCollection* numa_collection;
 
     Formatter fmt;
     PidContext *context = NULL;

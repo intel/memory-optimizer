@@ -74,7 +74,7 @@ void EPTMigrate::count_migrate_stats()
   sys_migrate_stats.add(&migrate_stats);
 }
 
-EPTMigrate::EPTMigrate() : numa_collection(NULL)
+EPTMigrate::EPTMigrate()
 {
   // inherit from global settings
   policy.migrate_what = option.migrate_what;
@@ -259,6 +259,7 @@ long EPTMigrate::do_move_pages(ProcIdlePageType type)
   migrator.set_page_shift(pagetype_shift[type]);
   migrator.set_batch_size(pagetype_batchsize[type]);
   migrator.set_migration_type(type);
+  migrator.set_numacollection(numa_collection);
 
   ret = migrator.locate_move_pages(context,
                                    addrs,
