@@ -159,6 +159,7 @@ int EPTMigrate::select_top_pages(ProcIdlePageType type)
   int max_refs;
   unsigned long addr;
   uint8_t ref_count;
+  uint8_t unused_nid;
   int iter_ret;
 
   if (page_refs.empty())
@@ -177,13 +178,13 @@ int EPTMigrate::select_top_pages(ProcIdlePageType type)
   }
   */
 
-  iter_ret = page_refs.get_first(addr, ref_count);
+  iter_ret = page_refs.get_first(addr, ref_count, unused_nid);
   while (!iter_ret) {
     if (ref_count >= min_refs &&
         ref_count <= max_refs)
       addrs.push_back((void *)addr);
 
-    iter_ret = page_refs.get_next(addr, ref_count);
+    iter_ret = page_refs.get_next(addr, ref_count, unused_nid);
   }
 
   if (addrs.empty())

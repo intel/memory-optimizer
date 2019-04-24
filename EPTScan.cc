@@ -122,6 +122,7 @@ void EPTScan::count_refs_one(ProcIdleRefs& prc)
   int rc;
   unsigned long addr;
   uint8_t ref_count;
+  uint8_t unused_nid;
   std::vector<unsigned long>& refs_count = prc.refs_count;
 
   refs_count.clear();
@@ -133,10 +134,10 @@ void EPTScan::count_refs_one(ProcIdleRefs& prc)
   // with the underlying huge page size. If the same huge page is covered by
   // 2 VMAs, there will be duplicate accounting for the same page. The easy
   // workaround is to enforce min() check here.
-  rc = prc.page_refs.get_first(addr, ref_count);
+  rc = prc.page_refs.get_first(addr, ref_count, unused_nid);
   while (!rc) {
     refs_count[std::min(ref_count, (uint8_t)nr_walks)] += 1;
-    rc = prc.page_refs.get_next(addr, ref_count);
+    rc = prc.page_refs.get_next(addr, ref_count, unused_nid);
   }
 }
 
