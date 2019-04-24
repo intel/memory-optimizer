@@ -67,6 +67,7 @@ void GlobalScan::main_loop()
     collect();
     update_pid_context();
     walk_multi();
+    get_memory_type();
     count_refs();
     migrate();
     count_migrate_stats();
@@ -530,6 +531,13 @@ void GlobalScan::update_pid_context()
                  mem_total_kb, mem_dram_kb, mem_pmem_kb,
                  i.second->context.get_dram_quota());
       }
+  }
+}
+
+void GlobalScan::get_memory_type()
+{
+  for (auto& m : idle_ranges) {
+    m->get_memory_type();
   }
 }
 

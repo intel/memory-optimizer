@@ -64,6 +64,7 @@ class GlobalScan
     bool exit_on_exceeded();
     bool check_exit_on_exceeded(pid_t pid);
     void update_pid_context();
+    void get_memory_type();
 
     unsigned long accept_hot_bytes()   { return dram_hot_target * 12 / 8; }
     unsigned long target_young_bytes() { return dram_hot_target * 10 / 8; }
