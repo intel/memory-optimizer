@@ -158,7 +158,7 @@ int EPTMigrate::select_top_pages(ProcIdlePageType type)
   int max_refs;
   unsigned long addr;
   uint8_t ref_count;
-  uint8_t unused_nid;
+  int8_t unused_nid;
   int iter_ret;
 
   if (page_refs.empty())

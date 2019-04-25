@@ -121,7 +121,7 @@ void EPTScan::count_refs_one(ProcIdleRefs& prc)
   int rc;
   unsigned long addr;
   uint8_t ref_count;
-  uint8_t nid;
+  int8_t nid;
   int loc_index;
   std::vector<refs_count_type>& refs_count = prc.refs_count;
   AddrSequence& page_refs = prc.page_refs;
@@ -259,6 +259,7 @@ int EPTScan::get_memory_type_range(void** addrs, unsigned long count,
   std::vector<int> addr_locate;
   MovePages locator;
   int ret;
+  int nid;
 
   if (0 == count)
     return 0;
@@ -271,7 +272,18 @@ int EPTScan::get_memory_type_range(void** addrs, unsigned long count,
   }
 
   for (unsigned long i = 0; i < count; ++i) {
-    addrobj.update_nodeid((unsigned long)addrs[i], addr_locate[i]);
+    nid = addr_locate[i];
+
+    if (nid < -128) {
+      fprintf(stderr,"limiting negative nid = %d from move_pages() to int8_t size\n", nid);
+      nid = -128;
+    }
+    if (nid > MAX_NID) {
+      fprintf(stderr,"nid = %d from move_pages() exceeded MAX_NID = %d\n", nid, MAX_NID);
+      exit(-1);
+    }
+
+    addrobj.update_nodeid((unsigned long)addrs[i], (int8_t)nid);
   }
 
   return ret;
@@ -282,7 +294,7 @@ int EPTScan::get_memory_type()
   int rc;
   unsigned long addr;
   uint8_t unused_count;
-  uint8_t nid;
+  int8_t nid;
 
   std::vector<void*> addr_set;
 

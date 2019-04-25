@@ -89,12 +89,12 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
   return ret_value;
 }
 
-int AddrSequence::update_nodeid(unsigned long addr, uint8_t nid)
+int AddrSequence::update_nodeid(unsigned long addr, int8_t nid)
 {
   int rc = 0;
   unsigned long next_addr;
   uint8_t unused_payload;
-  uint8_t unused_nid;
+  int8_t unused_nid;
 
   // only allow to update nid in update  period
   if (in_append_period())
@@ -130,7 +130,7 @@ int AddrSequence::update_addr(unsigned long addr, int n)
   int rc = 0;
   unsigned long next_addr;
   uint8_t unused_payload;
-  uint8_t unused_nid;
+  int8_t unused_nid;
 
   for (;;) {
       rc = do_walk(find_iter, next_addr, unused_payload, unused_nid);
@@ -185,14 +185,14 @@ bool AddrSequence::prepare_get()
   return !is_empty;
 }
 
-int AddrSequence::get_first(unsigned long& addr, uint8_t& payload, uint8_t& nid)
+int AddrSequence::get_first(unsigned long& addr, uint8_t& payload, int8_t& nid)
 {
   if (!prepare_get())
     return -1;
   return get_next(addr, payload, nid);
 }
 
-int AddrSequence::get_next(unsigned long& addr, uint8_t& payload, uint8_t& nid)
+int AddrSequence::get_next(unsigned long& addr, uint8_t& payload, int8_t& nid)
 {
   int rc;
 
@@ -204,7 +204,7 @@ int AddrSequence::get_next(unsigned long& addr, uint8_t& payload, uint8_t& nid)
 }
 
 int AddrSequence::do_walk(walk_iterator& iter,
-                          unsigned long& addr, uint8_t& payload, uint8_t& nid)
+                          unsigned long& addr, uint8_t& payload, int8_t& nid)
 {
   if (iter.cluster_iter == iter.cluster_iter_end)
     return END_OF_SEQUENCE;
@@ -250,7 +250,7 @@ void AddrSequence::do_walk_update_payload(walk_iterator& iter,
 }
 
 void AddrSequence::do_walk_update_nid(walk_iterator& iter,
-                                      unsigned addr, uint8_t nid)
+                                      unsigned addr, int8_t nid)
 {
   iter.cur_delta_ptr[iter.delta_index].nid = nid;
 }
@@ -411,7 +411,7 @@ int AddrSequence::do_self_test_compare(unsigned long pagesize, bool is_perf)
 {
   unsigned long addr;
   uint8_t payload = 0;
-  uint8_t nid;
+  int8_t nid;
 
   cout << "addr_clusters.size = " << addr_clusters.size() << endl;
   cout << "buf_pool.size = " << buf_pool.size() << endl;
@@ -557,7 +557,7 @@ int test_static()
   int rc;
   unsigned long addr;
   uint8_t  payload;
-  uint8_t  nid;
+  int8_t  nid;
 
   as.set_pageshift(12);
   rc = as.inc_payload(0x1000, 0);
