@@ -104,8 +104,7 @@ size_t EPTMigrate::get_threshold_refs(ProcIdlePageType type,
   }
 
   const AddrSequence& page_refs = get_pagetype_refs(type).page_refs;
-  vector<unsigned long> refs_count = get_pagetype_refs(type).refs_count;
-
+  vector<unsigned long> refs_count = get_pagetype_refs(type).refs_count[REF_LOC_ALL];
   double ratio;
 
   if (option.dram_percent) {

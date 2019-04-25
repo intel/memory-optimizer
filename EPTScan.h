@@ -16,6 +16,15 @@
 #include "AddrSequence.h"
 #include "MovePages.h"
 
+enum ref_location {
+  MAX_NID = 31,
+  REF_LOC_UNKNOWN,
+  REF_LOC_DRAM,
+  REF_LOC_PMEM,
+  REF_LOC_ALL,
+  REF_LOC_MAX,
+};
+
 class EPTScan: public ProcIdlePages
 {
   public:
@@ -37,13 +46,13 @@ class EPTScan: public ProcIdlePages
     int get_memory_type();
     int get_memory_type_range(void** addrs, unsigned long count,
                               AddrSequence& addrobj);
-
   private:
     bool should_stop();
     void count_refs_one(ProcIdleRefs& prc);
+    static void reset_one_ref_count(std::vector<refs_count_type>& ref_count_obj, int node_size);
 
   private:
-    static std::vector<unsigned long> sys_refs_count[MAX_ACCESSED + 1];
+    static std::vector<refs_count_type> sys_refs_count[MAX_ACCESSED + 1];
 
   protected:
      NumaNodeCollection* numa_collection = NULL;

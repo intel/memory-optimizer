@@ -108,12 +108,11 @@ void EPTScan::prepare_walks(int max_walks)
   }
 }
 
-std::vector<unsigned long> EPTScan::sys_refs_count[MAX_ACCESSED + 1];
+std::vector<refs_count_type> EPTScan::sys_refs_count[MAX_ACCESSED + 1];
 void EPTScan::reset_sys_refs_count(int nr_walks)
 {
   for (auto& src: sys_refs_count) {
-    src.clear();
-    src.resize(nr_walks + 1, 0);
+    reset_one_ref_count(src, nr_walks + 1);
   }
 }
 
@@ -122,23 +121,60 @@ void EPTScan::count_refs_one(ProcIdleRefs& prc)
   int rc;
   unsigned long addr;
   uint8_t ref_count;
-  uint8_t unused_nid;
-  std::vector<unsigned long>& refs_count = prc.refs_count;
+  uint8_t nid;
+  int loc_index;
+  std::vector<refs_count_type>& refs_count = prc.refs_count;
+  AddrSequence& page_refs = prc.page_refs;
 
-  refs_count.clear();
-  refs_count.resize(nr_walks + 1, 0);
+  reset_one_ref_count(prc.refs_count, nr_walks + 1);
 
-  // prc.page_refs.smooth_payloads();
-
-  // In the rare case of changed VMAs, their start/end boundary may not align
-  // with the underlying huge page size. If the same huge page is covered by
-  // 2 VMAs, there will be duplicate accounting for the same page. The easy
-  // workaround is to enforce min() check here.
-  rc = prc.page_refs.get_first(addr, ref_count, unused_nid);
+  // save page NID + refs information into refs_count
+  rc = page_refs.get_first(addr, ref_count, nid);
   while (!rc) {
-    refs_count[std::min(ref_count, (uint8_t)nr_walks)] += 1;
-    rc = prc.page_refs.get_next(addr, ref_count, unused_nid);
+
+    // In the rare case of changed VMAs, their start/end boundary may not align
+    // with the underlying huge page size. If the same huge page is covered by
+    // 2 VMAs, there will be duplicate accounting for the same page. The easy
+    // workaround is to enforce min() check here.
+    if (nid >= 0)
+      refs_count[nid][std::min(ref_count, (uint8_t)nr_walks)] += 1;
+    else
+      refs_count[REF_LOC_UNKNOWN][std::min(ref_count, (uint8_t)nr_walks)] += 1;
+    rc = page_refs.get_next(addr, ref_count, nid);
   }
+
+  // save DRAM/PMEM/ALL refs count from page NID + refs information
+  for (int i = 0; i <= MAX_NID; ++i) {
+
+    if (!numa_collection->is_valid_nid(i))
+      continue;
+
+    loc_index = (numa_collection->get_node(i)->is_pmem()) ?
+                REF_LOC_PMEM : REF_LOC_DRAM;
+
+    for (int j = 0; j <= nr_walks; ++j) {
+      refs_count[loc_index][j] += refs_count[i][j];
+      refs_count[REF_LOC_ALL][j] += refs_count[i][j];
+    }
+  }
+
+  // save UNKNOWN count into ALL
+  for (int k = 0; k <= nr_walks; ++k) {
+    refs_count[REF_LOC_ALL][k] += refs_count[REF_LOC_UNKNOWN][k];
+  }
+
+  return;
+}
+
+void EPTScan::reset_one_ref_count(std::vector<refs_count_type>& ref_count_obj, int node_size)
+{
+    ref_count_obj.clear();
+    ref_count_obj.resize(REF_LOC_MAX);
+
+    for (auto& node_ref: ref_count_obj) {
+      node_ref.clear();
+      node_ref.resize(node_size, 0);
+    }
 }
 
 void EPTScan::count_refs()
@@ -154,12 +190,14 @@ void EPTScan::count_refs()
 
     count_refs_one(prc);
 
-    if ((unsigned long)nr_walks + 1 != prc.refs_count.size())
+    if ((unsigned long)nr_walks + 1 != prc.refs_count[REF_LOC_ALL].size())
       fprintf(stderr, "ERROR: nr_walks mismatch: %d %lu\n",
               nr_walks, prc.refs_count.size());
 
-    for (int i = 0; i <= nr_walks; ++i) {
-      src[i] += prc.refs_count[i];
+    for (int j = 0; j < REF_LOC_MAX; ++j) {
+      for (int i = 0; i <= nr_walks; ++i) {
+        src[j][i] += prc.refs_count[j][i];
+      }
     }
   }
 }
@@ -187,12 +225,12 @@ int EPTScan::save_counts(std::string filename)
   fprintf(file, "======================================================\n");
 
   unsigned long sum_kb[IDLE_PAGE_TYPE_MAX] = {};
-  int nr = sys_refs_count[PTE_ACCESSED].size();
+  int nr = sys_refs_count[PTE_ACCESSED][REF_LOC_ALL].size();
 
   for (int i = 0; i < nr; i++) {
     fprintf(file, "%4d", i);
     for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_PRESENT}) {
-      unsigned long pages = sys_refs_count[type][i];
+      unsigned long pages = sys_refs_count[type][REF_LOC_ALL][i];
       unsigned long kb = pages * (pagetype_size[type] >> 10);
       fprintf(file, " %'15lu", kb);
       sum_kb[type] += kb;
