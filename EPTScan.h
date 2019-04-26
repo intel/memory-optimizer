@@ -49,10 +49,10 @@ class EPTScan: public ProcIdlePages
   private:
     bool should_stop();
     void count_refs_one(ProcIdleRefs& prc);
-    static void reset_one_ref_count(std::vector<refs_count_type>& ref_count_obj, int node_size);
+    static void reset_one_ref_count(histogram_2d_type& ref_count_obj, int node_size);
 
   private:
-    static std::vector<refs_count_type> sys_refs_count[MAX_ACCESSED + 1];
+    static histogram_2d_type  sys_refs_count[MAX_ACCESSED + 1];
 
   protected:
      NumaNodeCollection* numa_collection = NULL;

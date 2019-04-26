@@ -68,7 +68,9 @@ extern int pagetype_index[];
 extern int pagetype_batchsize[IDLE_PAGE_TYPE_MAX];
 
 typedef std::unordered_map<unsigned long, uint8_t> page_refs_map;
-typedef std::vector<unsigned long> refs_count_type;
+typedef std::vector<unsigned long> histogram_type;
+typedef std::vector<histogram_type> histogram_2d_type;
+
 
 struct ProcIdleRefs
 {
@@ -78,7 +80,7 @@ struct ProcIdleRefs
 
   // refs => page count
   // accumulated by count_refs()
-  std::vector<refs_count_type> refs_count;
+  histogram_2d_type histogram_2d;
 };
 
 class ProcIdlePages

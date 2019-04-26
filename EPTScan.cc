@@ -104,11 +104,11 @@ void EPTScan::prepare_walks(int max_walks)
     auto& prc = pagetype_refs[type];
     prc.page_refs.clear();
     prc.page_refs.set_pageshift(pagetype_shift[type]);
-    prc.refs_count.clear();
+    prc.histogram_2d.clear();
   }
 }
 
-std::vector<refs_count_type> EPTScan::sys_refs_count[MAX_ACCESSED + 1];
+histogram_2d_type EPTScan::sys_refs_count[MAX_ACCESSED + 1];
 void EPTScan::reset_sys_refs_count(int nr_walks)
 {
   for (auto& src: sys_refs_count) {
@@ -123,10 +123,10 @@ void EPTScan::count_refs_one(ProcIdleRefs& prc)
   uint8_t ref_count;
   int8_t nid;
   int loc_index;
-  std::vector<refs_count_type>& refs_count = prc.refs_count;
+  histogram_2d_type& refs_count = prc.histogram_2d;
   AddrSequence& page_refs = prc.page_refs;
 
-  reset_one_ref_count(prc.refs_count, nr_walks + 1);
+  reset_one_ref_count(refs_count, nr_walks + 1);
 
   // save page NID + refs information into refs_count
   rc = page_refs.get_first(addr, ref_count, nid);
@@ -166,7 +166,7 @@ void EPTScan::count_refs_one(ProcIdleRefs& prc)
   return;
 }
 
-void EPTScan::reset_one_ref_count(std::vector<refs_count_type>& ref_count_obj, int node_size)
+void EPTScan::reset_one_ref_count(histogram_2d_type& ref_count_obj, int node_size)
 {
     ref_count_obj.clear();
     ref_count_obj.resize(REF_LOC_MAX);
@@ -190,13 +190,13 @@ void EPTScan::count_refs()
 
     count_refs_one(prc);
 
-    if ((unsigned long)nr_walks + 1 != prc.refs_count[REF_LOC_ALL].size())
+    if ((unsigned long)nr_walks + 1 != prc.histogram_2d[REF_LOC_ALL].size())
       fprintf(stderr, "ERROR: nr_walks mismatch: %d %lu\n",
-              nr_walks, prc.refs_count.size());
+              nr_walks, prc.histogram_2d[REF_LOC_ALL].size());
 
     for (int j = 0; j < REF_LOC_MAX; ++j) {
       for (int i = 0; i <= nr_walks; ++i) {
-        src[j][i] += prc.refs_count[j][i];
+        src[j][i] += prc.histogram_2d[j][i];
       }
     }
   }
