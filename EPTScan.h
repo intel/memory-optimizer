@@ -16,14 +16,6 @@
 #include "AddrSequence.h"
 #include "MovePages.h"
 
-enum ref_location {
-  MAX_NID = 31,
-  REF_LOC_UNKNOWN,
-  REF_LOC_DRAM,
-  REF_LOC_PMEM,
-  REF_LOC_ALL,
-  REF_LOC_MAX,
-};
 
 class EPTScan: public ProcIdlePages
 {

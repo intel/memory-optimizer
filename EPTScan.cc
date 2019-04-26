@@ -104,7 +104,9 @@ void EPTScan::prepare_walks(int max_walks)
     auto& prc = pagetype_refs[type];
     prc.page_refs.clear();
     prc.page_refs.set_pageshift(pagetype_shift[type]);
-    prc.histogram_2d.clear();
+
+    for (auto& histogram: prc.histogram_2d)
+      histogram.clear();
   }
 }
 
@@ -168,9 +170,6 @@ void EPTScan::count_refs_one(ProcIdleRefs& prc)
 
 void EPTScan::reset_one_ref_count(histogram_2d_type& ref_count_obj, int node_size)
 {
-    ref_count_obj.clear();
-    ref_count_obj.resize(REF_LOC_MAX);
-
     for (auto& node_ref: ref_count_obj) {
       node_ref.clear();
       node_ref.resize(node_size, 0);

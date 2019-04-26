@@ -53,6 +53,15 @@ enum ProcIdlePageType
   IDLE_PAGE_TYPE_MAX
 };
 
+enum ref_location {
+  MAX_NID = 31,
+  REF_LOC_UNKNOWN,
+  REF_LOC_DRAM,
+  REF_LOC_PMEM,
+  REF_LOC_ALL,
+  REF_LOC_MAX,
+};
+
 #define PIP_TYPE(a)             (0xf & (a >> 4))
 #define PIP_SIZE(a)	            (0xf & a)
 #define PIP_COMPOSE(type, nr)	  ((type << 4) | nr)
@@ -68,8 +77,8 @@ extern int pagetype_index[];
 extern int pagetype_batchsize[IDLE_PAGE_TYPE_MAX];
 
 typedef std::unordered_map<unsigned long, uint8_t> page_refs_map;
-typedef std::vector<unsigned long> histogram_type;
-typedef std::vector<histogram_type> histogram_2d_type;
+typedef std::vector<unsigned long>  histogram_type;
+typedef histogram_type  histogram_2d_type[REF_LOC_MAX];
 
 
 struct ProcIdleRefs
