@@ -154,6 +154,7 @@ int EPTMigrate::select_top_pages(ProcIdlePageType type)
 {
   AddrSequence& page_refs = get_pagetype_refs(type).page_refs;
   std::vector<void *>& addrs = pages_addr[pagetype_index[type]];
+
   int min_refs;
   int max_refs;
   unsigned long addr;
@@ -285,4 +286,113 @@ unsigned long EPTMigrate::calc_numa_anon_capacity(ProcIdlePageType type,
     sum += proc_vmstat.anon_capacity(node->id());
 
   return sum;
+}
+
+int EPTMigrate::promote_and_demote(ProcIdlePageType type,
+                                   long nr_promote, long nr_demote)
+{
+  unsigned long addr;
+  uint8_t refs;
+  int8_t  nid;
+
+  int ret = -1;
+  int hot_threshold = nr_walks + 1;
+  int cold_threshold = 0;
+  long promote_remain = 0;
+  long demote_remain = 0;
+  std::vector<void*> cold_page_array, hot_page_array;
+
+  AddrSequence& page_refs
+      = get_pagetype_refs(type).page_refs;
+  const histogram_2d_type& refs_count
+      = get_pagetype_refs(type).histogram_2d;
+
+  if (nr_promote) {
+    long save_nr_promote = nr_promote;
+
+    for (hot_threshold = nr_walks; hot_threshold >= 1; --hot_threshold) {
+      nr_promote -= refs_count[REF_LOC_PMEM][hot_threshold];
+      if (nr_promote <= 0) {
+        promote_remain = nr_promote + refs_count[REF_LOC_PMEM][hot_threshold];
+        break;
+      }
+    }
+
+    // cover no enough hot page case
+    if (hot_threshold < 1) {
+      hot_threshold = 1;
+      promote_remain = refs_count[REF_LOC_PMEM][hot_threshold];
+      fprintf(stderr, "WARNING: no enough HOT pages, request: %ld actual: %ld "
+              "hot_threshold changed to: %d\n",
+              save_nr_promote,
+              save_nr_promote - nr_promote,
+              hot_threshold);
+    }
+  }
+
+  if (nr_demote) {
+    long save_nr_demote = nr_demote;
+
+    for (cold_threshold = 0; cold_threshold <= nr_walks; ++cold_threshold) {
+      nr_demote -= refs_count[REF_LOC_DRAM][cold_threshold];
+      if (nr_demote <= 0) {
+        demote_remain = nr_demote + refs_count[REF_LOC_DRAM][cold_threshold];
+        break;
+      }
+    }
+
+    // cover no enough cold page case
+    if (cold_threshold > nr_walks) {
+      cold_threshold = nr_walks;
+      demote_remain = refs_count[REF_LOC_DRAM][cold_threshold];
+      fprintf(stderr, "WARNING: no enough COLD pages, request: %ld actual: %ld "
+              "cold_threshold changed to: %d\n",
+              save_nr_demote,
+              save_nr_demote - nr_demote,
+              cold_threshold);
+    }
+  }
+
+  if (hot_threshold < cold_threshold + option.anti_thrash_threshold) {
+    int save_hot_threshold = hot_threshold;
+
+    hot_threshold = std::min(cold_threshold + option.anti_thrash_threshold,
+                             nr_walks);
+    promote_remain = refs_count[REF_LOC_PMEM][hot_threshold];
+    fprintf(stderr, "NOTICE: anti-thrashing happend. "
+            "cold_threshold: %d "
+            "old hot_threshold: %d "
+            "new hot_threshold: %d "
+            "anti_thrash_threshold: %d\n",
+            cold_threshold,
+            save_hot_threshold,
+            hot_threshold,
+            option.anti_thrash_threshold);
+  }
+
+  // build the hot and cold page addr list
+  ret = page_refs.get_first(addr, refs, nid);
+  while(!ret) {
+
+    if (!numa_collection->is_valid_nid(nid))
+      goto NEXT;
+
+    if (numa_collection->get_node(nid)->is_pmem()) {
+
+      if ((refs == hot_threshold && promote_remain-- > 0)
+          || refs > hot_threshold)
+        hot_page_array.push_back((void*)addr);
+
+    } else {
+
+      if ((refs == cold_threshold && demote_remain-- > 0)
+          || refs < cold_threshold)
+        cold_page_array.push_back((void*)addr);
+
+    }
+NEXT:
+    ret = page_refs.get_next(addr, refs, nid);
+  }
+
+  return ret;
 }

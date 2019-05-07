@@ -74,6 +74,8 @@ class EPTMigrate : public EPTScan
 
     unsigned long calc_numa_anon_capacity(ProcIdlePageType type, ProcVmstat& proc_vmstat);
 
+    int promote_and_demote(ProcIdlePageType type, long nr_promte, long nr_demote);
+
   public:
     static MigrateStats sys_migrate_stats;
 

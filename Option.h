@@ -162,6 +162,8 @@ public:
   // processes in ProcessCollection::collect().
   // Policy default_policy;
 
+  int anti_thrash_threshold = 2;
+
 private:
   PolicySet  policies;
 };
