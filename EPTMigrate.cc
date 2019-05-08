@@ -300,7 +300,9 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   int cold_threshold = 0;
   long promote_remain = 0;
   long demote_remain = 0;
-  std::vector<void*> cold_page_array, hot_page_array;
+
+  std::vector<void*> addr_array_2d[MAX_MIGRATE];
+  std::vector<int> target_nid_2d[MAX_MIGRATE];
 
   AddrSequence& page_refs
       = get_pagetype_refs(type).page_refs;
@@ -381,13 +383,17 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
 
       if ((refs == hot_threshold && promote_remain-- > 0)
           || refs > hot_threshold)
-        hot_page_array.push_back((void*)addr);
+        save_migrate_parameter((void*)addr, nid,
+                               addr_array_2d[HOT_MIGRATE],
+                               target_nid_2d[HOT_MIGRATE]);
 
     } else {
 
       if ((refs == cold_threshold && demote_remain-- > 0)
           || refs < cold_threshold)
-        cold_page_array.push_back((void*)addr);
+        save_migrate_parameter((void*)addr, nid,
+                               addr_array_2d[COLD_MIGRATE],
+                               target_nid_2d[COLD_MIGRATE]);
 
     }
 NEXT:
@@ -395,4 +401,23 @@ NEXT:
   }
 
   return ret;
+}
+
+int EPTMigrate::save_migrate_parameter(void* addr, int nid,
+                                        std::vector<void*>& addr_array,
+                                        std::vector<int>& target_nid_array)
+{
+  NumaNode* peer_node;
+
+  peer_node = numa_collection->get_node(nid)->get_peer_node();
+  if (!peer_node) {
+      fprintf(stderr, "WARNING: can NOT get target node id, skip addr. "
+              "addr: 0x%p nid: %d\n",
+              addr, nid);
+      return -1;
+  }
+
+  addr_array.push_back(addr);
+  target_nid_array.push_back(peer_node->id());
+  return 0;
 }

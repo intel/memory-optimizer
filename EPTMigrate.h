@@ -40,6 +40,13 @@ struct MigrateStats: public MoveStats
 
 class EPTMigrate : public EPTScan
 {
+  private:
+    enum {
+        COLD_MIGRATE = 0,
+        HOT_MIGRATE,
+        MAX_MIGRATE
+    };
+
   public:
     int dram_percent;
 
@@ -75,6 +82,10 @@ class EPTMigrate : public EPTScan
     unsigned long calc_numa_anon_capacity(ProcIdlePageType type, ProcVmstat& proc_vmstat);
 
     int promote_and_demote(ProcIdlePageType type, long nr_promte, long nr_demote);
+
+    int save_migrate_parameter(void* addr, int nid,
+                               std::vector<void*>& addr_array,
+                               std::vector<int>& target_nid_array);
 
   public:
     static MigrateStats sys_migrate_stats;
