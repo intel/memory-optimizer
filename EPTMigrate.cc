@@ -301,6 +301,9 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   long promote_remain = 0;
   long demote_remain = 0;
 
+  long save_nr_promote = nr_promote;
+  long save_nr_demote = nr_demote;
+
   std::vector<void*> addr_array_2d[MAX_MIGRATE];
   std::vector<int> target_nid_2d[MAX_MIGRATE];
 
@@ -310,8 +313,6 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
       = get_pagetype_refs(type).histogram_2d;
 
   if (nr_promote) {
-    long save_nr_promote = nr_promote;
-
     for (hot_threshold = nr_walks; hot_threshold >= 1; --hot_threshold) {
       nr_promote -= refs_count[REF_LOC_PMEM][hot_threshold];
       if (nr_promote <= 0) {
@@ -333,8 +334,6 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   }
 
   if (nr_demote) {
-    long save_nr_demote = nr_demote;
-
     for (cold_threshold = 0; cold_threshold <= nr_walks; ++cold_threshold) {
       nr_demote -= refs_count[REF_LOC_DRAM][cold_threshold];
       if (nr_demote <= 0) {
@@ -373,6 +372,16 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   }
 
   // build the hot and cold page addr list
+  if (save_nr_promote) {
+    addr_array_2d[HOT_MIGRATE].resize(save_nr_promote);
+    target_nid_2d[HOT_MIGRATE].resize(save_nr_promote);
+  }
+
+  if (save_nr_demote) {
+    addr_array_2d[COLD_MIGRATE].resize(save_nr_demote);
+    target_nid_2d[COLD_MIGRATE].resize(save_nr_demote);
+  }
+
   ret = page_refs.get_first(addr, refs, nid);
   while(!ret) {
 
