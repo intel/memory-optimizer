@@ -79,6 +79,8 @@ class MovePages
     long move_pages(std::vector<void *>& addrs, bool is_locate);
     long move_pages(void **addrs, std::vector<int> &move_status,
                     unsigned long count, bool is_locate);
+    long move_pages(void ** addrs, int* target_nid, unsigned long size,
+                    MoveStats& stats);
     long locate_move_pages(PidContext* pid_context, std::vector<void *>& addrs,
                            MoveStats *stats);
     void set_numacollection(NumaNodeCollection* new_collection)

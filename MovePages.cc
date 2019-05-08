@@ -144,6 +144,12 @@ long MovePages::move_pages(void **addrs, std::vector<int> &move_status,
   return ret;
 }
 
+long MovePages::move_pages(void ** addrs, int* target_nid, unsigned long size,
+                           MoveStats& stats)
+{
+  return -1;
+}
+
 long MovePages::locate_move_pages(PidContext *pid_context,
                                   std::vector<void *>& addrs,
                                   MoveStats *stats)

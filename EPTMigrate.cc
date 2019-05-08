@@ -400,6 +400,7 @@ NEXT:
     ret = page_refs.get_next(addr, refs, nid);
   }
 
+  ret = do_interleave_move_pages(type, addr_array_2d, target_nid_2d);
   return ret;
 }
 
@@ -420,4 +421,55 @@ int EPTMigrate::save_migrate_parameter(void* addr, int nid,
   addr_array.push_back(addr);
   target_nid_array.push_back(peer_node->id());
   return 0;
+}
+
+int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
+                                         std::vector<void*> *addr,
+                                         std::vector<int> *target_nid)
+{
+  size_t max_size;
+  size_t batch_size;
+  long count;
+
+  if (!addr[COLD_MIGRATE].size()
+      && !addr[HOT_MIGRATE].size()) {
+    fprintf(stderr,
+            "NOTICE: Skip migration becuase no HOT and COLD pages.\n");
+    return 0;
+  }
+
+  // prepare the hot and cold migrator
+  for (auto& i : page_migrator)
+    setup_migrator(type, i);
+
+  // get loop parameter
+  max_size = std::max(addr[COLD_MIGRATE].size(),
+                      addr[HOT_MIGRATE].size());
+  batch_size = pagetype_batchsize[type];
+
+  // interleave migration
+  for (unsigned long i = 0; i < max_size; i += batch_size) {
+    for (int migrate_type = 0; migrate_type < MAX_MIGRATE; ++migrate_type) {
+
+      if (i < addr[migrate_type].size()) {
+        count = std::min(batch_size, addr[migrate_type].size() - i);
+        page_migrator[migrate_type].move_pages(&addr[migrate_type][i],
+                                               &target_nid[migrate_type][i],
+                                               count,
+                                               page_migrate_stats[migrate_type]);
+      }
+
+    }
+  }
+
+  return 0;
+}
+
+void EPTMigrate::setup_migrator(ProcIdlePageType type, MovePages& migrator)
+{
+  migrator.set_pid(pid);
+  migrator.set_page_shift(pagetype_shift[type]);
+  migrator.set_batch_size(pagetype_batchsize[type]);
+  migrator.set_migration_type(type);
+  migrator.set_numacollection(numa_collection);
 }

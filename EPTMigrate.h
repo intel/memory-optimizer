@@ -87,6 +87,12 @@ class EPTMigrate : public EPTScan
                                std::vector<void*>& addr_array,
                                std::vector<int>& target_nid_array);
 
+    int do_interleave_move_pages(ProcIdlePageType type,
+                                 std::vector<void*> *addr,
+                                 std::vector<int> *target_nid);
+
+    void setup_migrator(ProcIdlePageType type, MovePages& migrator);
+
   public:
     static MigrateStats sys_migrate_stats;
 
@@ -104,6 +110,9 @@ class EPTMigrate : public EPTScan
 
     Formatter fmt;
     PidContext *context = NULL;
+
+    MigrateStats page_migrate_stats[MAX_MIGRATE];
+    MovePages page_migrator[MAX_MIGRATE];
 };
 
 #endif
