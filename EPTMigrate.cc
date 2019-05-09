@@ -510,3 +510,13 @@ void EPTMigrate::setup_migrator(ProcIdlePageType type, MovePages& migrator)
   migrator.set_migration_type(type);
   migrator.set_numacollection(numa_collection);
 }
+
+void EPTMigrate::update_migrate_state()
+{
+  for (auto& i : page_migrate_stats)
+    for (const ProcIdlePageType type: {PTE_ACCESSED, PMD_ACCESSED, PUD_PRESENT}) {
+      AddrSequence& page_refs = get_pagetype_refs(type).page_refs;
+      i.anon_kb += page_refs.size()
+          << (page_refs.get_pageshift() - 10);
+    }
+}

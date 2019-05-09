@@ -98,6 +98,8 @@ class EPTMigrate : public EPTScan
 
     void setup_migrator(ProcIdlePageType type, MovePages& migrator);
 
+    void update_migrate_state();
+
   public:
     static MigrateStats sys_migrate_stats;
 
