@@ -27,6 +27,7 @@
 #include "AddrSequence.h"
 #include "VMAInspect.h"
 #include "Numa.h"
+#include "BandwidthLimit.h"
 
 #define MPOL_MF_SW_YOUNG (1<<7)
 
@@ -306,6 +307,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
 
   std::vector<void*> addr_array_2d[MAX_MIGRATE];
   std::vector<int> target_nid_2d[MAX_MIGRATE];
+  std::vector<int> from_nid_2d[MAX_MIGRATE];
 
   AddrSequence& page_refs
       = get_pagetype_refs(type).page_refs;
@@ -374,11 +376,13 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   // build the hot and cold page addr list
   if (save_nr_promote) {
     addr_array_2d[HOT_MIGRATE].resize(save_nr_promote);
+    from_nid_2d[HOT_MIGRATE].resize(save_nr_promote);
     target_nid_2d[HOT_MIGRATE].resize(save_nr_promote);
   }
 
   if (save_nr_demote) {
     addr_array_2d[COLD_MIGRATE].resize(save_nr_demote);
+    from_nid_2d[COLD_MIGRATE].resize(save_nr_demote);
     target_nid_2d[COLD_MIGRATE].resize(save_nr_demote);
   }
 
@@ -394,6 +398,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
           || refs > hot_threshold)
         save_migrate_parameter((void*)addr, nid,
                                addr_array_2d[HOT_MIGRATE],
+                               from_nid_2d[HOT_MIGRATE],
                                target_nid_2d[HOT_MIGRATE]);
 
     } else {
@@ -402,6 +407,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
           || refs < cold_threshold)
         save_migrate_parameter((void*)addr, nid,
                                addr_array_2d[COLD_MIGRATE],
+                               from_nid_2d[COLD_MIGRATE],
                                target_nid_2d[COLD_MIGRATE]);
 
     }
@@ -415,6 +421,7 @@ NEXT:
 
 int EPTMigrate::save_migrate_parameter(void* addr, int nid,
                                         std::vector<void*>& addr_array,
+                                        std::vector<int>& from_nid_array,
                                         std::vector<int>& target_nid_array)
 {
   NumaNode* peer_node;
@@ -428,6 +435,7 @@ int EPTMigrate::save_migrate_parameter(void* addr, int nid,
   }
 
   addr_array.push_back(addr);
+  from_nid_array.push_back(nid);
   target_nid_array.push_back(peer_node->id());
   return 0;
 }
@@ -466,8 +474,12 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
                                                &target_nid[migrate_type][i],
                                                count,
                                                page_migrate_stats[migrate_type]);
+        // if (context)
+        //   context->sub_dram_quota(page_migrate_stats[migrate_type].move_kb);
       }
 
+      // if (throttler)
+      //   throttler->add_and_sleep(page_migrate_stats[migrate_type].move_kb * 1024);
     }
   }
 

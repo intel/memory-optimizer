@@ -56,7 +56,10 @@ class EPTMigrate : public EPTScan
     int migrate(ProcIdlePageType type);
 
     void set_throttler(BandwidthLimit* new_throttler)
-    { migrator.set_throttler(new_throttler); }
+    {
+      throttler = new_throttler;
+      migrator.set_throttler(new_throttler);
+    }
 
     void set_pid_context(PidContext *new_context)
     { context = new_context; }
@@ -85,6 +88,7 @@ class EPTMigrate : public EPTScan
 
     int save_migrate_parameter(void* addr, int nid,
                                std::vector<void*>& addr_array,
+                               std::vector<int>& from_nid_array,
                                std::vector<int>& target_nid_array);
 
     int do_interleave_move_pages(ProcIdlePageType type,
@@ -113,6 +117,8 @@ class EPTMigrate : public EPTScan
 
     MigrateStats page_migrate_stats[MAX_MIGRATE];
     MovePages page_migrator[MAX_MIGRATE];
+
+    BandwidthLimit* throttler = NULL;
 };
 
 #endif
