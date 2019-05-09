@@ -49,6 +49,11 @@ struct MoveStats
     void show_move_state(Formatter& fmt);
     unsigned long get_moved_bytes();
 
+    void save_migrate_states(unsigned long page_shift,
+                            std::vector<int>& from_nid,
+                            std::vector<int>& target_nid,
+                            std::vector<int>& migrate_result);
+
     static int default_failed;
     static bool is_page_moved(int from, int to, int move_state)
     { return from >= 0 && from != to && to == move_state; }
@@ -79,8 +84,7 @@ class MovePages
     long move_pages(std::vector<void *>& addrs, bool is_locate);
     long move_pages(void **addrs, std::vector<int> &move_status,
                     unsigned long count, bool is_locate);
-    long move_pages(void ** addrs, int* target_nid, unsigned long size,
-                    MoveStats& stats);
+    long move_pages(void **addrs, int* target_nid, unsigned long size);
     long locate_move_pages(PidContext* pid_context, std::vector<void *>& addrs,
                            MoveStats *stats);
     void set_numacollection(NumaNodeCollection* new_collection)
@@ -88,6 +92,8 @@ class MovePages
 
     std::vector<int>& get_status()            { return status; }
     MovePagesStatusCount& get_status_count()  { return status_count; }
+    std::vector<int>& get_migration_result()  { return status_after_move; }
+
     void clear_status_count()                 { status_count.clear(); }
     void calc_status_count();
     void add_status_count_to(MovePagesStatusCount& status_sum);
@@ -105,11 +111,12 @@ class MovePages
   private:
     bool is_exceed_dram_quota(PidContext* pid_context);
     void dec_dram_quota(PidContext* pid_context, long dec_value);
+
     long calc_and_save_state(MoveStats* stats,
                              std::vector<int>& status,
                              std::vector<int>& target_nodes,
                              std::vector<int>& status_after_move);
-        private:
+  private:
     pid_t pid;
     int flags;
 

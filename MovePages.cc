@@ -100,6 +100,34 @@ void MoveStats::unbox_movestate(int key,
   result = (signed char)((key >> result_shift) & 0xff);
 }
 
+void MoveStats::save_migrate_states(unsigned long page_shift,
+                                   std::vector<int>& from_nid,
+                                   std::vector<int>& target_nid,
+                                   std::vector<int>& migrate_result)
+{
+  const int shift = page_shift - 10;
+  unsigned long _move_kb = 0;
+  unsigned long _skip_kb = 0;
+
+  for (unsigned long i = 0; i < migrate_result.size(); ++i) {
+    if (migrate_result[i] == target_nid[i])
+      ++_move_kb;
+    else
+      ++_skip_kb;
+
+    save_move_states(from_nid[i],
+                     target_nid[i],
+                     migrate_result[i],
+                     page_shift);
+  }
+
+  move_kb = (_move_kb << shift);
+  skip_kb = (_skip_kb << shift);
+  to_move_kb = move_kb + skip_kb;
+}
+
+
+
 
 MovePages::MovePages() :
   flags(MPOL_MF_MOVE | MPOL_MF_SW_YOUNG),
@@ -144,10 +172,25 @@ long MovePages::move_pages(void **addrs, std::vector<int> &move_status,
   return ret;
 }
 
-long MovePages::move_pages(void ** addrs, int* target_nid, unsigned long size,
-                           MoveStats& stats)
+long MovePages::move_pages(void **addrs, int* target_nid, unsigned long size)
 {
-  return -1;
+  long ret;
+
+  status_after_move.resize(size, MoveStats::default_failed);
+  ret = ::move_pages(pid, size, addrs, target_nid, &status_after_move[0], flags);
+  if (ret > 0) {
+   /*
+    * Get page location again because move_pages() API leave "status"
+    * array untouched but the pages actually moved successfully when
+    * return value > 0 (for example 1 and 2).
+    */
+    move_pages(addrs, status_after_move, size, true);
+    fprintf(stderr, "WARNING: move_pages return: %ld\n", ret);
+  } else if (ret < 0) {
+    perror("WARNING: move_pages failed");
+  }
+
+  return ret;
 }
 
 long MovePages::locate_move_pages(PidContext *pid_context,
@@ -441,5 +484,4 @@ long MovePages::calc_and_save_state(MoveStats* stats,
   }
 
   return moved_bytes;
-
 }

@@ -93,6 +93,7 @@ class EPTMigrate : public EPTScan
 
     int do_interleave_move_pages(ProcIdlePageType type,
                                  std::vector<void*> *addr,
+                                 std::vector<int> *from_nid,
                                  std::vector<int> *target_nid);
 
     void setup_migrator(ProcIdlePageType type, MovePages& migrator);

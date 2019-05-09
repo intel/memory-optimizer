@@ -415,7 +415,9 @@ NEXT:
     ret = page_refs.get_next(addr, refs, nid);
   }
 
-  ret = do_interleave_move_pages(type, addr_array_2d, target_nid_2d);
+  ret = do_interleave_move_pages(type,
+                                 addr_array_2d,
+                                 from_nid_2d, target_nid_2d);
   return ret;
 }
 
@@ -442,6 +444,7 @@ int EPTMigrate::save_migrate_parameter(void* addr, int nid,
 
 int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
                                          std::vector<void*> *addr,
+                                         std::vector<int> *from_nid,
                                          std::vector<int> *target_nid)
 {
   size_t max_size;
@@ -469,17 +472,22 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
     for (int migrate_type = 0; migrate_type < MAX_MIGRATE; ++migrate_type) {
 
       if (i < addr[migrate_type].size()) {
+
         count = std::min(batch_size, addr[migrate_type].size() - i);
         page_migrator[migrate_type].move_pages(&addr[migrate_type][i],
                                                &target_nid[migrate_type][i],
-                                               count,
-                                               page_migrate_stats[migrate_type]);
-        // if (context)
-        //   context->sub_dram_quota(page_migrate_stats[migrate_type].move_kb);
+                                               count);
+        page_migrate_stats[migrate_type]
+            .save_migrate_states(pagetype_shift[type],
+                                 from_nid[migrate_type],
+                                 target_nid[migrate_type],
+                                 page_migrator[migrate_type].get_migration_result());
+        if (context)
+          context->sub_dram_quota(page_migrate_stats[migrate_type].move_kb);
       }
 
-      // if (throttler)
-      //   throttler->add_and_sleep(page_migrate_stats[migrate_type].move_kb * 1024);
+      if (throttler)
+        throttler->add_and_sleep(page_migrate_stats[migrate_type].move_kb * 1024);
     }
   }
 
