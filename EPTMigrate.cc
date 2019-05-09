@@ -327,8 +327,9 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
     if (hot_threshold < 1) {
       hot_threshold = 1;
       promote_remain = refs_count[REF_LOC_PMEM][hot_threshold];
-      fprintf(stderr, "WARNING: no enough HOT pages, request: %ld actual: %ld "
+      fprintf(stderr, "WARNING: No enough %s HOT pages, request: %ld actual: %ld "
               "hot_threshold changed to: %d\n",
+              pagetype_name[type],
               save_nr_promote,
               save_nr_promote - nr_promote,
               hot_threshold);
@@ -348,8 +349,9 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
     if (cold_threshold > nr_walks) {
       cold_threshold = nr_walks;
       demote_remain = refs_count[REF_LOC_DRAM][cold_threshold];
-      fprintf(stderr, "WARNING: no enough COLD pages, request: %ld actual: %ld "
+      fprintf(stderr, "WARNING: No enough %s COLD pages, request: %ld actual: %ld "
               "cold_threshold changed to: %d\n",
+              pagetype_name[type],
               save_nr_demote,
               save_nr_demote - nr_demote,
               cold_threshold);
@@ -362,11 +364,12 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
     hot_threshold = std::min(cold_threshold + option.anti_thrash_threshold,
                              nr_walks);
     promote_remain = refs_count[REF_LOC_PMEM][hot_threshold];
-    fprintf(stderr, "NOTICE: anti-thrashing happend. "
+    fprintf(stderr, "NOTICE: %s anti-thrashing happend. "
             "cold_threshold: %d "
             "old hot_threshold: %d "
             "new hot_threshold: %d "
             "anti_thrash_threshold: %d\n",
+            pagetype_name[type],
             cold_threshold,
             save_hot_threshold,
             hot_threshold,
@@ -375,15 +378,15 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
 
   // build the hot and cold page addr list
   if (save_nr_promote) {
-    addr_array_2d[HOT_MIGRATE].resize(save_nr_promote);
-    from_nid_2d[HOT_MIGRATE].resize(save_nr_promote);
-    target_nid_2d[HOT_MIGRATE].resize(save_nr_promote);
+    addr_array_2d[HOT_MIGRATE].reserve(save_nr_promote);
+    from_nid_2d[HOT_MIGRATE].reserve(save_nr_promote);
+    target_nid_2d[HOT_MIGRATE].reserve(save_nr_promote);
   }
 
   if (save_nr_demote) {
-    addr_array_2d[COLD_MIGRATE].resize(save_nr_demote);
-    from_nid_2d[COLD_MIGRATE].resize(save_nr_demote);
-    target_nid_2d[COLD_MIGRATE].resize(save_nr_demote);
+    addr_array_2d[COLD_MIGRATE].reserve(save_nr_demote);
+    from_nid_2d[COLD_MIGRATE].reserve(save_nr_demote);
+    target_nid_2d[COLD_MIGRATE].reserve(save_nr_demote);
   }
 
   ret = page_refs.get_first(addr, refs, nid);
@@ -454,7 +457,8 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
   if (!addr[COLD_MIGRATE].size()
       && !addr[HOT_MIGRATE].size()) {
     fprintf(stderr,
-            "NOTICE: Skip migration becuase no HOT and COLD pages.\n");
+            "NOTICE: Skip migration becuase no %s HOT and COLD pages.\n",
+            pagetype_name[type]);
     return 0;
   }
 
@@ -482,8 +486,12 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
                                  from_nid[migrate_type],
                                  target_nid[migrate_type],
                                  page_migrator[migrate_type].get_migration_result());
-        if (context)
-          context->sub_dram_quota(page_migrate_stats[migrate_type].move_kb);
+        if (context) {
+          if (migrate_type == HOT_MIGRATE)
+            context->sub_dram_quota(page_migrate_stats[migrate_type].move_kb);
+          else
+            context->add_dram_quota(page_migrate_stats[migrate_type].move_kb);
+        }
       }
 
       if (throttler)

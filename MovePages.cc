@@ -121,11 +121,13 @@ void MoveStats::save_migrate_states(unsigned long page_shift,
                      page_shift);
   }
 
-  move_kb = (_move_kb << shift);
-  skip_kb = (_skip_kb << shift);
-  to_move_kb = move_kb + skip_kb;
-}
+  _move_kb <<= shift;
+  _skip_kb <<= shift;
 
+  move_kb += _move_kb;
+  skip_kb += _skip_kb;
+  to_move_kb += _move_kb + _skip_kb;
+}
 
 
 
