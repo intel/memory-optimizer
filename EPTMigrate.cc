@@ -486,12 +486,17 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
                                  from_nid[migrate_type],
                                  target_nid[migrate_type],
                                  page_migrator[migrate_type].get_migration_result());
+        /*
+         * per-pid nid stats is enough to cover the ratio control case
+         *
+
         if (context) {
           if (migrate_type == HOT_MIGRATE)
             context->sub_dram_quota(page_migrate_stats[migrate_type].move_kb);
           else
             context->add_dram_quota(page_migrate_stats[migrate_type].move_kb);
         }
+        */
       }
 
       if (throttler)
