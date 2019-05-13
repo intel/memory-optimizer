@@ -28,25 +28,24 @@ class BandwidthLimit;
 class NumaNodeCollection;
 class ProcVmstat;
 
+enum {
+    COLD_MIGRATE = 0,
+    HOT_MIGRATE,
+    MAX_MIGRATE
+};
+
 struct MigrateStats: public MoveStats
 {
     unsigned long anon_kb;
 
     void clear();
     void add(MigrateStats *s);
-    void show(Formatter& fmt, MigrateWhat mwhat);
+    void show(Formatter& fmt, int mwhat);
     void show_move_result_state(Formatter& fmt);
 };
 
 class EPTMigrate : public EPTScan
 {
-  private:
-    enum {
-        COLD_MIGRATE = 0,
-        HOT_MIGRATE,
-        MAX_MIGRATE
-    };
-
   public:
     int dram_percent;
 
@@ -106,7 +105,7 @@ class EPTMigrate : public EPTScan
 
     void setup_migrator(ProcIdlePageType type, MovePages& migrator);
 
-    void update_migrate_state();
+    void update_migrate_state(int migrate_type);
 
   public:
     static MigrateStats sys_migrate_stats;

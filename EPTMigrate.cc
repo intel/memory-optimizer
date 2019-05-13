@@ -48,13 +48,13 @@ void MigrateStats::add(MigrateStats* s)
   anon_kb += s->anon_kb;
 }
 
-void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
+void MigrateStats::show(Formatter& fmt, int mwhat)
 {
   if (!to_move_kb)
     return;
 
-  const char *type = (mwhat == MIGRATE_HOT ? "hot" : "cold");
-  const char *node = (mwhat == MIGRATE_HOT ? "DRAM" : "PMEM");
+  const char *type = (mwhat == HOT_MIGRATE ? "hot" : "cold");
+  const char *node = (mwhat == HOT_MIGRATE ? "DRAM" : "PMEM");
 
   fmt.print("\n");
   fmt.print("find %4s pages: %'15lu %3d%% of anon pages\n", type, to_move_kb, percent(to_move_kb, anon_kb));
@@ -64,6 +64,7 @@ void MigrateStats::show(Formatter& fmt, MigrateWhat mwhat)
   if (option.debug_move_pages)
     show_move_state(fmt);
 }
+
 
 void EPTMigrate::reset_sys_migrate_stats()
 {
@@ -213,21 +214,21 @@ int EPTMigrate::migrate()
   fmt.clear();
   fmt.reserve(1<<10);
 
-  if (policy.migrate_what & MIGRATE_COLD) {
-    migrate_stats.clear();
-    migrate(PTE_IDLE);
-    migrate(PMD_IDLE);
-    migrate_stats.show(fmt, MIGRATE_COLD);
+  for (int i = COLD_MIGRATE; i < MAX_MIGRATE; ++i) {
+    page_migrate_stats[i].clear();
+    update_migrate_state(i);
   }
 
-  if (policy.migrate_what & MIGRATE_HOT) {
-    migrate_stats.clear();
-    migrate(PTE_ACCESSED);
-    migrate(PMD_ACCESSED);
-    migrate_stats.show(fmt, MIGRATE_HOT);
+  for (auto& type : {PTE_ACCESSED, PMD_ACCESSED}) {
+    promote_and_demote(type,
+                       nr_migrate_promote[type],
+                       nr_migrate_demote[type]);
   }
 
-  if (policy.dump_distribution && migrate_stats.move_kb) {
+  for (int i = COLD_MIGRATE; i < MAX_MIGRATE; ++i)
+    page_migrate_stats[i].show(fmt, i);
+
+  if (policy.dump_distribution) {
     VMAInspect vma_inspector;
     vma_inspector.set_numa_collection(numa_collection);
     vma_inspector.dump_task_nodes(pid, &fmt);
@@ -516,12 +517,11 @@ void EPTMigrate::setup_migrator(ProcIdlePageType type, MovePages& migrator)
   migrator.set_numacollection(numa_collection);
 }
 
-void EPTMigrate::update_migrate_state()
+void EPTMigrate::update_migrate_state(int migrate_type)
 {
-  for (auto& i : page_migrate_stats)
-    for (const ProcIdlePageType type: {PTE_ACCESSED, PMD_ACCESSED, PUD_PRESENT}) {
-      AddrSequence& page_refs = get_pagetype_refs(type).page_refs;
-      i.anon_kb += page_refs.size()
-          << (page_refs.get_pageshift() - 10);
-    }
+  for (const ProcIdlePageType type: {PTE_ACCESSED, PMD_ACCESSED, PUD_PRESENT}) {
+    AddrSequence& page_refs = get_pagetype_refs(type).page_refs;
+    page_migrate_stats[migrate_type].anon_kb
+        += page_refs.size() << (page_refs.get_pageshift() - 10);
+  }
 }
