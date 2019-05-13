@@ -164,6 +164,9 @@ public:
 
   int anti_thrash_threshold = 2;
 
+  // in kb unit
+  int one_period_migration_size = 256UL * 1024UL;
+
 private:
   PolicySet  policies;
 };
