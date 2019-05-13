@@ -38,6 +38,9 @@ class EPTScan: public ProcIdlePages
     int get_memory_type();
     int get_memory_type_range(void** addrs, unsigned long count,
                               AddrSequence& addrobj);
+    unsigned long get_total_memory_bytes(ProcIdlePageType tpye,
+                                         ref_location location);
+
   private:
     bool should_stop();
     void count_refs_one(ProcIdleRefs& prc);
