@@ -71,6 +71,14 @@ class EPTMigrate : public EPTScan
       return migrate_stats;
     }
 
+    void set_migrate_nr_promote(ProcIdlePageType type, long new_nr) {
+      nr_migrate_promote[type] = new_nr;
+    }
+
+    void set_migrate_nr_demote(ProcIdlePageType type, long new_nr) {
+      nr_migrate_demote[type] = new_nr;
+    }
+
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
 
@@ -122,6 +130,9 @@ class EPTMigrate : public EPTScan
     MovePages page_migrator[MAX_MIGRATE];
 
     BandwidthLimit* throttler = NULL;
+
+    long nr_migrate_promote[MAX_ACCESSED];
+    long nr_migrate_demote[MAX_ACCESSED];
 };
 
 #endif

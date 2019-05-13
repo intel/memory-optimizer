@@ -69,6 +69,7 @@ void GlobalScan::main_loop()
     walk_multi();
     get_memory_type();
     count_refs();
+    calc_migrate_parameter();
     migrate();
     count_migrate_stats();
 
@@ -540,6 +541,43 @@ void GlobalScan::get_memory_type()
     m->get_memory_type();
   }
 }
+
+void GlobalScan::calc_migrate_parameter()
+{
+  long total_mem ,total_pmem ,total_dram;
+  long limit = option.one_period_migration_size;
+  long dram_percent = option.dram_percent;
+  long dram_target;
+  long nr_demote, nr_promote;
+  long delta;
+
+  for (auto& m : idle_ranges) {
+    for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
+      long shift = pagetype_shift[type] - 10;
+
+      total_pmem = m->get_total_memory_bytes(type, REF_LOC_PMEM) << shift;
+      total_dram = m->get_total_memory_bytes(type, REF_LOC_DRAM) << shift;
+      total_mem = total_pmem + total_dram;
+
+      if (dram_percent) {
+        dram_target = total_mem * (dram_percent / 100.0);
+        delta = dram_target - total_dram;
+        delta = delta < 0 ?
+                        std::max(delta, 0 - limit) :
+                        std::min(delta, limit);
+        nr_promote = (limit + delta) / 2;
+        nr_demote = (limit - delta) / 2;
+      } else  {
+        nr_promote = limit / 2;
+        nr_demote = limit / 2;
+      }
+
+      m->set_migrate_nr_promote(type, nr_promote >> shift);
+      m->set_migrate_nr_demote(type, nr_demote >> shift);
+    }
+  }
+}
+
 
 bool GlobalScan::is_all_migration_done()
 {
