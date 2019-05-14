@@ -363,7 +363,8 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
     int save_hot_threshold = hot_threshold;
     hot_threshold = std::min(cold_threshold + option.anti_thrash_threshold,
                              nr_walks);
-    promote_remain = refs_count[REF_LOC_PMEM][hot_threshold];
+    promote_remain = std::min((long)refs_count[REF_LOC_PMEM][hot_threshold],
+                              save_nr_promote);
     fprintf(stderr, "NOTICE: %s anti-thrashing happend. "
             "cold_threshold: %d "
             "old hot_threshold: %d "
