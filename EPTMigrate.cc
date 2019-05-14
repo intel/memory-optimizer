@@ -465,7 +465,7 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
   if (!addr[COLD_MIGRATE].size()
       && !addr[HOT_MIGRATE].size()) {
     fprintf(stderr,
-            "NOTICE: Skip migration becuase no %s HOT and COLD pages.\n",
+            "NOTICE: Skip migration because no %s HOT and COLD pages.\n",
             pagetype_name[type]);
     return 0;
   }
