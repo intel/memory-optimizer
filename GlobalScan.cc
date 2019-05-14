@@ -559,6 +559,12 @@ void GlobalScan::calc_migrate_parameter()
       total_dram = m->get_total_memory_bytes(type, REF_LOC_DRAM) << shift;
       total_mem = total_pmem + total_dram;
 
+      if (!total_mem) {
+        nr_promote = 0;
+        nr_demote = 0;
+        goto set_nr;
+      }
+
       if (dram_percent) {
         dram_target = total_mem * (dram_percent / 100.0);
         delta = dram_target - total_dram;
@@ -572,6 +578,7 @@ void GlobalScan::calc_migrate_parameter()
         nr_demote = limit / 2;
       }
 
+set_nr:
       m->set_migrate_nr_promote(type, nr_promote >> shift);
       m->set_migrate_nr_demote(type, nr_demote >> shift);
     }
