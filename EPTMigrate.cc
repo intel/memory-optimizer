@@ -361,7 +361,6 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
 
   if (hot_threshold < cold_threshold + option.anti_thrash_threshold) {
     int save_hot_threshold = hot_threshold;
-
     hot_threshold = std::min(cold_threshold + option.anti_thrash_threshold,
                              nr_walks);
     promote_remain = refs_count[REF_LOC_PMEM][hot_threshold];
@@ -375,6 +374,14 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
             save_hot_threshold,
             hot_threshold,
             option.anti_thrash_threshold);
+
+    if (hot_threshold < cold_threshold + option.anti_thrash_threshold) {
+      fprintf(stderr,
+              "NOTICE: %s skip migration for hot_threshold - cold_threshold < %d.\n",
+              pagetype_name[type],
+              option.anti_thrash_threshold);
+      return 0;
+    }
   }
 
   // build the hot and cold page addr list
