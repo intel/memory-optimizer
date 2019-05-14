@@ -328,7 +328,8 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
     if (hot_threshold < 1) {
       hot_threshold = 1;
       promote_remain = refs_count[REF_LOC_PMEM][hot_threshold];
-      fprintf(stderr, "WARNING: No enough %s HOT pages, request: %ld actual: %ld "
+      fprintf(stderr, "WARNING: No enough %s HOT pages:\n"
+              "request: %ld actual: %ld\n"
               "hot_threshold changed to: %d\n",
               pagetype_name[type],
               save_nr_promote,
@@ -350,7 +351,8 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
     if (cold_threshold > nr_walks) {
       cold_threshold = nr_walks;
       demote_remain = refs_count[REF_LOC_DRAM][cold_threshold];
-      fprintf(stderr, "WARNING: No enough %s COLD pages, request: %ld actual: %ld "
+      fprintf(stderr, "WARNING: No enough %s COLD pages:\n"
+              "request: %ld actual: %ld\n"
               "cold_threshold changed to: %d\n",
               pagetype_name[type],
               save_nr_demote,
@@ -365,10 +367,9 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
                              nr_walks);
     promote_remain = std::min((long)refs_count[REF_LOC_PMEM][hot_threshold],
                               save_nr_promote);
-    fprintf(stderr, "NOTICE: %s anti-thrashing happend. "
-            "cold_threshold: %d "
-            "old hot_threshold: %d "
-            "new hot_threshold: %d "
+    fprintf(stderr, "NOTICE: %s anti-thrashing happend:\n"
+            "cold_threshold: %d\n"
+            "old hot_threshold: %d new hot_threshold: %d\n"
             "anti_thrash_threshold: %d\n",
             pagetype_name[type],
             cold_threshold,
@@ -378,7 +379,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
 
     if (hot_threshold < cold_threshold + option.anti_thrash_threshold) {
       fprintf(stderr,
-              "NOTICE: %s skip migration for hot_threshold - cold_threshold < %d.\n",
+              "NOTICE: skip migration: %s hot_threshold - cold_threshold < %d.\n",
               pagetype_name[type],
               option.anti_thrash_threshold);
       return 0;
@@ -466,7 +467,7 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
   if (!addr[COLD_MIGRATE].size()
       && !addr[HOT_MIGRATE].size()) {
     fprintf(stderr,
-            "NOTICE: Skip migration because no %s HOT and COLD pages.\n",
+            "NOTICE: skip migration: %s no HOT and COLD pages.\n",
             pagetype_name[type]);
     return 0;
   }
