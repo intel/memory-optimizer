@@ -76,6 +76,7 @@ void GlobalScan::main_loop()
     if (!option.daemon && exit_on_stabilized())
       break;
 
+    // TODO: below condition checking will be deprecated soon once 1:1 mode is done.
     if (!option.daemon && is_all_migration_done()) {
       printf("exit because all migration done.\n");
       break;
@@ -88,12 +89,23 @@ void GlobalScan::main_loop()
 
     double sleep_time = std::max(option.sleep_secs, 2 * interval);
 
+    /*
+      TODO:
+      the original is_all_migration_done() will be deprecated in 1:1 mode
+      the below disabled section leave here as a reference and will be deleted
+      once 1:1 mode is done.
+     */
+#if 0
     if (is_all_migration_done()) {
       sleep_time = 20;
       printf("changed sleep_time to %f for all migration done.\n", sleep_time);
     }
     else if (sleep_time > 10 * interval)
       sleep_time = 10 * interval;
+#else
+    if (sleep_time > 10 * interval)
+      sleep_time = 10 * interval;
+#endif
 
     printf("\nSleeping for %.2f seconds\n", sleep_time);
     usleep(sleep_time * 1000000);
@@ -508,6 +520,7 @@ unsigned long GlobalScan::calc_migrated_bytes()
   return total_moved_bytes;
 }
 
+// TODO: below function be deprecated soon once 1:1 mode is done.
 void GlobalScan::update_pid_context()
 {
   int err;
