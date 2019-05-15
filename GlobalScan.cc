@@ -546,9 +546,10 @@ void GlobalScan::update_pid_context()
       {
           long dram_quota = mem_total_kb * ratio - mem_dram_kb;
           i.second->context.set_dram_quota(dram_quota);
-          printf("pid = %d: mem = %ld kb, dram=%ld kb, pmem = %ld kb, dram_quota = %ld kb\n",
+          printf("pid: %d mem: %ld kb dram: %ld kb pmem: %ld kb ratio: %d dram_quota: %ld kb\n",
                  i.first,
                  mem_total_kb, mem_dram_kb, mem_pmem_kb,
+                 percent(mem_dram_kb, mem_total_kb),
                  i.second->context.get_dram_quota());
       }
   }
@@ -598,6 +599,18 @@ void GlobalScan::calc_migrate_parameter()
       }
 
 set_nr:
+      printf("Memory info by %s for %s:\n"
+             "  total_mem: %ld kb\n"
+             "  total_dram: %ld kb\n"
+             "  total_pmem: %ld kb\n"
+             "  ratio: %d\n"
+             "  promote: %ld kb\n"
+             "  demote: %ld kb\n",
+             __func__, pagetype_name[type],
+             total_mem, total_dram, total_pmem,
+             percent(total_dram, total_mem),
+             nr_promote, nr_demote);
+
       m->set_migrate_nr_promote(type, nr_promote >> shift);
       m->set_migrate_nr_demote(type, nr_demote >> shift);
     }
