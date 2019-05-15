@@ -71,8 +71,8 @@ class EPTMigrate : public EPTScan
     static void reset_sys_migrate_stats();
     void count_migrate_stats();
 
-    MigrateStats& get_migrate_stats() {
-      return migrate_stats;
+    MigrateStats& get_migrate_stats(unsigned int type) {
+      return page_migrate_stats[type];
     }
 
     void set_migrate_nr_promote(ProcIdlePageType type, long new_nr) {

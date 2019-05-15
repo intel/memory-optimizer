@@ -501,7 +501,8 @@ unsigned long GlobalScan::calc_migrated_bytes()
   unsigned long total_moved_bytes = 0;
 
   for (auto& m : idle_ranges) {
-    total_moved_bytes += m->get_migrate_stats().get_moved_bytes();
+    for (unsigned i = COLD_MIGRATE; i < MAX_MIGRATE; ++i)
+      total_moved_bytes += m->get_migrate_stats(i).get_moved_bytes();
   }
 
   return total_moved_bytes;
