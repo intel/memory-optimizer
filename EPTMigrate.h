@@ -34,6 +34,11 @@ enum {
     MAX_MIGRATE
 };
 
+struct MigrateResult {
+    long hot_threshold;
+    long cold_threshold;
+};
+
 struct MigrateStats: public MoveStats
 {
     unsigned long anon_kb;
@@ -78,6 +83,9 @@ class EPTMigrate : public EPTScan
       nr_migrate_demote[type] = new_nr;
     }
 
+    const MigrateResult& get_migrate_result() {
+      return migrate_result;
+    }
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
 
@@ -132,6 +140,8 @@ class EPTMigrate : public EPTScan
 
     long nr_migrate_promote[MAX_ACCESSED];
     long nr_migrate_demote[MAX_ACCESSED];
+
+    struct MigrateResult migrate_result;
 };
 
 #endif

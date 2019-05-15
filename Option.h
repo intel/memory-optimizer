@@ -167,6 +167,8 @@ public:
   // in kb unit
   int one_period_migration_size = 256UL * 1024UL;
 
+  bool benchmark_mode = false;
+
 private:
   PolicySet  policies;
 };

@@ -81,6 +81,11 @@ void GlobalScan::main_loop()
       break;
     }
 
+    if (option.benchmark_mode && exit_on_benchmark()) {
+      printf("Exit: benchmark mode migration done\n");
+      break;
+    }
+
     double sleep_time = std::max(option.sleep_secs, 2 * interval);
 
     if (is_all_migration_done()) {
@@ -588,8 +593,18 @@ set_nr:
 
 bool GlobalScan::is_all_migration_done()
 {
-  for(auto &i : process_collection.get_proccesses()) {
+  for (auto &i : process_collection.get_proccesses()) {
     if (i.second->context.get_dram_quota() > 0)
+      return false;
+  }
+  return true;
+}
+
+bool GlobalScan::exit_on_benchmark()
+{
+  for (auto &m : idle_ranges) {
+    const MigrateResult& result = m->get_migrate_result();
+    if (result.hot_threshold > result.cold_threshold + 1)
       return false;
   }
   return true;
