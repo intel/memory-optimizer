@@ -264,8 +264,11 @@ int ProcIdlePages::open_file()
   memset(filepath, 0, sizeof(filepath));
   snprintf(filepath, sizeof(filepath), "/proc/%d/idle_pages", pid);
 
-  if (nr_walks > 0)
-    flags |= SCAN_SKIM_IDLE;
+  /*
+   *  disable for we considering to do this smart thing in future.
+   *  if (nr_walks > 0)
+   *    flags |= SCAN_SKIM_IDLE;
+   */
 
   idle_fd = open(filepath, flags);
   if (idle_fd < 0) {
