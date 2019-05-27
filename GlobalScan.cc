@@ -630,9 +630,12 @@ bool GlobalScan::is_all_migration_done()
 bool GlobalScan::exit_on_benchmark()
 {
   for (auto &m : idle_ranges) {
-    const MigrateResult& result = m->get_migrate_result();
-    if (result.hot_threshold > result.cold_threshold + 1)
-      return false;
+    for (auto &type : {PTE_ACCESSED, PMD_ACCESSED}) {
+      const MigrateResult& result = m->get_migrate_result(type);
+      if (result.hot_threshold > result.cold_threshold + 1)
+        return false;
+    }
   }
+
   return true;
 }

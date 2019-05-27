@@ -220,6 +220,7 @@ int EPTMigrate::migrate()
   }
 
   for (auto& type : {PTE_ACCESSED, PMD_ACCESSED}) {
+    migrate_result[type].clear();
     promote_and_demote(type,
                        nr_migrate_promote[type],
                        nr_migrate_demote[type]);
@@ -382,7 +383,8 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
               "NOTICE: skip migration: %s hot_threshold - cold_threshold < %d.\n",
               pagetype_name[type],
               option.anti_thrash_threshold);
-      return 0;
+      ret = 0;
+      goto done_exit;
     }
   }
 
@@ -403,7 +405,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   while(!ret) {
 
     if (!numa_collection->is_valid_nid(nid))
-      goto NEXT;
+      goto next;
 
     if (numa_collection->get_node(nid)->is_pmem()) {
 
@@ -424,13 +426,18 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
                                target_nid_2d[COLD_MIGRATE]);
 
     }
-NEXT:
+next:
     ret = page_refs.get_next(addr, refs, nid);
   }
 
   ret = do_interleave_move_pages(type,
                                  addr_array_2d,
                                  from_nid_2d, target_nid_2d);
+
+done_exit:
+  migrate_result[type].hot_threshold = hot_threshold;
+  migrate_result[type].cold_threshold = cold_threshold;
+
   return ret;
 }
 

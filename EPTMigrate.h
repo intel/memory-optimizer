@@ -35,6 +35,11 @@ enum {
 };
 
 struct MigrateResult {
+    void clear() {
+      hot_threshold = 0;
+      cold_threshold = 0;
+    }
+
     long hot_threshold;
     long cold_threshold;
 };
@@ -83,8 +88,8 @@ class EPTMigrate : public EPTScan
       nr_migrate_demote[type] = new_nr;
     }
 
-    const MigrateResult& get_migrate_result() {
-      return migrate_result;
+    const MigrateResult& get_migrate_result(ProcIdlePageType type) {
+      return migrate_result[type];
     }
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
@@ -141,7 +146,7 @@ class EPTMigrate : public EPTScan
     long nr_migrate_promote[MAX_ACCESSED];
     long nr_migrate_demote[MAX_ACCESSED];
 
-    struct MigrateResult migrate_result;
+    struct MigrateResult migrate_result[MAX_ACCESSED];
 };
 
 #endif
