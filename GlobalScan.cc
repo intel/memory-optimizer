@@ -629,13 +629,39 @@ bool GlobalScan::is_all_migration_done()
 
 bool GlobalScan::exit_on_benchmark()
 {
+  ProcIdlePageType page_type[] = {PTE_ACCESSED, PMD_ACCESSED};
+  size_t single_migration_count = 0;
+  size_t total_checking_count;
+
   for (auto &m : idle_ranges) {
-    for (auto &type : {PTE_ACCESSED, PMD_ACCESSED}) {
+    for (auto &type : page_type) {
       const MigrateResult& result = m->get_migrate_result(type);
-      if (result.hot_threshold > result.cold_threshold + 1)
+
+      printf("threshold_dump: %s hot_threshold: %ld cold_threshold: %ld\n",
+             pagetype_name[type], result.hot_threshold, result.cold_threshold);
+
+      if (result.hot_threshold > nr_walks
+          || result.cold_threshold < 0) {
+        ++single_migration_count;
+        continue;
+      }
+
+      if (result.hot_threshold > result.cold_threshold
+          + option.anti_thrash_threshold)
         return false;
     }
   }
+
+  /*
+   * The "single_migration_count == total_checking_count"
+   * means all migration happened in last period is single direction
+   * (only HOT or COLD), so we just ignore this situation and let sys-refs
+   *  keep running.
+   */
+  total_checking_count = idle_ranges.size()
+                         * sizeof(page_type)/sizeof(page_type[0]);
+  if (single_migration_count == total_checking_count)
+    return false;
 
   return true;
 }
