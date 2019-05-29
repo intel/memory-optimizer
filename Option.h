@@ -167,7 +167,7 @@ public:
   // in kb unit
   int one_period_migration_size = 256UL * 1024UL;
 
-  bool benchmark_mode = false;
+  bool exit_on_converged = false;
 
 private:
   PolicySet  policies;

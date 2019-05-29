@@ -79,7 +79,7 @@ class GlobalScan
     unsigned long calc_migrated_bytes();
     void show_migrate_speed(float delta_time);
     bool is_all_migration_done();
-    bool exit_on_benchmark();
+    bool exit_on_converged();
 
   private:
     static const float MIN_INTERVAL;

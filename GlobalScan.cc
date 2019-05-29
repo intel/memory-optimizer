@@ -82,8 +82,8 @@ void GlobalScan::main_loop()
       break;
     }
 
-    if (option.benchmark_mode && exit_on_benchmark()) {
-      printf("Exit: benchmark mode migration done\n");
+    if (option.exit_on_converged && exit_on_converged()) {
+      printf("Exit: exit_on_converged done\n");
       break;
     }
 
@@ -627,7 +627,7 @@ bool GlobalScan::is_all_migration_done()
   return true;
 }
 
-bool GlobalScan::exit_on_benchmark()
+bool GlobalScan::exit_on_converged()
 {
   ProcIdlePageType page_type[] = {PTE_ACCESSED, PMD_ACCESSED};
   size_t single_migration_count = 0;

@@ -130,7 +130,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_BOOL_VALUE("exit_on_exceeded", exit_on_exceeded, 2);
       OP_GET_BOOL_VALUE("daemon", daemon, 2);
       OP_GET_BOOL_VALUE("show_numa_stats", show_numa_stats, 2);
-      OP_GET_BOOL_VALUE("benchmark_mode", benchmark_mode, 2);
+      OP_GET_BOOL_VALUE("exit_on_converged", exit_on_converged, 2);
 #undef OP_GET_BOOL_VALUE
 
       YAML::Node sub_node;
