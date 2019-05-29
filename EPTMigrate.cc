@@ -54,12 +54,15 @@ void MigrateStats::show(Formatter& fmt, int mwhat)
     return;
 
   const char *type = (mwhat == HOT_MIGRATE ? "hot" : "cold");
-  const char *node = (mwhat == HOT_MIGRATE ? "DRAM" : "PMEM");
+  // const char *node = (mwhat == HOT_MIGRATE ? "DRAM" : "PMEM");
 
   fmt.print("\n");
-  fmt.print("find %4s pages: %'15lu %3d%% of anon pages\n", type, to_move_kb, percent(to_move_kb, anon_kb));
-  fmt.print("already in %4s: %'15lu %3d%% of %4s pages\n", node, skip_kb, percent(skip_kb, to_move_kb), type);
-  fmt.print("need to migrate: %'15lu %3d%% of %4s pages\n", move_kb, percent(move_kb, to_move_kb), type);
+  fmt.print("find %4s pages: %'14lu %3d%% of anon pages\n",
+            type, to_move_kb, percent(to_move_kb, anon_kb));
+  fmt.print("migrate failed: %'15lu %3d%% of %4s pages\n",
+            skip_kb, percent(skip_kb, to_move_kb), type);
+  fmt.print("migrate successful: %'11lu %3d%% of %4s pages\n",
+            move_kb, percent(move_kb, to_move_kb), type);
 
   if (option.debug_move_pages)
     show_move_state(fmt);
