@@ -299,8 +299,8 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   int8_t  nid;
 
   int ret = -1;
-  int hot_threshold = nr_walks + 1;
-  int cold_threshold = 0;
+  int hot_threshold;
+  int cold_threshold;
   long promote_remain = 0;
   long demote_remain = 0;
 
@@ -316,6 +316,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   const histogram_2d_type& refs_count
       = get_pagetype_refs(type).histogram_2d;
 
+  hot_threshold = nr_walks + 1;
   if (nr_promote) {
     for (hot_threshold = nr_walks; hot_threshold >= 1; --hot_threshold) {
       nr_promote -= refs_count[REF_LOC_PMEM][hot_threshold];
@@ -339,6 +340,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
     }
   }
 
+  cold_threshold = -1;
   if (nr_demote) {
     for (cold_threshold = 0; cold_threshold <= nr_walks; ++cold_threshold) {
       nr_demote -= refs_count[REF_LOC_DRAM][cold_threshold];
@@ -362,7 +364,14 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
     }
   }
 
-  if (hot_threshold < cold_threshold + option.anti_thrash_threshold) {
+  /*
+   *  Checking save_nr_demote and save_nr_promote to make sure
+   *  hot_threshold and cold_threshold are both available before
+   *  do anti-thrashing checking
+   */
+  if (save_nr_demote != 0 && save_nr_promote != 0
+      && hot_threshold < cold_threshold + option.anti_thrash_threshold) {
+
     int save_hot_threshold = hot_threshold;
     hot_threshold = std::min(cold_threshold + option.anti_thrash_threshold,
                              nr_walks);
