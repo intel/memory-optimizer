@@ -116,6 +116,8 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("numa_pmem_nodes", numa_hw_config.numa_pmem_list);
       OP_GET_VALUE("numa_peer_nodes", numa_hw_config.pmem_dram_map);
       OP_GET_VALUE("debug_move_pages",    debug_move_pages);
+      OP_GET_VALUE("anti_thrash_threshold", anti_thrash_threshold);
+      OP_GET_VALUE("one_period_migration_size", one_period_migration_size);
 #undef OP_GET_VALUE
 
       std::string str_val;

@@ -68,6 +68,8 @@ void Option::dump()
   printf("config_file = %s\n", config_file.c_str());
   printf("daemon = %d\n", (int)daemon);
   printf("exit_on_converged = %d\n", (int)exit_on_converged);
+  printf("anti_thrash_threshold = %d\n", anti_thrash_threshold);
+  printf("one_period_migration_size = %d\n", one_period_migration_size);
 
   for (size_t i = 0; i < policies.size(); ++i) {
       printf("policy %ld:\n", i);
