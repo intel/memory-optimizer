@@ -599,6 +599,7 @@ void GlobalScan::calc_migrate_parameter()
       }
 
 set_nr:
+      printf("\n");
       printf("Memory info by %s for %s:\n"
              "  total_mem: %ld kb\n"
              "  total_dram: %ld kb\n"
