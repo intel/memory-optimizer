@@ -520,8 +520,8 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
                                                count);
         page_migrate_stats[migrate_type]
             .save_migrate_states(pagetype_shift[type],
-                                 from_nid[migrate_type],
-                                 target_nid[migrate_type],
+                                 &from_nid[migrate_type][i],
+                                 &target_nid[migrate_type][i],
                                  page_migrator[migrate_type].get_migration_result());
         /*
          * per-pid nid stats is enough to cover the ratio control case

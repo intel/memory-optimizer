@@ -50,8 +50,8 @@ struct MoveStats
     unsigned long get_moved_bytes();
 
     void save_migrate_states(unsigned long page_shift,
-                            std::vector<int>& from_nid,
-                            std::vector<int>& target_nid,
+                            int* from_nid,
+                            int* target_nid,
                             std::vector<int>& migrate_result);
 
     static int default_failed;
