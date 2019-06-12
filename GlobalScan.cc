@@ -50,6 +50,12 @@ GlobalScan::GlobalScan() : conf_reload_flag(0)
 void GlobalScan::main_loop()
 {
   unsigned max_round = option.nr_loops;
+  int nr_scan_rounds = 0;
+  struct timeval ts_begin;
+  struct timeval ts_end;
+  float sleep_time;
+  float elapsed;
+  float walk_interval;
 
   if (!max_round || option.daemon)
     max_round = UINT_MAX;
@@ -61,12 +67,22 @@ void GlobalScan::main_loop()
 
   create_threads();
 
-  for (nround = 0; nround <= max_round; ++nround)
-  {
-    reload_conf();
-    collect();
-    update_pid_context();
-    walk_multi();
+  for (nround = 0; nround <= max_round; ++nround) {
+    gettimeofday(&ts_begin, NULL);
+
+    if (0 == nr_scan_rounds) {
+      reload_conf();
+      collect();
+      update_pid_context();
+      prepare_walk_multi();
+    }
+
+    walk_interval = walk_multi();
+
+    if (++nr_scan_rounds < option.nr_scan_rounds)
+      goto have_sleep;
+
+    nr_scan_rounds = 0;
     get_memory_type();
     count_refs();
     calc_migrate_parameter();
@@ -76,38 +92,19 @@ void GlobalScan::main_loop()
     if (!option.daemon && exit_on_stabilized())
       break;
 
-    // TODO: below condition checking will be deprecated soon once 1:1 mode is done.
-    if (!option.daemon && is_all_migration_done()) {
-      printf("exit because all migration done.\n");
-      break;
-    }
-
     if (option.exit_on_converged && exit_on_converged()) {
       printf("Exit: exit_on_converged done\n");
       break;
     }
 
-    double sleep_time = std::max(option.sleep_secs, 2 * interval);
-
-    /*
-      TODO:
-      the original is_all_migration_done() will be deprecated in 1:1 mode
-      the below disabled section leave here as a reference and will be deleted
-      once 1:1 mode is done.
-     */
-#if 0
-    if (is_all_migration_done()) {
-      sleep_time = 20;
-      printf("changed sleep_time to %f for all migration done.\n", sleep_time);
-    }
-    else if (sleep_time > 10 * interval)
-      sleep_time = 10 * interval;
-#else
-    if (sleep_time > 10 * interval)
-      sleep_time = 10 * interval;
-#endif
+have_sleep:
+    gettimeofday(&ts_end, NULL);
+    elapsed = tv_secs(ts_begin, ts_end);
+    sleep_time = std::max(2 * walk_interval,
+                          option.scan_period - elapsed);
 
     printf("\nSleeping for %.2f seconds\n", sleep_time);
+
     usleep(sleep_time * 1000000);
   }
   stop_threads();
@@ -197,44 +194,53 @@ void GlobalScan::stop_threads()
     th.join();
 }
 
+void GlobalScan::prepare_walk_multi()
+{
+  nr_walks = 0;
+  for (auto& m: idle_ranges)
+    m->prepare_walks(option.nr_scans);
+}
 
-void GlobalScan::walk_multi()
+float GlobalScan::walk_multi()
 {
   struct timeval ts1, ts2;
   float elapsed;
+  float interval_sum = 0;
+  int scans;
 
   nr_acceptable_scans = 0;
-
-  for (auto& m: idle_ranges)
-    m->prepare_walks(option.max_walks);
 
   printf("\nStarting page table scans: %s\n", get_current_date().c_str());
   printf("%7s  %8s  %23s  %23s  %15s\n", "nr_scan", "interval", "young", "top hot", "all");
   printf("====================================================================================\n");
 
-  for (nr_walks = 0; nr_walks < option.max_walks;)
-  {
-    ++nr_walks;
+  for (scans = 0; scans < option.nr_scans;) {
+    ++scans;
 
     gettimeofday(&ts1, NULL);
     real_interval = tv_secs(last_scan_start, ts1);
     last_scan_start = ts1;
 
-    walk_once();
+    walk_once(scans);
 
     gettimeofday(&ts2, NULL);
     elapsed = tv_secs(ts1, ts2);
 
-    if (should_stop_walk())
-      break;
+    interval_sum += interval;
 
-    update_interval(0);
+    if (scans > 1 )
+      update_interval();
+
     if (interval > elapsed)
       usleep((interval - elapsed) * 1000000);
   }
 
-  update_interval(1);
+  // must update nr_walks to align with idle_ranges::nr_walks.
+  nr_walks += scans;
+
   printf("End of page table scans: %s\n", get_current_date().c_str());
+
+  return interval_sum / scans;
 }
 
 void GlobalScan::count_refs()
@@ -328,7 +334,7 @@ void GlobalScan::update_dram_free_anon_bytes()
     dram_hot_target += dram_hot_target * nround / 16;
 }
 
-void GlobalScan::walk_once()
+void GlobalScan::walk_once(int scans)
 {
   int nr = 0;
   Job job;
@@ -361,7 +367,7 @@ void GlobalScan::walk_once()
   update_dram_free_anon_bytes();
 
   printf("%7d  %8.3f  %'15lu %6.2f%%  %'15lu %6.2f%%  %'15lu\n",
-         nr_walks,
+         scans,
          (double)interval,
          young_bytes >> 10, 100.0 * young_bytes / all_bytes,
          top_bytes >> 10, 100.0 * top_bytes / all_bytes,
@@ -443,6 +449,7 @@ void GlobalScan::show_migrate_speed(float delta_time)
          (unsigned long)(migrated_kb / (delta_time + 0.0000001)));
 }
 
+#if 0
 void GlobalScan::update_interval(bool finished)
 {
   if (option.interval)
@@ -486,6 +493,22 @@ void GlobalScan::update_interval(bool finished)
   }
 }
 
+#else
+
+void GlobalScan::update_interval()
+{
+  unsigned long target_bytes;
+  if (option.interval)
+    return;
+
+  target_bytes = all_bytes * option.dram_percent / 100;
+  intervaler.set_target_y(target_bytes);
+
+  intervaler.add_pair(real_interval, young_bytes);
+  interval = intervaler.estimate_x();
+}
+
+#endif
 void GlobalScan::request_reload_conf()
 {
   conf_reload_flag.store(1, std::memory_order_relaxed);
@@ -617,7 +640,6 @@ set_nr:
     }
   }
 }
-
 
 bool GlobalScan::is_all_migration_done()
 {

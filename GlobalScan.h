@@ -19,6 +19,7 @@
 #include "BandwidthLimit.h"
 #include "Sysfs.h"
 #include "Numa.h"
+#include "IntervalFitting.h"
 
 enum JobIntent
 {
@@ -45,18 +46,23 @@ class GlobalScan
     void stop_threads();
 
     int collect();
-    void walk_multi();
+    float walk_multi();
     void migrate();
     void count_refs();
     void count_migrate_stats();
+#if 0
     void update_interval(bool finished);
+#else
+    void update_interval();
+#endif
     void request_reload_conf();
     void apply_option();
+    void prepare_walk_multi();
 
   private:
     void consumer_loop();
     int consumer_job(Job& job);
-    void walk_once();
+    void walk_once(int scans);
     bool should_stop_walk();
     void update_dram_free_anon_bytes();
     void reload_conf();
@@ -108,6 +114,8 @@ class GlobalScan
     NumaNodeCollection numa_collection;
     ProcVmstat proc_vmstat;
     Sysfs sysfs;
+
+    IntervalFitting<float, unsigned long, 5> intervaler;
 };
 
 #endif
