@@ -99,7 +99,9 @@ int OptionParser::parse_option(YAML::Node &&option_node)
          iter != option_node.end();
          ++iter) {
 #define OP_GET_VALUE(name, member) if (get_value(iter, name, member)) continue;
-      OP_GET_VALUE("max_walks",       max_walks);
+      OP_GET_VALUE("nr_scans",        nr_scans);
+      OP_GET_VALUE("nr_scan_rounds",  nr_scan_rounds);
+      OP_GET_VALUE("scan_period",     scan_period);
       OP_GET_VALUE("interval",        interval);
       OP_GET_VALUE("initial_interval", initial_interval);
       OP_GET_VALUE("sleep",           sleep_secs);

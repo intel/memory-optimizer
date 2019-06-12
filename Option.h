@@ -124,7 +124,12 @@ public:
   float initial_interval = 0.1;
   float interval = 0; // auto adjust
   float sleep_secs = 1;
-  int max_walks = 10;
+  int nr_scans = 3;
+  int nr_scan_rounds = 2;
+
+  // in second unit
+  int scan_period = 1;
+
   int nr_walks = 0; // auto stop when nr_top_pages can fit in half DRAM size
   int nr_loops = 0;
 
