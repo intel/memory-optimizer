@@ -101,6 +101,7 @@ class GlobalScan
     unsigned long all_bytes;
     unsigned long dram_free_anon_bytes;
     unsigned long dram_hot_target;
+    unsigned long nr_total_scans = 0;
 
     ProcessCollection process_collection;
     std::vector<std::shared_ptr<EPTMigrate>> idle_ranges;

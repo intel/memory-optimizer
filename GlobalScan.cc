@@ -218,7 +218,11 @@ float GlobalScan::walk_multi()
     ++scans;
 
     gettimeofday(&ts1, NULL);
-    real_interval = tv_secs(last_scan_start, ts1);
+    if (nr_total_scans > 0)
+      real_interval = tv_secs(last_scan_start, ts1);
+    else
+      real_interval = 0.0;
+
     last_scan_start = ts1;
 
     walk_once(scans);
@@ -228,11 +232,14 @@ float GlobalScan::walk_multi()
 
     interval_sum += interval;
 
-    if (scans > 1 )
-      update_interval();
+    update_interval();
 
     if (interval > elapsed)
       usleep((interval - elapsed) * 1000000);
+
+    // for handling overflow case
+    if (!(++nr_total_scans))
+      nr_total_scans = 1;
   }
 
   // must update nr_walks to align with idle_ranges::nr_walks.
@@ -368,7 +375,7 @@ void GlobalScan::walk_once(int scans)
 
   printf("%7d  %8.3f  %'15lu %6.2f%%  %'15lu %6.2f%%  %'15lu\n",
          scans,
-         (double)interval,
+         (double)real_interval,
          young_bytes >> 10, 100.0 * young_bytes / all_bytes,
          top_bytes >> 10, 100.0 * top_bytes / all_bytes,
          all_bytes >> 10);
@@ -499,6 +506,9 @@ void GlobalScan::update_interval()
 {
   unsigned long target_bytes;
   if (option.interval)
+    return;
+
+  if (0 == nr_total_scans)
     return;
 
   target_bytes = all_bytes * option.dram_percent / 100;
