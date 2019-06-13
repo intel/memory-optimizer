@@ -135,6 +135,14 @@ public:
 
   // set either dram_percent or hot_min_refs/cold_max_refs, but not both
   int dram_percent = 0;
+
+  /*
+   * This option will override the dram_percent when the
+   * sys-refs will try to move all target process's memory into DRAM
+   * if system has more free DRAM than the total memory of target process
+   */
+  bool use_free_dram_first = false;
+
   int hot_min_refs = -1;
   int cold_max_refs = -1;
 

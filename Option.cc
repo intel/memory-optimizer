@@ -72,6 +72,7 @@ void Option::dump()
   printf("exit_on_converged = %d\n", (int)exit_on_converged);
   printf("anti_thrash_threshold = %d\n", anti_thrash_threshold);
   printf("one_period_migration_size = %d\n", one_period_migration_size);
+  printf("use_free_dram_first = %d\n", (int)use_free_dram_first);
 
   for (size_t i = 0; i < policies.size(); ++i) {
       printf("policy %ld:\n", i);
