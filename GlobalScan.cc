@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <sys/time.h>
+#include <vector>
 
 #include "lib/debug.h"
 #include "lib/stats.h"
@@ -207,13 +208,15 @@ float GlobalScan::walk_multi()
   float elapsed;
   float interval_sum = 0;
   int scans;
-
+  float sleep_time;
+  std::vector<float> sleep_time_vector;
   nr_acceptable_scans = 0;
 
   printf("\nStarting page table scans: %s\n", get_current_date().c_str());
   printf("%7s  %8s  %23s  %23s  %15s\n", "nr_scan", "interval", "young", "top hot", "all");
   printf("====================================================================================\n");
 
+  sleep_time_vector.reserve(option.nr_scans);
   for (scans = 0; scans < option.nr_scans;) {
     ++scans;
 
@@ -234,13 +237,19 @@ float GlobalScan::walk_multi()
 
     update_interval();
 
-    if (interval > elapsed)
-      usleep((interval - elapsed) * 1000000);
+    sleep_time = interval - elapsed;
+    sleep_time_vector.push_back(sleep_time);
+    if (sleep_time > 0) {
+      usleep(sleep_time * 1000000);
+    }
 
     // for handling overflow case
     if (!(++nr_total_scans))
       nr_total_scans = 1;
   }
+
+  for (size_t i = 0; i < sleep_time_vector.size(); ++i)
+    printf("sleep time %lu: %f\n", i, sleep_time_vector[i]);
 
   // must update nr_walks to align with idle_ranges::nr_walks.
   nr_walks += scans;
