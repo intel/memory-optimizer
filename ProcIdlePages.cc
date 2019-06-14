@@ -71,7 +71,7 @@ int pagetype_shift[IDLE_PAGE_TYPE_MAX] = {
 
 int pagetype_batchsize[IDLE_PAGE_TYPE_MAX] = {
   [PTE_ACCESSED]      = 1024, // total 4M per batch
-  [PMD_ACCESSED]      = 128,  // total 256M per batch
+  [PMD_ACCESSED]      = 2,  // total 4M per batch
   [PUD_PRESENT]       = 2,    // total 2G per batch
 
   [PTE_DIRTY]         = 1024,
