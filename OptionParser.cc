@@ -132,7 +132,6 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_BOOL_VALUE("dump_options", dump_options, 2);
       OP_GET_BOOL_VALUE("dump_processes", dump_processes, 2);
       OP_GET_BOOL_VALUE("exit_on_exceeded", exit_on_exceeded, 2);
-      OP_GET_BOOL_VALUE("daemon", daemon, 2);
       OP_GET_BOOL_VALUE("show_numa_stats", show_numa_stats, 2);
       OP_GET_BOOL_VALUE("exit_on_converged", exit_on_converged, 2);
       OP_GET_BOOL_VALUE("use_free_dram_first", use_free_dram_first, 2);

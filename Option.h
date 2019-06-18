@@ -168,7 +168,6 @@ public:
 
   int debug_move_pages = 0;
 
-  bool daemon = false;
   bool show_numa_stats = false;
   // Not used for now, so current sys-refs behavior is to ignore all processes
   // w/o a policy defined. In future, may consider applying this to all

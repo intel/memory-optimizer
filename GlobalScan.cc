@@ -58,7 +58,7 @@ void GlobalScan::main_loop()
   float elapsed;
   float walk_interval;
 
-  if (!max_round || option.daemon)
+  if (!max_round)
     max_round = UINT_MAX;
 
   if (option.interval)
@@ -89,9 +89,6 @@ void GlobalScan::main_loop()
     calc_migrate_parameter();
     migrate();
     count_migrate_stats();
-
-    if (!option.daemon && exit_on_stabilized())
-      break;
 
     if (option.exit_on_converged && exit_on_converged()) {
       printf("Exit: exit_on_converged done\n");
