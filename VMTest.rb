@@ -119,9 +119,9 @@ class VMTest
       "qemu_ssh" => @qemu_ssh,
       "qemu_log" => @qemu_log,
     }
-
     qemu_nodes = @all_nodes
     qemu_nodes = @pmem_nodes if :one_way_migration == type
+    qemu_nodes = @dram_nodes if :dram_one_way_migration == type
     qemu_nodes = @dram_nodes if :dram_baseline == type
     env["interleave"] = qemu_nodes.join(',')
     env["qemu_numactl"] = @scheme["qemu_numactl"] if @scheme["qemu_numactl"]
@@ -383,7 +383,8 @@ class VMTest
 
   def run_type_migration?(run_type)
     run_type == :migration ||
-    run_type == :one_way_migration
+    run_type == :one_way_migration ||
+    run_type == :dram_one_way_migration
   end
 
   def run_one(run_type)
@@ -555,7 +556,7 @@ class VMTest
     d = @scheme["dram_nodes"].size
     p = @scheme["pmem_nodes"].size
 
-    if @scheme["skip_baseline_run"]
+    if @scheme["skip_baseline_run"] || @scheme["dram_one_way_migrate"]
       d, p = adjust_nodes_pure(d, p, ratio)
     else
       d, p = adjust_nodes_baseline(d, p, ratio)
@@ -603,7 +604,7 @@ class VMTest
   #   migration
   #   baseline
   #   dram_baseline
-  #
+  #   dram_one_way_migration
   def run_group
     @scheme["workload_params"].each do |params|
       @workload_params = params
@@ -618,6 +619,8 @@ class VMTest
       # all migration start from here
       if @scheme["one_way_migrate"] then
         run_one :one_way_migration
+      elsif @scheme["dram_one_way_migrate"] then
+        run_one :dram_one_way_migration
       else
         run_one :migration
       end
