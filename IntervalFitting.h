@@ -1,3 +1,12 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (c) 2019 Intel Corporation
+ *
+ * Authors: Yao Yuan <yuan.yao@intel.com>
+ *
+ */
+
 #include <list>
 #include <map>
 #include <climits>
