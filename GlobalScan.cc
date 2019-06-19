@@ -670,7 +670,7 @@ bool GlobalScan::exit_on_converged()
 {
   ProcIdlePageType page_type[] = {PTE_ACCESSED, PMD_ACCESSED};
   size_t single_migration_count = 0;
-  size_t total_checking_count;
+  int valid_count;
 
   for (auto &m : idle_ranges) {
     for (auto &type : page_type) {
@@ -679,9 +679,17 @@ bool GlobalScan::exit_on_converged()
       printf("threshold_dump: %s hot_threshold: %ld cold_threshold: %ld\n",
              pagetype_name[type], result.hot_threshold, result.cold_threshold);
 
-      if (result.hot_threshold > nr_walks
-          || result.cold_threshold < 0) {
-        ++single_migration_count;
+      valid_count = 0;
+      if (result.hot_threshold <= nr_walks)
+          ++valid_count;
+      if (result.cold_threshold >= 0)
+          ++valid_count;
+      /*
+       * We never stop when single direction migration (HOT -> COLD or COLD -> HOT)
+       * happened.
+       */
+      if (valid_count <= 1) {
+        single_migration_count += valid_count;
         continue;
       }
 
@@ -692,14 +700,13 @@ bool GlobalScan::exit_on_converged()
   }
 
   /*
-   * The "single_migration_count == total_checking_count"
-   * means all migration happened in last period is single direction
-   * (only HOT or COLD), so we just ignore this situation and let sys-refs
-   *  keep running.
+   *  single_migration_count = 0: means all migrations happend were either "normal
+   *  dual direction migration, and converged condition matched to every idle_ranges"
+   *  or "no migrations happend", we return true in both cases.
+   *  single_migration_count > 0: At least 1 "single direction migration" happened,
+   *  we return false in this case to continue.
    */
-  total_checking_count = idle_ranges.size()
-                         * sizeof(page_type)/sizeof(page_type[0]);
-  if (single_migration_count == total_checking_count)
+  if (single_migration_count)
     return false;
 
   return true;
