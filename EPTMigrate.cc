@@ -323,7 +323,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   if (nr_promote) {
     printf("%s nr_promote: %ld \n", pagetype_name[type], nr_promote);
     for (hot_threshold = nr_walks; hot_threshold >= 1; --hot_threshold) {
-      printf("  refs_count[PMEM][%d] = %ld\n",
+      printf("  refs_count[PMEM][%d] = %lu\n",
              hot_threshold,
              refs_count[REF_LOC_PMEM][hot_threshold]);
       nr_promote -= refs_count[REF_LOC_PMEM][hot_threshold];
@@ -351,7 +351,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
   if (nr_demote) {
     printf("%s nr_demote: %ld \n", pagetype_name[type], nr_demote);
     for (cold_threshold = 0; cold_threshold <= nr_walks; ++cold_threshold) {
-      printf("  refs_count[DRAM][%d] = %ld\n",
+      printf("  refs_count[DRAM][%d] = %lu\n",
              cold_threshold,
              refs_count[REF_LOC_DRAM][cold_threshold]);
       nr_demote -= refs_count[REF_LOC_DRAM][cold_threshold];
