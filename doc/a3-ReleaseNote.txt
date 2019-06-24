@@ -1,0 +1,56 @@
+This is the README for memory optimizer a3 release.
+
+New features in sys-refs:
+=========================
+1:1 user space migration feature enabled in this release.
+This feature does HOT/COLD migration in interleave mode, that is, prmote hot pages then demote same number of cold pages. It helps to provide better ratio control and
+decrease the memory pressure of page migration. Now any initial ratio is supported including pure DRAM or pure AEP.
+
+The increment kernel patches:
+=============================
+We only provide the increment kernel patches since last release to reduce user's overheads. User just apply new patches instead of re-setup from scratch.
+
+
+New Config options:
+===================
+exit_on_converged:
+Enable “converged mode”, the tool will exit when converged condition matched, it will not run as a daemon to run forever,
+to enable “daemon mode” please set this to false.
+We suggest to use this when you want to assess the benefit from using this tool with specific workload.
+Please refer GlobalScan::exit_on_converged() in file GlobalScan.cc to know the details of the converged condition.
+
+anti_thrash_threshold:
+The anti-thrashing will help to avoid thrashing in HOT/COLD migration, default suggested value is 2.
+More bigger more easier to trigger the anti-thrashing protection, the “end hot page reference threshold” will be changed
+to  “end hot page reference threshold + anti_thrash_threshold” buy the protection, and sys-refs will skip the migration if
+the thrashing is still exist even after applied the protection.
+
+
+one_period_migration_size:
+The migration size in one period in KB unit, apply to all page size. The default suggested value is 256MB,
+it means in one period we can migrate 256MB 4K pages and than 256MB 2M pages.
+
+nr_scans:
+The total scan rounds in one sampling point, The default suggested value depends on the page size and workload,
+we now use 10 for 4K page size and 4 for 2M page size.
+The bigger nr_scans value can help to increase the scan accuracy, but also increase the time cost of scan phase,
+and decrease the HOT/COLD pages convergence speed which may decrease overall performance of workload further
+
+nr_scan_rounds:
+The total sampling count in one period before start to migration, the default suggested value depends on
+the page size and workload, we now use 2 for 4K page size and 5 for 2M page size. A completed period was
+combined by 2 phase: SCAN phase and MIGRATION phase, this value control the total sampling points count
+in SCAN phase (the total scan count in 1 sampling point is controlled by “nr_scans” above).
+More bigger more easier to filter out the “unstable” HOT pages, but increase the time cost of SCAN phase
+and decrease the HOT/COLD pages convergence speed which may decrease overall performance of workload further
+
+scan_period:
+The time slice for SCAN phase and MIGRATION phase in one period, in second unit. The sys-refs will
+sleep (scan_period – one sampling time cost) seconds in SCAN phase, or (scan_period – one sampling time
+cost – migration time cost) in MIGRATION stage. The default suggested value depends on page size and workload,
+we now use 20 for 4K page size and 1 for 2M page size. This is a lower bound setting, so it will be ignored if
+the total time cost of  SCAN phase or MIGRATION phase is longer than this setting.
+More bigger more easier to filter out the “unstable” HOT pages and decrease the overhead(CPU usage),
+but increase the time cost of SCAN and MIGRATION phase and decrease the HOT/COLD pages convergence
+speed which may decrease overall performance of workload further.
+Suggest to increase this value  if you want to decrease overhead of sys-refs.
