@@ -132,7 +132,7 @@ class VMTest
   end
 
   def wait_vm
-    9.downto(1) do |i|
+    30.downto(1) do |i|
       sleep(i)
       # mkdir on guest rootfs
       output, status = Open3.capture2e("ssh", "-p", @qemu_ssh, "root@localhost", "mkdir -p #{@guest_workspace}")
