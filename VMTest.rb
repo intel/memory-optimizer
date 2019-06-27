@@ -120,8 +120,8 @@ class VMTest
       "qemu_log" => @qemu_log,
     }
     qemu_nodes = @all_nodes
-    qemu_nodes = @pmem_nodes if :one_way_migration == type
-    qemu_nodes = @dram_nodes if :dram_one_way_migration == type
+    qemu_nodes = @pmem_nodes if :one_way_promotion == type
+    qemu_nodes = @dram_nodes if :one_way_demotion == type
     qemu_nodes = @dram_nodes if :dram_baseline == type
     env["interleave"] = qemu_nodes.join(',')
     env["qemu_numactl"] = @scheme["qemu_numactl"] if @scheme["qemu_numactl"]
@@ -274,8 +274,17 @@ class VMTest
     tt
   end
 
+  def one_way_migration?
+    @scheme["one_way_promotion"] ||
+      @scheme["one_way_demotion"]
+  end
+
+  def skip_eatmem?
+    return @scheme["no_eatmem"] || one_way_migration?
+  end
+
   def eat_mem(is_squeeze = false)
-    return if @scheme["one_way_migrate"] || @scheme["no_eatmem"]
+    return if skip_eatmem?
     proc_vmstat = ProcVmstat.new
     proc_numa_maps = ProcNumaMaps.new
     proc_numa_maps.load(@qemu_pid)
@@ -351,7 +360,7 @@ class VMTest
   end
 
   def eat_mem_loop
-    return if @scheme["one_way_migrate"] || @scheme["no_eatmem"]
+    return if skip_eatmem?
     5.times do |i| eat_mem; sleep i end
     rounds = 2
     percent = 50
@@ -383,8 +392,8 @@ class VMTest
 
   def run_type_migration?(run_type)
     run_type == :migration ||
-    run_type == :one_way_migration ||
-    run_type == :dram_one_way_migration
+    run_type == :one_way_promotion ||
+    run_type == :one_way_demotion
   end
 
   def run_one(run_type)
@@ -556,7 +565,7 @@ class VMTest
     d = @scheme["dram_nodes"].size
     p = @scheme["pmem_nodes"].size
 
-    if @scheme["skip_baseline_run"] || @scheme["dram_one_way_migrate"]
+    if @scheme["skip_baseline_run"] || one_way_migration?
       d, p = adjust_nodes_pure(d, p, ratio)
     else
       d, p = adjust_nodes_baseline(d, p, ratio)
@@ -585,9 +594,8 @@ class VMTest
     m["options"]["numa_nodes"] = gen_numa_nodes_conf unless @dram_nodes.empty?
     if @scheme['hugetlb']
       m["options"]["hugetlb"] = 1
-      @scheme["one_way_migrate"] = 1 # no kernel hugetlb DRAM=>PMEM migration for now
     end
-    if @scheme["one_way_migrate"]
+    if one_way_migration?
       m["options"]["exit_on_exceeded"] = 1
       m["options"]["dram_percent"] = 100 / (@ratio + 1)
     end
@@ -600,11 +608,11 @@ class VMTest
   end
 
   # run type:
-  #   one_way_migration
+  #   one_way_promotion
+  #   one_way_demotion
   #   migration
   #   baseline
   #   dram_baseline
-  #   dram_one_way_migration
   def run_group
     @scheme["workload_params"].each do |params|
       @workload_params = params
@@ -617,10 +625,10 @@ class VMTest
       next if @scheme["skip_migration_run"]
 
       # all migration start from here
-      if @scheme["one_way_migrate"] then
-        run_one :one_way_migration
-      elsif @scheme["dram_one_way_migrate"] then
-        run_one :dram_one_way_migration
+      if @scheme["one_way_promotion"] then
+        run_one :one_way_promotion
+      elsif @scheme["one_way_demotion"] then
+        run_one :one_way_demotion
       else
         run_one :migration
       end
