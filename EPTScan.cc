@@ -198,6 +198,8 @@ void EPTScan::count_refs()
         src[j][i] += prc.histogram_2d[j][i];
       }
     }
+
+    dump_histogram((ProcIdlePageType)type);
   }
 }
 

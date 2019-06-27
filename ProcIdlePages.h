@@ -111,6 +111,7 @@ class ProcIdlePages
 
     int get_nr_walks() { return nr_walks; }
 
+    void dump_histogram(ProcIdlePageType type);
   private:
     int walk_vma(proc_maps_entry& vma);
 
@@ -122,7 +123,6 @@ class ProcIdlePages
                          unsigned long end,
                          int bytes);
     void dump_idlepages(proc_maps_entry& vma, int bytes);
-
     void inc_page_refs(ProcIdlePageType type, int nr,
                        unsigned long va, unsigned long end);
 

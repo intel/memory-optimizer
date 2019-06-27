@@ -325,6 +325,21 @@ void ProcIdlePages::dump_idlepages(proc_maps_entry& vma, int bytes)
   printf("\n\n");
 }
 
+void ProcIdlePages::dump_histogram(ProcIdlePageType type)
+{
+  printf("refs_count dump: Pid: %d type: %s\n",
+         pid, pagetype_name[type]);
+  printf("%-16s%-16s%s\n",
+         "refs_count", "PMEM", "DRAM");
+  printf("================================================\n");
+
+  for (int i = 0; i <= nr_walks; ++i)
+    printf("  %-14d%-16lu%lu\n",
+           i,
+           get_pagetype_refs(type).histogram_2d[REF_LOC_PMEM][i],
+           get_pagetype_refs(type).histogram_2d[REF_LOC_DRAM][i]);
+}
+
 uint64_t ProcIdlePages::u8_to_u64(uint8_t a[])
 {
   uint64_t n;
