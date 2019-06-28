@@ -330,14 +330,14 @@ void ProcIdlePages::dump_histogram(ProcIdlePageType type)
   printf("refs_count dump: Pid: %d type: %s\n",
          pid, pagetype_name[type]);
   printf("%-16s%-16s%s\n",
-         "refs_count", "PMEM", "DRAM");
+         "refs_count", "DRAM", "PMEM");
   printf("================================================\n");
 
-  for (int i = 0; i <= nr_walks; ++i)
+  for (int i = nr_walks; i >= 0; --i)
     printf("  %-14d%-16lu%lu\n",
            i,
-           get_pagetype_refs(type).histogram_2d[REF_LOC_PMEM][i],
-           get_pagetype_refs(type).histogram_2d[REF_LOC_DRAM][i]);
+           get_pagetype_refs(type).histogram_2d[REF_LOC_DRAM][i],
+           get_pagetype_refs(type).histogram_2d[REF_LOC_PMEM][i]);
 }
 
 uint64_t ProcIdlePages::u8_to_u64(uint8_t a[])
