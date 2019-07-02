@@ -109,7 +109,8 @@ void MoveStats::save_migrate_states(unsigned long page_shift,
   unsigned long _skip_kb = 0;
 
   for (unsigned long i = 0; i < migrate_result.size(); ++i) {
-    if (migrate_result[i] == target_nid[i])
+    if (migrate_result[i] == target_nid[i]
+        && from_nid[i] != target_nid[i])
       ++_move_kb;
     else
       ++_skip_kb;
