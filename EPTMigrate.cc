@@ -490,6 +490,7 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
   size_t max_size;
   size_t batch_size;
   long count;
+  long last_move_kb = 0;
 
   if (!addr[COLD_MIGRATE].size()
       && !addr[HOT_MIGRATE].size()) {
@@ -512,6 +513,7 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
   for (unsigned long i = 0; i < max_size; i += batch_size) {
     for (int migrate_type = 0; migrate_type < MAX_MIGRATE; ++migrate_type) {
 
+      last_move_kb = page_migrate_stats[migrate_type].move_kb;
       if (i < addr[migrate_type].size()) {
 
         count = std::min(batch_size, addr[migrate_type].size() - i);
@@ -523,21 +525,11 @@ int EPTMigrate::do_interleave_move_pages(ProcIdlePageType type,
                                  &from_nid[migrate_type][i],
                                  &target_nid[migrate_type][i],
                                  page_migrator[migrate_type].get_migration_result());
-        /*
-         * per-pid nid stats is enough to cover the ratio control case
-         *
-
-        if (context) {
-          if (migrate_type == HOT_MIGRATE)
-            context->sub_dram_quota(page_migrate_stats[migrate_type].move_kb);
-          else
-            context->add_dram_quota(page_migrate_stats[migrate_type].move_kb);
-        }
-        */
       }
 
       if (throttler)
-        throttler->add_and_sleep(page_migrate_stats[migrate_type].move_kb * 1024);
+        throttler->add_and_sleep((page_migrate_stats[migrate_type].move_kb - last_move_kb)
+                                 * 1024);
     }
   }
 
