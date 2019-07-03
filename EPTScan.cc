@@ -326,15 +326,15 @@ int EPTScan::get_memory_type()
   return  0;
 }
 
-unsigned long EPTScan::get_total_memory_bytes(ProcIdlePageType type,
-                                              ref_location location)
+unsigned long EPTScan::get_total_memory_page_count(ProcIdlePageType type,
+                                                   ref_location location)
 {
   unsigned long sum = 0;
   if (location >= REF_LOC_MAX)
     return 0;
 
   histogram_type& page_stats
-      = get_pagetype_refs(type).histogram_2d[location];
+      = get_sys_refs_count(type)[location];
   for (auto& item : page_stats) {
     sum += item;
   }
