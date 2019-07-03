@@ -47,13 +47,15 @@ struct MigrateStats: public MoveStats
 };
 
 struct migrate_parameter {
-  long nr_promote;
-  long nr_demote;
-  long promote_remain;
-  long demote_remain;
   int hot_threshold;
+  long nr_promote;
+  long promote_remain;
+
   int cold_threshold;
-  bool enable;
+  long nr_demote;
+  long demote_remain;
+
+  bool enabled;
   const char* disable_reason;
 
   void clear() {
@@ -63,8 +65,37 @@ struct migrate_parameter {
     demote_remain = 0;
     hot_threshold = 0;
     cold_threshold = 0;
-    enable = false;
+    enabled = false;
     disable_reason = "None";
+  }
+
+  void dump() const {
+    printf("hot_threshold: %d\n"
+           "nr_promote: %ld promote_remain: %ld\n"
+           "cold_threshold: %d\n"
+           "nr_demote: %ld demote_remain: %ld\n"
+           "enable: %d\n"
+           "disable_reason: %s\n",
+           hot_threshold,
+           nr_promote, promote_remain,
+           cold_threshold,
+           nr_demote, demote_remain,
+           (int)enabled, disable_reason);
+  }
+
+  void enable() {
+    enabled = true;
+    disable_reason = "None";
+  }
+
+  void disable(const char* reason) {
+    enabled = false;
+    if (reason)
+      disable_reason = reason;
+  }
+
+  const char* get_disable_reason() {
+    return disable_reason ? disable_reason : "Unknown";
   }
 };
 

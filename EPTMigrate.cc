@@ -223,12 +223,10 @@ int EPTMigrate::migrate()
   }
 
   for (auto& type : {PTE_ACCESSED, PMD_ACCESSED}) {
-    if (!parameter[type].enable) {
-      const char* reason = parameter[type].disable_reason ?
-                           parameter[type].disable_reason : "Unknow";
+    if (!parameter[type].enabled) {
       printf("Skip %s migration: %s\n",
              pagetype_name[type],
-             reason);
+             parameter[type].get_disable_reason());
       continue;
     }
     promote_and_demote(type);
