@@ -223,10 +223,15 @@ int EPTMigrate::migrate()
   }
 
   for (auto& type : {PTE_ACCESSED, PMD_ACCESSED}) {
-    migrate_result[type].clear();
-    promote_and_demote(type,
-                       nr_migrate_promote[type],
-                       nr_migrate_demote[type]);
+    if (!parameter[type].enable) {
+      const char* reason = parameter[type].disable_reason ?
+                           parameter[type].disable_reason : "Unknow";
+      printf("Skip %s migration: %s\n",
+             pagetype_name[type],
+             reason);
+      continue;
+    }
+    promote_and_demote(type);
   }
 
   for (int i = COLD_MIGRATE; i < MAX_MIGRATE; ++i)
@@ -294,21 +299,15 @@ unsigned long EPTMigrate::calc_numa_anon_capacity(ProcIdlePageType type,
   return sum;
 }
 
-int EPTMigrate::promote_and_demote(ProcIdlePageType type,
-                                   long nr_promote, long nr_demote)
+int EPTMigrate::promote_and_demote(ProcIdlePageType type)
 {
   unsigned long addr;
   uint8_t refs;
   int8_t  nid;
-
   int ret = -1;
-  int hot_threshold;
-  int cold_threshold;
-  long promote_remain = 0;
-  long demote_remain = 0;
 
-  long save_nr_promote = nr_promote;
-  long save_nr_demote = nr_demote;
+  long nr_promote = parameter[type].nr_promote;
+  long nr_demote = parameter[type].nr_demote;
 
   std::vector<void*> addr_array_2d[MAX_MIGRATE];
   std::vector<int> target_nid_2d[MAX_MIGRATE];
@@ -316,109 +315,16 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
 
   AddrSequence& page_refs
       = get_pagetype_refs(type).page_refs;
-  const histogram_2d_type& refs_count
-      = get_pagetype_refs(type).histogram_2d;
 
-  hot_threshold = nr_walks + 1;
   if (nr_promote) {
-    printf("%s nr_promote: %ld \n", pagetype_name[type], nr_promote);
-    for (hot_threshold = nr_walks; hot_threshold >= 1; --hot_threshold) {
-      printf("  refs_count[PMEM][%d] = %lu\n",
-             hot_threshold,
-             refs_count[REF_LOC_PMEM][hot_threshold]);
-      nr_promote -= refs_count[REF_LOC_PMEM][hot_threshold];
-      if (nr_promote <= 0) {
-        promote_remain = nr_promote + refs_count[REF_LOC_PMEM][hot_threshold];
-        break;
-      }
-    }
-
-    // cover no enough hot page case
-    if (hot_threshold < 1) {
-      hot_threshold = 1;
-      promote_remain = refs_count[REF_LOC_PMEM][hot_threshold];
-      fprintf(stderr, "WARNING: No enough %s HOT pages:\n"
-              "request: %ld actual: %ld\n"
-              "hot_threshold changed to: %d\n",
-              pagetype_name[type],
-              save_nr_promote,
-              save_nr_promote - nr_promote,
-              hot_threshold);
-    }
+    addr_array_2d[HOT_MIGRATE].reserve(nr_promote);
+    from_nid_2d[HOT_MIGRATE].reserve(nr_promote);
+    target_nid_2d[HOT_MIGRATE].reserve(nr_promote);
   }
-
-  cold_threshold = -1;
   if (nr_demote) {
-    printf("%s nr_demote: %ld \n", pagetype_name[type], nr_demote);
-    for (cold_threshold = 0; cold_threshold <= nr_walks; ++cold_threshold) {
-      printf("  refs_count[DRAM][%d] = %lu\n",
-             cold_threshold,
-             refs_count[REF_LOC_DRAM][cold_threshold]);
-      nr_demote -= refs_count[REF_LOC_DRAM][cold_threshold];
-      if (nr_demote <= 0) {
-        demote_remain = nr_demote + refs_count[REF_LOC_DRAM][cold_threshold];
-        break;
-      }
-    }
-
-    // cover no enough cold page case
-    if (cold_threshold > nr_walks) {
-      cold_threshold = nr_walks;
-      demote_remain = refs_count[REF_LOC_DRAM][cold_threshold];
-      fprintf(stderr, "WARNING: No enough %s COLD pages:\n"
-              "request: %ld actual: %ld\n"
-              "cold_threshold changed to: %d\n",
-              pagetype_name[type],
-              save_nr_demote,
-              save_nr_demote - nr_demote,
-              cold_threshold);
-    }
-  }
-
-  /*
-   *  Checking save_nr_demote and save_nr_promote to make sure
-   *  hot_threshold and cold_threshold are both available before
-   *  do anti-thrashing checking
-   */
-  if (save_nr_demote != 0 && save_nr_promote != 0
-      && hot_threshold < cold_threshold + option.anti_thrash_threshold) {
-
-    int save_hot_threshold = hot_threshold;
-    hot_threshold = std::min(cold_threshold + option.anti_thrash_threshold,
-                             nr_walks);
-    promote_remain = std::min((long)refs_count[REF_LOC_PMEM][hot_threshold],
-                              save_nr_promote);
-    fprintf(stderr, "NOTICE: %s anti-thrashing happend:\n"
-            "cold_threshold: %d\n"
-            "old hot_threshold: %d new hot_threshold: %d\n"
-            "anti_thrash_threshold: %d\n",
-            pagetype_name[type],
-            cold_threshold,
-            save_hot_threshold,
-            hot_threshold,
-            option.anti_thrash_threshold);
-
-    if (hot_threshold < cold_threshold + option.anti_thrash_threshold) {
-      fprintf(stderr,
-              "NOTICE: skip migration: %s hot_threshold - cold_threshold < %d.\n",
-              pagetype_name[type],
-              option.anti_thrash_threshold);
-      ret = 0;
-      goto done_exit;
-    }
-  }
-
-  // build the hot and cold page addr list
-  if (save_nr_promote) {
-    addr_array_2d[HOT_MIGRATE].reserve(save_nr_promote);
-    from_nid_2d[HOT_MIGRATE].reserve(save_nr_promote);
-    target_nid_2d[HOT_MIGRATE].reserve(save_nr_promote);
-  }
-
-  if (save_nr_demote) {
-    addr_array_2d[COLD_MIGRATE].reserve(save_nr_demote);
-    from_nid_2d[COLD_MIGRATE].reserve(save_nr_demote);
-    target_nid_2d[COLD_MIGRATE].reserve(save_nr_demote);
+    addr_array_2d[COLD_MIGRATE].reserve(nr_demote);
+    from_nid_2d[COLD_MIGRATE].reserve(nr_demote);
+    target_nid_2d[COLD_MIGRATE].reserve(nr_demote);
   }
 
   ret = page_refs.get_first(addr, refs, nid);
@@ -429,8 +335,9 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
 
     if (numa_collection->get_node(nid)->is_pmem()) {
 
-      if ((refs == hot_threshold && promote_remain-- > 0)
-          || refs > hot_threshold)
+      if ((refs == parameter[type].hot_threshold
+          && parameter[type].promote_remain-- > 0)
+          || refs > parameter[type].hot_threshold)
         save_migrate_parameter((void*)addr, nid,
                                addr_array_2d[HOT_MIGRATE],
                                from_nid_2d[HOT_MIGRATE],
@@ -438,8 +345,9 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type,
 
     } else {
 
-      if ((refs == cold_threshold && demote_remain-- > 0)
-          || refs < cold_threshold)
+      if ((refs == parameter[type].cold_threshold
+          && parameter[type].demote_remain-- > 0)
+          || refs < parameter[type].cold_threshold)
         save_migrate_parameter((void*)addr, nid,
                                addr_array_2d[COLD_MIGRATE],
                                from_nid_2d[COLD_MIGRATE],
@@ -453,10 +361,6 @@ next:
   ret = do_interleave_move_pages(type,
                                  addr_array_2d,
                                  from_nid_2d, target_nid_2d);
-
-done_exit:
-  migrate_result[type].hot_threshold = hot_threshold;
-  migrate_result[type].cold_threshold = cold_threshold;
 
   return ret;
 }

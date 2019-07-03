@@ -34,15 +34,7 @@ enum {
     MAX_MIGRATE
 };
 
-struct MigrateResult {
-    void clear() {
-      hot_threshold = 0;
-      cold_threshold = 0;
-    }
 
-    long hot_threshold;
-    long cold_threshold;
-};
 
 struct MigrateStats: public MoveStats
 {
@@ -52,6 +44,28 @@ struct MigrateStats: public MoveStats
     void add(MigrateStats *s);
     void show(Formatter& fmt, int mwhat);
     void show_move_result_state(Formatter& fmt);
+};
+
+struct migrate_parameter {
+  long nr_promote;
+  long nr_demote;
+  long promote_remain;
+  long demote_remain;
+  int hot_threshold;
+  int cold_threshold;
+  bool enable;
+  const char* disable_reason;
+
+  void clear() {
+    nr_promote = 0;
+    nr_demote = 0;
+    promote_remain = 0;
+    demote_remain = 0;
+    hot_threshold = 0;
+    cold_threshold = 0;
+    enable = false;
+    disable_reason = "None";
+  }
 };
 
 class EPTMigrate : public EPTScan
@@ -80,17 +94,6 @@ class EPTMigrate : public EPTScan
       return page_migrate_stats[type];
     }
 
-    void set_migrate_nr_promote(ProcIdlePageType type, long new_nr) {
-      nr_migrate_promote[type] = new_nr;
-    }
-
-    void set_migrate_nr_demote(ProcIdlePageType type, long new_nr) {
-      nr_migrate_demote[type] = new_nr;
-    }
-
-    const MigrateResult& get_migrate_result(ProcIdlePageType type) {
-      return migrate_result[type];
-    }
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
 
@@ -104,7 +107,7 @@ class EPTMigrate : public EPTScan
 
     unsigned long calc_numa_anon_capacity(ProcIdlePageType type, ProcVmstat& proc_vmstat);
 
-    int promote_and_demote(ProcIdlePageType type, long nr_promte, long nr_demote);
+    int promote_and_demote(ProcIdlePageType type);
 
     int save_migrate_parameter(void* addr, int nid,
                                std::vector<void*>& addr_array,
@@ -122,6 +125,9 @@ class EPTMigrate : public EPTScan
 
   public:
     static MigrateStats sys_migrate_stats;
+
+  public:
+    migrate_parameter parameter[MAX_ACCESSED];
 
   private:
     // The Virtual Address of hot/cold pages.
@@ -142,11 +148,6 @@ class EPTMigrate : public EPTScan
     MovePages page_migrator[MAX_MIGRATE];
 
     BandwidthLimit* throttler = NULL;
-
-    long nr_migrate_promote[MAX_ACCESSED];
-    long nr_migrate_demote[MAX_ACCESSED];
-
-    struct MigrateResult migrate_result[MAX_ACCESSED];
 };
 
 #endif
