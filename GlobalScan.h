@@ -87,6 +87,9 @@ class GlobalScan
     bool is_all_migration_done();
     bool exit_on_converged();
 
+    void anti_thrashing(EPTMigratePtr range, ProcIdlePageType type,
+                        int anti_threshold);
+    void init_migration_parameter(EPTMigratePtr range, ProcIdlePageType type);
   private:
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;

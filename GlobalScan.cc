@@ -74,7 +74,7 @@ void GlobalScan::main_loop()
     if (0 == nr_scan_rounds) {
       reload_conf();
       collect();
-      update_pid_context();
+      // update_pid_context();
       prepare_walk_multi();
     }
 
@@ -522,6 +522,8 @@ void GlobalScan::update_interval()
 
   intervaler.add_pair(real_interval, young_bytes);
   interval = intervaler.estimate_x();
+  if (interval > 10)
+    interval = 10;
 }
 
 #endif
@@ -603,58 +605,185 @@ void GlobalScan::get_memory_type()
 
 void GlobalScan::calc_migrate_parameter()
 {
-  long total_mem ,total_pmem ,total_dram;
+  long total_mem, total_pmem, total_dram;
   long limit = option.one_period_migration_size;
   long dram_percent = option.dram_percent;
   long dram_target;
   long nr_demote, nr_promote;
+  long save_nr_promote, save_nr_demote;
+  long nr_increase;
   long delta;
+  int hot_threshold, cold_threshold;
 
-  for (auto& m : idle_ranges) {
-    for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
-      long shift = pagetype_shift[type] - 10;
+  for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
+    long shift = pagetype_shift[type] - 10;
 
-      total_pmem = m->get_total_memory_bytes(type, REF_LOC_PMEM) << shift;
-      total_dram = m->get_total_memory_bytes(type, REF_LOC_DRAM) << shift;
-      total_mem = total_pmem + total_dram;
+    total_pmem = EPTScan::get_total_memory_page_count(type, REF_LOC_PMEM) << shift;
+    total_dram = EPTScan::get_total_memory_page_count(type, REF_LOC_DRAM) << shift;
+    total_mem = total_pmem + total_dram;
 
-      if (!total_mem) {
-        nr_promote = 0;
-        nr_demote = 0;
-        goto set_nr;
+    if (!total_mem) {
+      for (auto& range : idle_ranges) {
+        init_migration_parameter(range, type);
+        range->parameter[type].disable("No HOT or COLD pages");
       }
+      continue;
+    }
 
-      if (dram_percent) {
-        dram_target = total_mem * (dram_percent / 100.0);
-        delta = dram_target - total_dram;
-        delta = delta < 0 ?
-                        std::max(delta, 0 - limit) :
-                        std::min(delta, limit);
-        nr_promote = (limit + delta) / 2;
-        nr_demote = (limit - delta) / 2;
-      } else  {
-        nr_promote = limit / 2;
-        nr_demote = limit / 2;
+    if (dram_percent) {
+      dram_target = total_mem * (dram_percent / 100.0);
+      delta = dram_target - total_dram;
+      delta = delta < 0 ?
+                      std::max(delta, 0 - limit) :
+                      std::min(delta, limit);
+      nr_promote = (limit + delta) / 2;
+      nr_demote = (limit - delta) / 2;
+    } else  {
+      nr_promote = limit / 2;
+      nr_demote = limit / 2;
+    }
+
+    printf("\nMemory info by %s for %s:\n"
+           "  total_mem: %ld kb\n"
+           "  total_dram: %ld kb\n"
+           "  total_pmem: %ld kb\n"
+           "  ratio: %d\n"
+           "  promote: %ld kb\n"
+           "  demote: %ld kb\n",
+           __func__, pagetype_name[type],
+           total_mem, total_dram, total_pmem,
+           percent(total_dram, total_mem),
+           nr_promote, nr_demote);
+
+    // from KB to page count
+    nr_promote >>= shift;
+    nr_demote  >>= shift;
+    save_nr_promote = nr_promote;
+    save_nr_demote = nr_demote;
+    for (int i = 0; i <= nr_walks; ++i) {
+      for (auto& range : idle_ranges) {
+        const histogram_2d_type& refs_count
+            = range->get_pagetype_refs(type).histogram_2d;
+
+        // Skip disabled range (for example fail to anti-thrashing)
+        if (0 == i)
+          init_migration_parameter(range, type);
+        else if (!range->parameter[type].enabled)
+          continue;
+
+        if (nr_promote > 0) {
+          hot_threshold = nr_walks - i;
+          nr_increase = std::min(nr_promote,
+                                 (long)refs_count[REF_LOC_PMEM][hot_threshold]);
+
+          range->parameter[type].nr_promote += nr_increase;
+          range->parameter[type].promote_remain = nr_increase;
+          range->parameter[type].hot_threshold = hot_threshold;
+          range->parameter[type].enable();
+
+          nr_promote -= nr_increase;
+        }
+
+        if (nr_demote > 0) {
+          cold_threshold = i;
+          nr_increase = std::min(nr_demote,
+                                 (long)refs_count[REF_LOC_DRAM][cold_threshold]);
+
+          range->parameter[type].nr_demote += nr_increase;
+          range->parameter[type].demote_remain = nr_increase;
+          range->parameter[type].cold_threshold = cold_threshold;
+          range->parameter[type].enable();
+
+          nr_demote -= nr_increase;
+        }
+
+        /*
+         *  Checking save_nr_demote and save_nr_promote to make sure
+         *  hot_threshold and cold_threshold are both available before
+         *  do anti-thrashing checking
+         */
+        if (save_nr_demote && save_nr_promote)
+          anti_thrashing(range, type, option.anti_thrash_threshold);
       }
+    }
 
-set_nr:
+    // no enough hot pages case
+    if (nr_promote > 0) {
+      fprintf(stderr, "WARNING: No enough %s HOT pages:\n"
+              "request: %ld actual: %ld\n"
+              "hot_threshold changed to: %d\n",
+              pagetype_name[type],
+              save_nr_promote,
+              save_nr_promote - nr_promote,
+              hot_threshold);
+    }
+    // no enough cold pages case
+    if (nr_demote > 0) {
+      fprintf(stderr, "WARNING: No enough %s COLD pages:\n"
+              "request: %ld actual: %ld\n"
+              "cold_threshold changed to: %d\n",
+              pagetype_name[type],
+              save_nr_demote,
+              save_nr_demote - nr_demote,
+              cold_threshold);
+    }
+
+    printf("\nPage selection for %s:\n", pagetype_name[type]);
+    for (auto& range : idle_ranges) {
+      const migrate_parameter& parameter = range->parameter[type];
+      printf("range:\n");
+      parameter.dump();
       printf("\n");
-      printf("Memory info by %s for %s:\n"
-             "  total_mem: %ld kb\n"
-             "  total_dram: %ld kb\n"
-             "  total_pmem: %ld kb\n"
-             "  ratio: %d\n"
-             "  promote: %ld kb\n"
-             "  demote: %ld kb\n",
-             __func__, pagetype_name[type],
-             total_mem, total_dram, total_pmem,
-             percent(total_dram, total_mem),
-             nr_promote, nr_demote);
-
-      m->set_migrate_nr_promote(type, nr_promote >> shift);
-      m->set_migrate_nr_demote(type, nr_demote >> shift);
     }
   }
+}
+
+void GlobalScan::anti_thrashing(EPTMigratePtr range, ProcIdlePageType type,
+                                int anti_threshold)
+{
+  long promote_remain;
+  int hot_threshold = range->parameter[type].hot_threshold;
+  int cold_threshold = range->parameter[type].cold_threshold;
+
+  const histogram_2d_type& refs_count
+        = range->get_pagetype_refs(type).histogram_2d;
+
+  if (hot_threshold - cold_threshold >= option.anti_thrash_threshold)
+    return;
+
+  hot_threshold = std::min(cold_threshold + anti_threshold,
+                           nr_walks);
+  promote_remain = std::min((long)refs_count[REF_LOC_PMEM][hot_threshold],
+                            range->parameter[type].nr_promote);
+
+  fprintf(stderr, "NOTICE: %s anti-thrashing happend:\n"
+          "cold_threshold: %d\n"
+          "old hot_threshold: %d new hot_threshold: %d\n"
+          "anti_thrash_threshold: %d\n",
+          pagetype_name[type],
+          cold_threshold,
+          range->parameter[type].hot_threshold,
+          hot_threshold,
+          option.anti_thrash_threshold);
+
+  if (hot_threshold - cold_threshold < option.anti_thrash_threshold) {
+    fprintf(stderr,
+            "NOTICE: skip migration: %s hot_threshold - cold_threshold < %d.\n",
+            pagetype_name[type],
+            option.anti_thrash_threshold);
+    range->parameter[type].disable("fail to anti-thrashing");
+  }
+
+  range->parameter[type].hot_threshold = hot_threshold;
+  range->parameter[type].promote_remain = promote_remain;
+}
+
+void GlobalScan::init_migration_parameter(EPTMigratePtr range, ProcIdlePageType type)
+{
+  range->parameter[type].clear();
+  range->parameter[type].hot_threshold = nr_walks + 1;
+  range->parameter[type].cold_threshold = -1;
+  range->parameter[type].disable("by page selection");
 }
 
 bool GlobalScan::is_all_migration_done()
@@ -674,15 +803,17 @@ bool GlobalScan::exit_on_converged()
 
   for (auto &m : idle_ranges) {
     for (auto &type : page_type) {
-      const MigrateResult& result = m->get_migrate_result(type);
+      const migrate_parameter& parameter = m->parameter[type];
+      printf("threshold_dump: %s hot_threshold: %d cold_threshold: %d\n",
+             pagetype_name[type], parameter.hot_threshold, parameter.cold_threshold);
 
-      printf("threshold_dump: %s hot_threshold: %ld cold_threshold: %ld\n",
-             pagetype_name[type], result.hot_threshold, result.cold_threshold);
+      if (!parameter.enabled)
+        continue;
 
       valid_count = 0;
-      if (result.hot_threshold <= nr_walks)
+      if (parameter.hot_threshold <= nr_walks)
           ++valid_count;
-      if (result.cold_threshold >= 0)
+      if (parameter.cold_threshold >= 0)
           ++valid_count;
       /*
        * We never stop when single direction migration (HOT -> COLD or COLD -> HOT)
@@ -693,7 +824,7 @@ bool GlobalScan::exit_on_converged()
         continue;
       }
 
-      if (result.hot_threshold > result.cold_threshold
+      if (parameter.hot_threshold > parameter.cold_threshold
           + option.anti_thrash_threshold)
         return false;
     }
