@@ -86,6 +86,7 @@ void GlobalScan::main_loop()
     nr_scan_rounds = 0;
     get_memory_type();
     count_refs();
+    calc_memory_size();
     calc_migrate_parameter();
     migrate();
     count_migrate_stats();
@@ -603,9 +604,26 @@ void GlobalScan::get_memory_type()
   }
 }
 
+void GlobalScan::calc_memory_size()
+{
+  global_total_pmem = 0;
+  global_total_dram = 0;
+  global_total_mem = 0;
+  for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
+    long shift = pagetype_shift[type] - 10;
+
+    total_pmem[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_PMEM) << shift;
+    total_dram[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_DRAM) << shift;
+    total_mem[type] = total_pmem[type] + total_dram[type];
+
+    global_total_pmem += total_pmem[type];
+    global_total_dram += total_dram[type];
+  }
+  global_total_mem = global_total_pmem + global_total_dram;
+}
+
 void GlobalScan::calc_migrate_parameter()
 {
-  long total_mem, total_pmem, total_dram;
   long limit = option.one_period_migration_size;
   long dram_percent = option.dram_percent;
   long dram_target;
@@ -618,11 +636,7 @@ void GlobalScan::calc_migrate_parameter()
   for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
     long shift = pagetype_shift[type] - 10;
 
-    total_pmem = EPTScan::get_total_memory_page_count(type, REF_LOC_PMEM) << shift;
-    total_dram = EPTScan::get_total_memory_page_count(type, REF_LOC_DRAM) << shift;
-    total_mem = total_pmem + total_dram;
-
-    if (!total_mem) {
+    if (!total_mem[type]) {
       for (auto& range : idle_ranges) {
         init_migration_parameter(range, type);
         range->parameter[type].disable("No HOT or COLD pages");
@@ -631,8 +645,8 @@ void GlobalScan::calc_migrate_parameter()
     }
 
     if (dram_percent) {
-      dram_target = total_mem * (dram_percent / 100.0);
-      delta = dram_target - total_dram;
+      dram_target = total_mem[type] * (dram_percent / 100.0);
+      delta = dram_target - total_dram[type];
       delta = delta < 0 ?
                       std::max(delta, 0 - limit) :
                       std::min(delta, limit);
@@ -651,8 +665,8 @@ void GlobalScan::calc_migrate_parameter()
            "  promote: %ld kb\n"
            "  demote: %ld kb\n",
            __func__, pagetype_name[type],
-           total_mem, total_dram, total_pmem,
-           percent(total_dram, total_mem),
+           total_mem[type], total_dram[type], total_pmem[type],
+           percent(total_dram[type], total_mem[type]),
            nr_promote, nr_demote);
 
     // from KB to page count
@@ -800,6 +814,19 @@ bool GlobalScan::exit_on_converged()
   ProcIdlePageType page_type[] = {PTE_ACCESSED, PMD_ACCESSED};
   size_t single_migration_count = 0;
   int valid_count;
+  long current_ratio;
+  long ratio_error;
+
+  current_ratio = 100 * (double)global_total_dram / global_total_mem;
+  ratio_error = current_ratio - option.dram_percent;
+  printf("current memory size state: total: %ld KB dram: %ld KB pmem: %ld KB\n"
+         "ratio: %ld target ratio: %d\n",
+         global_total_mem,
+         global_total_dram, global_total_pmem,
+         current_ratio, option.dram_percent);
+
+  if (ratio_error)
+    return false;
 
   for (auto &m : idle_ranges) {
     for (auto &type : page_type) {

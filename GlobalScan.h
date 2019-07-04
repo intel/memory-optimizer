@@ -86,10 +86,10 @@ class GlobalScan
     void show_migrate_speed(float delta_time);
     bool is_all_migration_done();
     bool exit_on_converged();
-
     void anti_thrashing(EPTMigratePtr range, ProcIdlePageType type,
                         int anti_threshold);
     void init_migration_parameter(EPTMigratePtr range, ProcIdlePageType type);
+    void calc_memory_size();
   private:
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;
@@ -120,6 +120,14 @@ class GlobalScan
     Sysfs sysfs;
 
     IntervalFitting<float, unsigned long, 5> intervaler;
+
+    long total_pmem[MAX_ACCESSED];
+    long total_dram[MAX_ACCESSED];
+    long total_mem[MAX_ACCESSED];
+
+    long global_total_pmem;
+    long global_total_dram;
+    long global_total_mem;
 };
 
 #endif
