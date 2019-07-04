@@ -755,41 +755,47 @@ void GlobalScan::calc_migrate_parameter()
 void GlobalScan::anti_thrashing(EPTMigratePtr range, ProcIdlePageType type,
                                 int anti_threshold)
 {
-  long promote_remain;
-  int hot_threshold = range->parameter[type].hot_threshold;
-  int cold_threshold = range->parameter[type].cold_threshold;
+  int hot_threshold;
+  int cold_threshold;
 
   const histogram_2d_type& refs_count
         = range->get_pagetype_refs(type).histogram_2d;
 
+  struct migrate_parameter& parameter
+        = range->parameter[type];
+
+  hot_threshold = parameter.hot_threshold;
+  cold_threshold = parameter.cold_threshold;
   if (hot_threshold - cold_threshold >= option.anti_thrash_threshold)
     return;
 
-  hot_threshold = std::min(cold_threshold + anti_threshold,
-                           nr_walks);
-  promote_remain = std::min((long)refs_count[REF_LOC_PMEM][hot_threshold],
-                            range->parameter[type].nr_promote);
+
+  if (hot_threshold == nr_walks) {
+    parameter.cold_threshold = std::max(hot_threshold - anti_threshold, 0);
+    parameter.demote_remain = std::min((long)refs_count[REF_LOC_DRAM][cold_threshold],
+                                       parameter.nr_demote);
+  } else {
+    parameter.hot_threshold = std::min(cold_threshold + anti_threshold, nr_walks);
+    parameter.promote_remain = std::min((long)refs_count[REF_LOC_PMEM][hot_threshold],
+                                        parameter.nr_promote);
+  }
 
   fprintf(stderr, "NOTICE: %s anti-thrashing happend:\n"
-          "cold_threshold: %d\n"
-          "old hot_threshold: %d new hot_threshold: %d\n"
-          "anti_thrash_threshold: %d\n",
+          "anti_thrash_threshold: %d\n"
+          "cold_threshold: %d -> %d\n"
+          "hot_threshold:  %d -> %d\n",
           pagetype_name[type],
-          cold_threshold,
-          range->parameter[type].hot_threshold,
-          hot_threshold,
-          option.anti_thrash_threshold);
+          option.anti_thrash_threshold,
+          cold_threshold, parameter.cold_threshold,
+          hot_threshold, parameter.hot_threshold);
 
   if (hot_threshold - cold_threshold < option.anti_thrash_threshold) {
     fprintf(stderr,
             "NOTICE: skip migration: %s hot_threshold - cold_threshold < %d.\n",
             pagetype_name[type],
             option.anti_thrash_threshold);
-    range->parameter[type].disable("fail to anti-thrashing");
+    parameter.disable("fail to anti-thrashing");
   }
-
-  range->parameter[type].hot_threshold = hot_threshold;
-  range->parameter[type].promote_remain = promote_remain;
 }
 
 void GlobalScan::init_migration_parameter(EPTMigratePtr range, ProcIdlePageType type)
