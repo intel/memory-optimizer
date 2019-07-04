@@ -733,7 +733,7 @@ void GlobalScan::calc_migrate_parameter()
          *  hot_threshold and cold_threshold are both available before
          *  do anti-thrashing checking
          */
-        if (save_nr_demote && save_nr_promote)
+        if (!in_adjust_ratio_stage())
           anti_thrashing(range, type, option.anti_thrash_threshold);
       }
     }
@@ -783,6 +783,11 @@ void GlobalScan::anti_thrashing(EPTMigratePtr range, ProcIdlePageType type,
 
   hot_threshold = parameter.hot_threshold;
   cold_threshold = parameter.cold_threshold;
+
+  // anti-thrashing only need for "bi-direction" migration
+  if (cold_threshold < 0 || hot_threshold > nr_walks)
+    return;
+
   if (hot_threshold - cold_threshold >= option.anti_thrash_threshold)
     return;
 
