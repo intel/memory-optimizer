@@ -794,11 +794,11 @@ void GlobalScan::anti_thrashing(EPTMigratePtr range, ProcIdlePageType type,
 
   if (hot_threshold == nr_walks) {
     parameter.cold_threshold = std::max(hot_threshold - anti_threshold, 0);
-    parameter.demote_remain = std::min((long)refs_count[REF_LOC_DRAM][cold_threshold],
+    parameter.demote_remain = std::min((long)refs_count[REF_LOC_DRAM][parameter.cold_threshold],
                                        parameter.nr_demote);
   } else {
     parameter.hot_threshold = std::min(cold_threshold + anti_threshold, nr_walks);
-    parameter.promote_remain = std::min((long)refs_count[REF_LOC_PMEM][hot_threshold],
+    parameter.promote_remain = std::min((long)refs_count[REF_LOC_PMEM][parameter.hot_threshold],
                                         parameter.nr_promote);
   }
 
