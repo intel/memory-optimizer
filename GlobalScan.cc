@@ -620,6 +620,19 @@ void GlobalScan::calc_memory_size()
     global_total_dram += total_dram[type];
   }
   global_total_mem = global_total_pmem + global_total_dram;
+  global_ratio = (100.0 * global_total_dram) / global_total_mem;
+
+  printf("global memory size state: total: %ld KB dram: %ld KB pmem: %ld KB\n"
+         "ratio: %ld target ratio: %d\n",
+         global_total_mem,
+         global_total_dram, global_total_pmem,
+         global_ratio, option.dram_percent);
+}
+
+bool GlobalScan::in_adjust_ratio_stage()
+{
+  long error = global_ratio - option.dram_percent;
+  return error ? true : false;
 }
 
 void GlobalScan::calc_migrate_parameter()
@@ -657,6 +670,9 @@ void GlobalScan::calc_migrate_parameter()
       nr_promote = limit / 2;
       nr_demote = limit / 2;
     }
+
+    // nr_promote = std::min(total_pmem[type], nr_promote);
+    // nr_demote = std::min(total_dram[type], nr_demote);
 
     printf("\nMemory info by %s for %s:\n"
            "  total_mem: %ld kb\n"
@@ -821,18 +837,8 @@ bool GlobalScan::exit_on_converged()
   ProcIdlePageType page_type[] = {PTE_ACCESSED, PMD_ACCESSED};
   size_t single_migration_count = 0;
   int valid_count;
-  long current_ratio;
-  long ratio_error;
 
-  current_ratio = 100 * (double)global_total_dram / global_total_mem;
-  ratio_error = current_ratio - option.dram_percent;
-  printf("current memory size state: total: %ld KB dram: %ld KB pmem: %ld KB\n"
-         "ratio: %ld target ratio: %d\n",
-         global_total_mem,
-         global_total_dram, global_total_pmem,
-         current_ratio, option.dram_percent);
-
-  if (ratio_error)
+  if (in_adjust_ratio_stage())
     return false;
 
   for (auto &m : idle_ranges) {

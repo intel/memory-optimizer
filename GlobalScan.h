@@ -90,6 +90,7 @@ class GlobalScan
                         int anti_threshold);
     void init_migration_parameter(EPTMigratePtr range, ProcIdlePageType type);
     void calc_memory_size();
+    bool in_adjust_ratio_stage();
   private:
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;
@@ -128,6 +129,7 @@ class GlobalScan
     long global_total_pmem;
     long global_total_dram;
     long global_total_mem;
+    long global_ratio;
 };
 
 #endif
