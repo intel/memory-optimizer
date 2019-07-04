@@ -645,11 +645,12 @@ void GlobalScan::calc_migrate_parameter()
     }
 
     if (dram_percent) {
+      long adjust = limit / 8;
       dram_target = total_mem[type] * (dram_percent / 100.0);
       delta = dram_target - total_dram[type];
       delta = delta < 0 ?
-                      std::max(delta, 0 - limit) :
-                      std::min(delta, limit);
+                      std::max(delta, 0 - limit + adjust) :
+                      std::min(delta, limit - adjust);
       nr_promote = (limit + delta) / 2;
       nr_demote = (limit - delta) / 2;
     } else  {
