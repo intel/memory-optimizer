@@ -57,6 +57,7 @@ void GlobalScan::main_loop()
   float sleep_time;
   float elapsed;
   float walk_interval;
+  float idle_sleep_time = 20;
 
   if (!max_round)
     max_round = UINT_MAX;
@@ -74,7 +75,13 @@ void GlobalScan::main_loop()
     if (0 == nr_scan_rounds) {
       reload_conf();
       collect();
-      // update_pid_context();
+
+      if (idle_ranges.empty()) {
+        printf("No target process, sleeping for %f seconds\n", idle_sleep_time);
+        usleep(idle_sleep_time * 1000000);
+        continue;
+      }
+
       prepare_walk_multi();
     }
 
