@@ -764,7 +764,10 @@ void GlobalScan::calc_migrate_parameter()
     printf("\nPage selection for %s:\n", pagetype_name[type]);
     for (auto& range : idle_ranges) {
       const migrate_parameter& parameter = range->parameter[type];
-      printf("range:\n");
+      range->dump_histogram(type);
+      printf("global nr_promte: %ld global nr_demote: %ld\n",
+             save_nr_promote, save_nr_demote);
+      printf("migration parameter dump:\n");
       parameter.dump();
       printf("\n");
     }

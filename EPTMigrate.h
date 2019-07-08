@@ -70,10 +70,8 @@ struct migrate_parameter {
   }
 
   void dump() const {
-    printf("hot_threshold: %d\n"
-           "nr_promote: %ld promote_remain: %ld\n"
-           "cold_threshold: %d\n"
-           "nr_demote: %ld demote_remain: %ld\n"
+    printf("hot_threshold: %d nr_promote: %ld promote_remain: %ld\n"
+           "cold_threshold: %d nr_demote: %ld demote_remain: %ld\n"
            "enable: %d\n"
            "disable_reason: %s\n",
            hot_threshold,
