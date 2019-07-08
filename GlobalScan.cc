@@ -735,11 +735,6 @@ void GlobalScan::calc_migrate_parameter()
           nr_demote -= nr_increase;
         }
 
-        /*
-         *  Checking save_nr_demote and save_nr_promote to make sure
-         *  hot_threshold and cold_threshold are both available before
-         *  do anti-thrashing checking
-         */
         if (!in_adjust_ratio_stage())
           anti_thrashing(range, type, option.anti_thrash_threshold);
       }
@@ -847,49 +842,43 @@ bool GlobalScan::is_all_migration_done()
 bool GlobalScan::exit_on_converged()
 {
   ProcIdlePageType page_type[] = {PTE_ACCESSED, PMD_ACCESSED};
-  size_t single_migration_count = 0;
-  int valid_count;
-
-  if (in_adjust_ratio_stage())
-    return false;
+  bool converged;
+  int  converged_count = 0;
+  int  nr_check_count = sizeof(page_type)/sizeof(page_type[0])
+                        * (int)idle_ranges.size();
+  int  valid_count;
 
   for (auto &m : idle_ranges) {
     for (auto &type : page_type) {
       const migrate_parameter& parameter = m->parameter[type];
-      printf("threshold_dump: %s hot_threshold: %d cold_threshold: %d\n",
-             pagetype_name[type], parameter.hot_threshold, parameter.cold_threshold);
-
-      if (!parameter.enabled)
-        continue;
 
       valid_count = 0;
       if (parameter.hot_threshold <= nr_walks)
-          ++valid_count;
+        ++valid_count;
       if (parameter.cold_threshold >= 0)
-          ++valid_count;
-      /*
-       * We never stop when single direction migration (HOT -> COLD or COLD -> HOT)
-       * happened.
-       */
-      if (valid_count <= 1) {
-        single_migration_count += valid_count;
-        continue;
-      }
+        ++valid_count;
 
-      if (parameter.hot_threshold > parameter.cold_threshold
-          + option.anti_thrash_threshold)
-        return false;
+      if (valid_count > 1)
+        converged = parameter.enabled ?
+                 (parameter.hot_threshold - parameter.cold_threshold <=
+                  option.anti_thrash_threshold) : true;
+      else
+        converged = true;
+
+      printf("exit_on_converged: %2s hot_threshold: %2d cold_threshold: %2d converged: %d\n",
+             pagetype_name[type],
+             parameter.hot_threshold, parameter.cold_threshold,
+             (int)converged);
+      converged_count += (int)converged;
     }
   }
 
-  /*
-   *  single_migration_count = 0: means all migrations happend were either "normal
-   *  dual direction migration, and converged condition matched to every idle_ranges"
-   *  or "no migrations happend", we return true in both cases.
-   *  single_migration_count > 0: At least 1 "single direction migration" happened,
-   *  we return false in this case to continue.
-   */
-  if (single_migration_count)
+  if (in_adjust_ratio_stage()) {
+    printf("exit_on_converged: in ratio adjustment stage: %ld%%\n", global_ratio);
+    return false;
+  }
+
+  if (converged_count < nr_check_count)
     return false;
 
   return true;
