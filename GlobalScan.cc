@@ -525,7 +525,7 @@ void GlobalScan::update_interval()
   if (0 == nr_total_scans)
     return;
 
-  target_bytes = all_bytes * option.dram_percent / 100;
+  target_bytes = option.one_period_migration_size * 1024;
   intervaler.set_target_y(target_bytes);
 
   intervaler.add_pair(real_interval, young_bytes);
