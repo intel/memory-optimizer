@@ -1,6 +1,28 @@
-This is the README for memory optimizer a3 release.
 
-New features in sys-refs:
+a4 Release 7/11/2019
+------------------------
+
+New features:
+=========================
+None
+
+Issue fixed:
+=========================
+1. rate limitation feature can't doesn't work.
+
+Improvement:
+=========================
+1. More better ratio control in exit on converged mode.
+2. More better support when sys-refs work in multi-threading mode.
+3. Adjusted anti-thrashing algorithm to avoid skipping top hot pages incorrectly.
+4. Better stats log output for tuning.
+5. Change to use one period migration size as auto-interval adjustment target.
+
+
+a3 Release 6/24/2019
+------------------------
+
+New features
 =========================
 1:1 user space migration feature enabled in this release.
 This feature does HOT/COLD migration in interleave mode, that is, prmote hot pages then demote same number of cold pages. It helps to provide better ratio control and
@@ -8,12 +30,12 @@ decrease the memory pressure of page migration. Now any initial ratio is support
 This migration feature adjusts DRAM target ratio in higher priority, it adjusts the page distribution among DRAM and PMEM to reach target ratio firstly,
 then starts "1:1" migaration to reach best page distribution by hotness.
 
-The increment kernel patches:
+The increment kernel patches
 =============================
 We only provide the increment kernel patches since last release to reduce user's overheads. User just apply new patches instead of re-setup from scratch.
 
 
-New Config options:
+New Config options
 ===================
 exit_on_converged:
 Enable "converged mode", the tool will exit when converged condition matched, it will not run as a daemon to run forever,
