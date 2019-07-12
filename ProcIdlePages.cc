@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 
 #include "Option.h"
 #include "ProcIdlePages.h"
@@ -260,20 +261,29 @@ int ProcIdlePages::open_file()
 {
   unsigned int flags = O_RDWR;
   char filepath[PATH_MAX];
+  const char* idle_page_path="/proc/idle_pages";
 
-  memset(filepath, 0, sizeof(filepath));
-  snprintf(filepath, sizeof(filepath), "/proc/%d/idle_pages", pid);
+  idle_fd = open(idle_page_path, flags);
+  if (idle_fd >= 0) {
+    // ignore the ret value to allow close fd properly
+    ioctl(idle_fd, IDLE_PAGE_SET_PID, pid);
+    return idle_fd;
+  }
 
   /*
    *  disable for we considering to do this smart thing in future.
    *  if (nr_walks > 0)
    *    flags |= SCAN_SKIM_IDLE;
    */
+  memset(filepath, 0, sizeof(filepath));
+  snprintf(filepath, sizeof(filepath), "/proc/%d/idle_pages", pid);
 
   idle_fd = open(filepath, flags);
   if (idle_fd < 0) {
     io_error = idle_fd;
     perror(filepath);
+    perror(idle_page_path);
+    return idle_fd;
   }
 
   return idle_fd;

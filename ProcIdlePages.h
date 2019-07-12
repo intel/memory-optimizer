@@ -30,6 +30,7 @@ static const unsigned long TASK_SIZE_MAX = (1UL << 47) - PAGE_SIZE;
 
 #define SCAN_HUGE_PAGE      O_NONBLOCK
 #define SCAN_SKIM_IDLE      O_NOFOLLOW
+#define IDLE_PAGE_SET_PID   _IOW(0x1, 0x1, pid_t)
 
 enum ProcIdlePageType
 {
