@@ -638,7 +638,12 @@ void GlobalScan::calc_memory_size()
 
 bool GlobalScan::in_adjust_ratio_stage()
 {
-  long error = global_ratio - option.dram_percent;
+  long error;
+
+  if (!option.dram_percent)
+    return false;
+
+  error = global_ratio - option.dram_percent;
   return error ? true : false;
 }
 
