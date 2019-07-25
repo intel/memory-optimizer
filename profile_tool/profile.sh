@@ -14,13 +14,14 @@ target_pid=
 dram_percent=25
 hot_node=
 cold_node=
+run_time=1200
 
 #runtime variable
 sys_refs_pid=
 perf_pid=
 sys_refs_log=
 perf_log=
-run_time=1200
+
 
 usage() {
     echo "usage: $0:"
@@ -152,22 +153,49 @@ run_perf() {
 
 parse_perf_log() {
     # TODO: parse the log from $perf_log
-    echo echo "Empty parse_perf_log"
+    echo "Empty parse_perf_log"
 }
 
 kill_child() {
-    if [[ $1 -ne 0 ]]; then
+    local pid
+    for pid; do
         echo "killing $1"
-        kill $1
-    fi
+        kill $pid
+    done
+}
+
+cpu_to_node() {
+    local cpu=cpu$1
+    
+    # 64 NODEs should be enough in non fake NUMA state
+    for i in {0..63}; do
+        echo $i
+        if [[ -d /sys/bus/cpu/devices/$cpu/node$i ]]; then
+            return $i
+        fi        
+    done
+    echo "ERROR: failed to get NODE id for $cpu"
+    exit -1
 }
 
 hardware_detect() {
-    # just leave empty here in prototype stage
-    # consdier below in later from fengguang:
-    #│
-    #│       HOT = COLD ^ 1.
-    #│
+    local running_cpu=
+
+    # skip if user provided -h or -c 
+    if [[ ! -z $hot_node ]]; then
+        return 0
+    fi
+    if [[ ! -z $cold_node ]]; then
+        return 0
+    fi
+
+    running_cpu=$(ps -o psr $target_pid | tail -n +2)
+    cpu_to_node $running_cpu
+    hot_node=$?
+    cold_node=$(($hot_node^1))
+
+    # Consider to reduce dependency, we consider to rewrite below
+    # rb by python.
     #│The more sophisticated solution is to use top node as COLD and 2nd
     #│large node as HOT, based on smaps stats:
     #│
@@ -177,16 +205,15 @@ hardware_detect() {
     #│       N8  0M  0%
     #│
     #│But if user specified the values, just leave it to user.
-    echo "TODO: NUMA hardware_detect";
+    echo "hardware detection: hot node:$hot_node cold node:$cold_node";
 }
 
-hardware_detect
 parse_parameter "$@"
+hardware_detect
 check_parameter
 
 prepare_sys_refs $target_pid
 run_sys_refs
-
 run_perf
 
 #let sys-refs and perf run
