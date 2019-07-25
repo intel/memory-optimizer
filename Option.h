@@ -181,6 +181,7 @@ public:
 
   bool exit_on_converged = false;
 
+  int interval_scale = 100;
 private:
   PolicySet  policies;
 };
