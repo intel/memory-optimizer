@@ -254,7 +254,7 @@ float GlobalScan::walk_multi()
   }
 
   for (size_t i = 0; i < sleep_time_vector.size(); ++i)
-    printf("sleep time %lu: %f\n", i, sleep_time_vector[i]);
+    printf("sleep time %2lu -> %-2lu: %f\n", i+1, i+2, sleep_time_vector[i]);
 
   // must update nr_walks to align with idle_ranges::nr_walks.
   nr_walks += scans;

@@ -226,7 +226,7 @@ int EPTScan::save_counts(std::string filename)
   unsigned long sum_kb[IDLE_PAGE_TYPE_MAX] = {};
   int nr = sys_refs_count[PTE_ACCESSED][REF_LOC_ALL].size();
 
-  for (int i = 0; i < nr; i++) {
+  for (int i = nr - 1; i >= 0; i--) {
     fprintf(file, "%4d", i);
     for (const int& type: {PTE_ACCESSED, PMD_ACCESSED, PUD_PRESENT}) {
       unsigned long pages = sys_refs_count[type][REF_LOC_ALL][i];
