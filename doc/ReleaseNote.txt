@@ -1,3 +1,27 @@
+a6 Release 7/29/2019
+------------------------
+New features:
+=========================
+1. Introduce new option "interval_scale"
+   This option helps to adjust the sleeping interval in scan stage.
+   You can use this option to scale up/down the "HOT pages scan target" in each scan,
+   to influence the sleeping interval one more step.
+   The relationship of scan interval and "HOT pages scan target":
+   More larger "HOT pages scan target", more larger scan interval, vice versa.
+   The "interval_scale" is an percent value, for example:
+       85: Means scale down the "HOT pages scan target" to 85% of its original value.
+      400: Means scale up the "HOT pages scan target" to 4 times of its original value.
+   The default value is 100
+
+Issue fixed:
+=========================
+None
+
+Improvement:
+=========================
+None
+
+
 a5 Release 7/23/2019
 ------------------------
 New features:
