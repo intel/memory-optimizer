@@ -41,23 +41,23 @@ parse_parameter() {
     while getopts ":p:d:h:c:t:" optname; do
         case "$optname" in
             "p")
-                echo "-p $OPTARG"
+                # echo "-p $OPTARG"
                 target_pid=$OPTARG
                 ;;
             "d")
-                echo "-d $OPTARG"
+                # echo "-d $OPTARG"
                 dram_percent=$OPTARG
                 ;;
             "h")
-                echo "-h $OPTARG"
+                # echo "-h $OPTARG"
                 hot_node=$OPTARG
                 ;;
             "c")
-                echo "-c $OPTARG"
+                # echo "-c $OPTARG"
                 cold_node=$OPTARG
                 ;;
             "t")
-                echo "-t $OPTARG"
+                # echo "-t $OPTARG"
                 run_time=$OPTARG
                 ;;
             ":")
@@ -93,11 +93,12 @@ check_parameter() {
         exit 1
     fi
 
-    echo "target PID = $target_pid"
-    echo "DRAM percent = $dram_percent"
-    echo "time = $run_time"
-    echo "hot node = $hot_node"
-    echo "cold node = $cold_node"
+    echo "parameter dump:"
+    echo "  target PID = $target_pid"
+    echo "  DRAM percent = $dram_percent"
+    echo "  time = $run_time"
+    echo "  hot node = $hot_node"
+    echo "  cold node = $cold_node"
 
     sys_refs_log=sys-refs-$target_pid-$dram_percent.log
     perf_log=perf-$target_pid-$dram_percent.log
@@ -110,7 +111,6 @@ prepare_sys_refs() {
         exit 10
     fi
 
-    echo "prepare the sys-refs configuration file"
     cat $sys_refs_yaml_template > $sys_refs_yaml
 
     # NUMA part
@@ -134,7 +134,7 @@ EOF
 }
 
 run_sys_refs() {
-    echo "log: $sys_refs_log"
+    echo "sys_refs_log: $sys_refs_log"
     stdbuf -oL $sys_refs -d $dram_percent -c $sys_refs_yaml > $sys_refs_log 2>&1 &
     sys_refs_pid=$(pidof sys-refs)
     echo "sys-refs pid: $sys_refs_pid"
@@ -156,19 +156,61 @@ run_perf() {
         perf_cmd="$perf_cmd -e $i "
     done
     perf_cmd="$perf_cmd $perf_cmd_end"
+    echo perf_log: $perf_log
     $perf_cmd
 }
 
-
 parse_perf_log() {
+    local local_read=0
+    local remote_read=0
+    local total_read=0
+    local time_cost=1
+    local type=
+
     if [[ ! -f $perf_log ]]; then
         echo "ERROR: No $perf_log file"
         exit -1
     fi
 
-    # TODO: parse the log from $perf_log
     cat $perf_log
+
+    while read line; do
+        word=($line)
+        type=${word[1]}
+        if [[ $type == "total_read" ]]; then
+            total_read=${word[0]}
+        fi
+        if [[ $type == "remote_read_COLD" ]]; then
+            remote_read=${word[0]}
+        fi
+        if [[ $type == "local_read_HOT" ]]; then
+            local_read=${word[0]}
+        fi
+        if [[ $type == "seconds" ]]; then
+            time_cost=${word[0]}
+        fi
+    done < $perf_log
+
+    local_read=$(echo $local_read | sed -e "s/,//g")
+    local_read=$(echo "scale=4; $local_read * 64 / (1000000 * $time_cost)" | bc)
+
+    remote_read=$(echo $remote_read | sed -e "s/,//g")
+    remote_read=$(echo "scale=4; $remote_read * 64 / (1000000 * $time_cost)" | bc)
+
+    total_read=$(echo $total_read | sed -e "s/,//g")
+    total_read=$(echo "scale=4; $total_read * 64 / (1000000 * $time_cost)" | bc)
+
+    echo Local_read_HOT: \
+        $local_read MB/s \
+        $(echo "scale=4; 100 * $local_read / $total_read" | bc)%
+
+    echo Remote_read_COLD: \
+        $remote_read MB/s \
+        $(echo "scale=4; 100 * $remote_read/$total_read" | bc)%
+
+    echo "Total_read: $total_read MB/s"
 }
+
 
 cpu_to_node() {
     local cpu=cpu$1
@@ -185,7 +227,7 @@ cpu_to_node() {
 hardware_detect() {
     local running_cpu=
 
-    # skip if user provided -h or -c 
+    # skip if user provided -h or -c
     if [[ ! -z $hot_node ]]; then
         return 0
     fi
@@ -209,7 +251,7 @@ hardware_detect() {
     #│       N8  0M  0%
     #│
     #│But if user specified the values, just leave it to user.
-    echo "hardware detection: hot node:$hot_node cold node:$cold_node";
+    echo "PID $target_pid running on node $hot_node. HOT node:$hot_node COLD node:$cold_node.";
 }
 
 wait_pid_timeout()
@@ -265,6 +307,7 @@ on_ctrlc()
 }
 
 trap 'on_ctrlc' INT
+
 parse_parameter "$@"
 hardware_detect
 check_parameter
@@ -273,9 +316,6 @@ prepare_sys_refs $target_pid
 run_sys_refs
 wait_pid_timeout $sys_refs_pid $sys_refs_runtime
 run_perf
-
-#let sys-refs and perf run
-#sleep $run_time
 
 parse_perf_log
 
