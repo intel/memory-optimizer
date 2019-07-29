@@ -8,6 +8,7 @@ sys_refs_yaml_template=sys-refs-template.yaml
 sys_refs_yaml=sys-refs.yaml
 sys_refs=sys-refs/sys-refs
 perf=pmutools/ocperf.py
+sys_refs_runtime=300
 
 #parameter variable
 target_pid=
@@ -135,46 +136,49 @@ EOF
 run_sys_refs() {
     echo "log: $sys_refs_log"
     stdbuf -oL $sys_refs -d $dram_percent -c $sys_refs_yaml > $sys_refs_log 2>&1 &
-    sys_refs_pid=$!
+    sys_refs_pid=$(pidof sys-refs)
     echo "sys-refs pid: $sys_refs_pid"
 }
 
 run_perf() {
-    echo "Empty run_perf"
-    # Step1 perf list | grep to find the event name
-    # Step2 construct the cmd line parameter by pid and event name
-    # Step3 run the perf > $perf_log
-    #
-    #
+    perf_cmd="$perf stat -p $target_pid -o $perf_log "
+    perf_cmd_end=" -- sleep $run_time"
+    perf_event=(
+        # SLX only, test only
+        cpu/event=0xbb,umask=0x1,offcore_rsp=0x7bc0007f5,name=total_read/
+        cpu/event=0xbb,umask=0x1,offcore_rsp=0x7b80007f5,name=remote_read_COLD/
+        cpu/event=0xbb,umask=0x1,offcore_rsp=0x7840007f5,name=local_read_HOT/
+    )
 
-    #$perf list
-    #perf_pid=$!
+    #TODO: perf list to set right event in perf_event
+
+    for i in ${perf_event[@]}; do
+        perf_cmd="$perf_cmd -e $i "
+    done
+    perf_cmd="$perf_cmd $perf_cmd_end"
+    $perf_cmd
 }
+
 
 parse_perf_log() {
-    # TODO: parse the log from $perf_log
-    echo "Empty parse_perf_log"
-}
+    if [[ ! -f $perf_log ]]; then
+        echo "ERROR: No $perf_log file"
+        exit -1
+    fi
 
-kill_child() {
-    local pid
-    for pid; do
-        echo "killing $1"
-        kill $pid
-    done
+    # TODO: parse the log from $perf_log
+    cat $perf_log
 }
 
 cpu_to_node() {
     local cpu=cpu$1
-    
-    # 64 NODEs should be enough in non fake NUMA state
-    for i in {0..63}; do
-        echo $i
-        if [[ -d /sys/bus/cpu/devices/$cpu/node$i ]]; then
-            return $i
-        fi        
-    done
-    echo "ERROR: failed to get NODE id for $cpu"
+    local node_path=$(echo /sys/bus/cpu/devices/$cpu/node*)
+
+    if [[ -d $node_path ]]; then
+        return ${node_path#*/node}
+    fi
+
+    echo "ERROR: failed get NODE id for $cpu"
     exit -1
 }
 
@@ -208,18 +212,72 @@ hardware_detect() {
     echo "hardware detection: hot node:$hot_node cold node:$cold_node";
 }
 
+wait_pid_timeout()
+{
+    local wait_pid=$1
+    local timeout=$2
+
+    if [[ -z $wait_pid ]]; then
+        return 0
+    fi
+
+    # no timeout ? so let's keep wattting.
+    if [[ -z $timeout ]]; then
+        wait $wait_pid
+        return 0
+    fi
+
+    for i in $(seq 1 $timeout); do
+        if [[ ! -d /proc/$wait_pid ]]; then
+            break
+        fi
+        sleep 1
+        printf "\rWaitting for $wait_pid ($i/$timeout seconds)"
+    done
+    printf "\n"
+    return 0
+}
+
+kill_sys_refs()
+{
+    if [[ ! -z $sys_refs_pid ]]; then
+        echo "killing sys_refs($sys_refs_pid)"
+        kill $sys_refs_pid
+        sys_refs_pid=
+    fi
+
+}
+
+kill_perf()
+{
+    if [[ ! -z $perf_pid ]]; then
+        echo "killing perf($perf_pid)"
+        kill $perf_pid
+        perf_pid=
+    fi
+}
+
+on_ctrlc()
+{
+    echo "Ctrl-C received"
+    kill_sys_refs
+    kill_perf
+}
+
+trap 'on_ctrlc' INT
 parse_parameter "$@"
 hardware_detect
 check_parameter
 
 prepare_sys_refs $target_pid
 run_sys_refs
+wait_pid_timeout $sys_refs_pid $sys_refs_runtime
 run_perf
 
 #let sys-refs and perf run
-sleep $run_time
+#sleep $run_time
 
 parse_perf_log
 
-kill_child $sys_refs_pid
-kill_child $perf_pid
+kill_sys_refs
+kill_perf
