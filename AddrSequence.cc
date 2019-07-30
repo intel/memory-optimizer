@@ -21,11 +21,9 @@ AddrSequence::AddrSequence()
   nr_walks = 0;
   pageshift = 0;
   pagesize = 0;
-  top_bytes = 0;
-  young_bytes = 0;
-
   //set this to froce alloc buffer when add cluster
   buf_used_count = MAX_ITEM_COUNT;
+  clear_location_count();
 }
 
 AddrSequence::~AddrSequence()
@@ -37,8 +35,6 @@ void AddrSequence::clear()
 {
   addr_size = 0;
   nr_walks = 0;
-  top_bytes = 0;
-  young_bytes = 0;
   addr_clusters.clear();
   free_all_buf();
 
@@ -47,7 +43,7 @@ void AddrSequence::clear()
 #ifdef ADDR_SEQ_SELF_TEST
   test_map.clear();
 #endif
-
+  clear_location_count();
 }
 
 void AddrSequence::set_pageshift(int shift)
@@ -62,8 +58,7 @@ int AddrSequence::rewind()
 
   ++nr_walks;
   last_cluster_end = 0;
-  top_bytes = 0;
-  young_bytes = 0;
+  clear_location_count();
 
   return 0;
 }
@@ -89,15 +84,17 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
   return ret_value;
 }
 
-int AddrSequence::update_nodeid(unsigned long addr, int8_t nid)
+int AddrSequence::update_nodeid(unsigned long addr, int8_t nid,
+                                int8_t location)
 {
   int rc = 0;
   unsigned long next_addr;
   uint8_t unused_payload;
   int8_t unused_nid;
 
-  // only allow to update nid in update  period
-  if (in_append_period())
+  // only allow to update nid and location
+  // in append stage
+  if (!in_append_period())
     return -1;
 
   for (;;) {
@@ -108,7 +105,7 @@ int AddrSequence::update_nodeid(unsigned long addr, int8_t nid)
           break;
 
       if (next_addr == addr) {
-          do_walk_update_nid(find_iter, addr, nid);
+          do_walk_update_nid(find_iter, addr, nid, location);
           return 0;
       } else if (next_addr > addr) {
           return ADDR_NOT_FOUND;
@@ -244,15 +241,18 @@ void AddrSequence::do_walk_update_payload(walk_iterator& iter,
 
   // payload == 1: increase
   ++iter.cur_delta_ptr[iter.delta_index].payload;
-  if (iter.cur_delta_ptr[iter.delta_index].payload >= nr_walks)
-    top_bytes += pagesize;
-  young_bytes += pagesize;
+
+  update_addr_location_count(iter);
 }
 
 void AddrSequence::do_walk_update_nid(walk_iterator& iter,
-                                      unsigned addr, int8_t nid)
+                                      unsigned addr,
+                                      int8_t nid, int8_t location)
 {
   iter.cur_delta_ptr[iter.delta_index].nid = nid;
+  iter.cur_delta_ptr[iter.delta_index].location = location;
+
+  update_addr_location_count(iter);
 }
 
 
@@ -341,10 +341,8 @@ int AddrSequence::save_into_cluster(AddrCluster& cluster,
   cluster.deltas[index].payload = n;
   cluster.deltas[index].nid = -1;
 
-  if (n) {
-      top_bytes += pagesize;
-    young_bytes += pagesize;
-  }
+  // default to DRAM, will be updated in update_nodeid() later
+  cluster.deltas[index].location = LOC_DRAM;
 
   ++cluster.size;
   ++buf_used_count;

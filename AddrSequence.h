@@ -13,13 +13,14 @@
 #include <map>
 #include <vector>
 #include <memory>
-
+#include <string.h>
 
 struct DeltaPayload
 {
   uint8_t delta;    // in pagesize unit
   uint8_t payload;  // stores refs count
   int8_t nid;
+  int8_t location;  // in AEP or DRAM
 }__attribute__((packed));
 
 struct AddrCluster
@@ -48,13 +49,23 @@ class AddrSequence
         END_OF_SEQUENCE,
     };
 
+    enum {
+        LOC_BEGIN,
+        LOC_DRAM = LOC_BEGIN,
+        LOC_PMEM,
+        LOC_UNKNOW,
+        LOC_MAX,
+    };
+
   public:
     AddrSequence();
     ~AddrSequence();
     size_t size() const { return addr_size; }
     bool empty() const  { return 0 == addr_size; }
-    unsigned long get_top_bytes() const { return top_bytes; }
-    unsigned long get_young_bytes() const { return young_bytes; }
+    unsigned long get_top_bytes() const { return top_bytes[LOC_DRAM] + top_bytes[LOC_PMEM]; }
+    unsigned long get_young_bytes() const { return young_bytes[LOC_DRAM] + young_bytes[LOC_PMEM]; }
+    unsigned long get_top_bytes(int location) const { return top_bytes[location] }
+    unsigned long get_young_bytes(int location) const { return young_bytes[location] }
     int get_pageshift() const { return pageshift; }
 
     void set_pageshift(int shift);
@@ -78,7 +89,7 @@ class AddrSequence
     // will do ++payload
     // will ignore addresses not already there
     int inc_payload(unsigned long addr, int n);
-    int update_nodeid(unsigned long addr, int8_t nid);
+    int update_nodeid(unsigned long addr, int8_t nid, int8_t location);
     int smooth_payloads();
 
     // for sequential visiting
@@ -137,7 +148,8 @@ class AddrSequence
     void do_walk_update_payload(walk_iterator& iter,
                                 unsigned addr, uint8_t payload);
     void do_walk_update_nid(walk_iterator& iter,
-                            unsigned addr, int8_t nid);
+                            unsigned addr,
+                            int8_t nid, int8_t location);
 
     bool do_walk_continue(int rc) { return rc >=0 && rc != END_OF_SEQUENCE; }
 
@@ -146,6 +158,19 @@ class AddrSequence
         iter.cur_delta_ptr = iter.cur_cluster_ptr->deltas;
     }
 
+    void clear_location_count() {
+      memset(top_bytes, 0, sizeof(top_bytes));
+      memset(young_bytes, 0, sizeof(young_bytes));
+    }
+
+    void update_addr_location_count(walk_iterator& iter) {
+        int payload = iter.cur_delta_ptr[iter.delta_index].payload;
+        int location = iter.cur_delta_ptr[iter.delta_index].location;
+
+        if (payload >= nr_walks)
+          top_bytes[location] += pagesize;
+        young_bytes[location] += pagesize;
+    }
   private:
     const static int BUF_SIZE = 0x10000; // 64KB;
     const static int ITEM_SIZE = sizeof(struct DeltaPayload);
@@ -156,8 +181,8 @@ class AddrSequence
     int pageshift;
     unsigned long pagesize;
     unsigned long addr_size;  // # of addrs stored
-    unsigned long top_bytes;  // nr_top_pages * pagesize
-    unsigned long young_bytes; // all accessed in one scan
+    unsigned long top_bytes[LOC_MAX];  // nr_top_pages * pagesize
+    unsigned long young_bytes[LOC_MAX]; // all accessed in one scan
 
     std::vector<AddrCluster>     addr_clusters;
 
