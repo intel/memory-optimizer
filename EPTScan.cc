@@ -259,6 +259,7 @@ int EPTScan::get_memory_type_range(void** addrs, unsigned long count,
   MovePages locator;
   int ret;
   int nid;
+  int location;
 
   if (0 == count)
     return 0;
@@ -282,7 +283,18 @@ int EPTScan::get_memory_type_range(void** addrs, unsigned long count,
       exit(-1);
     }
 
-    addrobj.update_nodeid((unsigned long)addrs[i], (int8_t)nid);
+    if (nid >= 0) {
+      NumaNode* node = numa_collection->get_node(nid);
+      if (node) {
+        location = node->is_pmem() ?
+            AddrSequence::LOC_PMEM : AddrSequence::LOC_DRAM;
+        goto update_nid;
+      }
+    }
+    location = AddrSequence::LOC_UNKNOW;
+
+update_nid:
+    addrobj.update_nodeid((unsigned long)addrs[i], (int8_t)nid, (int8_t)location);
   }
 
   return ret;

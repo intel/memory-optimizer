@@ -91,7 +91,6 @@ void GlobalScan::main_loop()
       goto have_sleep;
 
     nr_scan_rounds = 0;
-    get_memory_type();
     count_refs();
     calc_memory_size();
     calc_migrate_parameter();
@@ -365,23 +364,25 @@ void GlobalScan::walk_once(int scans)
   top_bytes = 0;
   all_bytes = 0;
 
-  for (auto& m: idle_ranges)
-  {
-      job.migration = m;
-      if (option.max_threads) {
-        work_queue.push(job);
-        printd("push job %d\n", nr);
-        ++nr;
-      } else {
-        consumer_job(job);
-        job.migration->gather_walk_stats(young_bytes, top_bytes, all_bytes);
-      }
+  for (auto& m: idle_ranges) {
+
+    job.migration = m;
+    if (option.max_threads) {
+      work_queue.push(job);
+      printd("push job %d\n", nr);
+    } else {
+      consumer_job(job);
+      done_queue.push(job);
+    }
+    ++nr;
   }
 
-  for (; nr; --nr)
-  {
+  for (; nr; --nr) {
     printd("wait walk job %d\n", nr);
     job = done_queue.pop();
+
+    if (1 == scans)
+      job.migration->get_memory_type();
     job.migration->gather_walk_stats(young_bytes, top_bytes, all_bytes);
   }
 
