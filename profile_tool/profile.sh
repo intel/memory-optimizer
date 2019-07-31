@@ -26,6 +26,7 @@ perf_log=
 
 # parser
 perf_ipc_parser=./perf_parser_ipc.rb
+perf_bw_parser=./perf_parser_bw.rb
 sysrefs_ratio_parser=./sysrefs_parser_ratio.rb
 
 usage() {
@@ -165,54 +166,13 @@ run_perf() {
 }
 
 parse_perf_log() {
-    local local_read=0
-    local remote_read=0
-    local total_read=0
-    local time_cost=1
-    local type=
-
     if [[ ! -f $perf_log ]]; then
         echo "ERROR: No $perf_log file"
         exit -1
     fi
 
     cat $perf_log
-
-    while read line; do
-        word=($line)
-        type=${word[1]}
-        if [[ $type == "total_read" ]]; then
-            total_read=${word[0]}
-        fi
-        if [[ $type == "remote_read_COLD" ]]; then
-            remote_read=${word[0]}
-        fi
-        if [[ $type == "local_read_HOT" ]]; then
-            local_read=${word[0]}
-        fi
-        if [[ $type == "seconds" ]]; then
-            time_cost=${word[0]}
-        fi
-    done < $perf_log
-
-    local_read=$(echo $local_read | sed -e "s/,//g")
-    local_read=$(echo "scale=4; $local_read * 64 / (1000000 * $time_cost)" | bc)
-
-    remote_read=$(echo $remote_read | sed -e "s/,//g")
-    remote_read=$(echo "scale=4; $remote_read * 64 / (1000000 * $time_cost)" | bc)
-
-    total_read=$(echo $total_read | sed -e "s/,//g")
-    total_read=$(echo "scale=4; $total_read * 64 / (1000000 * $time_cost)" | bc)
-
-    echo "Bandwidth: Local_read_HOT: " \
-        $local_read MB/s \
-        $(echo "scale=4; 100 * $local_read / $total_read" | bc)%
-
-    echo "Bandwidth: Remote_read_COLD: " \
-        $remote_read MB/s \
-        $(echo "scale=4; 100 * $remote_read/$total_read" | bc)%
-
-    echo "Bandwidth: Total_read: $total_read MB/s"
+    $perf_bw_parser < $perf_log
 }
 
 parse_sys_refs_log() {
