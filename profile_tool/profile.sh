@@ -26,6 +26,7 @@ perf_log=
 
 # parser
 perf_ipc_parser=./perf_parser_ipc.rb
+perf_ipc_calc=./perf_calc_ipc.rb
 perf_bw_parser=./perf_parser_bw.rb
 sysrefs_ratio_parser=./sysrefs_parser_ratio.rb
 
@@ -287,8 +288,9 @@ run_perf_ipc()
 output_perf_ipc()
 {
     echo ""
-    echo "IPC baseline:        $perf_ipc_before"
-    echo "IPC after migration: $perf_ipc_after"
+    echo "IPC baseline:        $perf_ipc_before instructions per cycle"
+    echo "IPC after migration: $perf_ipc_after instructions per cycle"
+    calc_ipc_drop $perf_ipc_before $perf_ipc_after
 }
 
 on_ctrlc()
@@ -296,6 +298,13 @@ on_ctrlc()
     echo "Ctrl-C received"
     kill_sys_refs
     kill_perf
+}
+
+calc_ipc_drop()
+{
+  local ipc_before=$1
+  local ipc_after=$2
+  $perf_ipc_calc $ipc_before $ipc_after
 }
 
 trap 'on_ctrlc' INT
