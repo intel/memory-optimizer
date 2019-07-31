@@ -7,10 +7,10 @@ pmem_ratio=0
 
 while (line = STDIN.gets)
   case line
-  when /Anon DRAM.*:\s*([\d,]+)\s*([\d%]+)/
+  when /Anon DRAM.*:\s+([\d,]+)\s+([\d%]+)/
     dram_kb = $1.delete(",").to_i
     dram_ratio = $2.to_s
-  when /Anon PMEM.*:\s*([\d,]+)\s*([\d%]+)/
+  when /Anon PMEM.*:\s+([\d,]+)\s+([\d%]+)/
     pmem_kb = $1.delete(",").to_i
     pmem_ratio = $2.to_s
   end
