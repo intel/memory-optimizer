@@ -3,26 +3,30 @@
 
 cd "$(dirname "$0")"
 
-#config variable
+# config variable
 sys_refs_yaml_template=sys-refs-template.yaml
 sys_refs_yaml=sys-refs.yaml
 sys_refs=sys-refs/sys-refs
 perf=pmutools/ocperf.py
-sys_refs_runtime=300
+sys_refs_runtime=600
 
-#parameter variable
+# parameter variable
 target_pid=
 dram_percent=25
 hot_node=
 cold_node=
 run_time=1200
 
-#runtime variable
+# runtime variable
 sys_refs_pid=
 perf_pid=
 sys_refs_log=
 perf_log=
 
+
+# parser
+perf_ipc_parser=./perf_parser_ipc.rb
+sysrefs_ratio_parser=./sysrefs_parser_ratio.rb
 
 usage() {
     echo "usage: $0:"
@@ -141,9 +145,9 @@ run_sys_refs() {
 }
 
 run_perf() {
-    perf_cmd="$perf stat -p $target_pid -o $perf_log "
-    perf_cmd_end=" -- sleep $run_time"
-    perf_event=(
+    local perf_cmd="$perf stat -p $target_pid -o $perf_log "
+    local perf_cmd_end=" -- sleep $run_time"
+    local perf_event=(
         # SLX only, test only
         cpu/event=0xbb,umask=0x1,offcore_rsp=0x7bc0007f5,name=total_read/
         cpu/event=0xbb,umask=0x1,offcore_rsp=0x7b80007f5,name=remote_read_COLD/
@@ -200,17 +204,26 @@ parse_perf_log() {
     total_read=$(echo $total_read | sed -e "s/,//g")
     total_read=$(echo "scale=4; $total_read * 64 / (1000000 * $time_cost)" | bc)
 
-    echo Local_read_HOT: \
+    echo "Bandwidth: Local_read_HOT: " \
         $local_read MB/s \
         $(echo "scale=4; 100 * $local_read / $total_read" | bc)%
 
-    echo Remote_read_COLD: \
+    echo "Bandwidth: Remote_read_COLD: " \
         $remote_read MB/s \
         $(echo "scale=4; 100 * $remote_read/$total_read" | bc)%
 
-    echo "Total_read: $total_read MB/s"
+    echo "Bandwidth: Total_read: $total_read MB/s"
 }
 
+parse_sys_refs_log() {
+
+    if [[ ! -f $sys_refs_log ]]; then
+        return 0;
+    fi
+
+    echo ""
+    $sysrefs_ratio_parser < $sys_refs_log
+}
 
 cpu_to_node() {
     local cpu=cpu$1
@@ -284,19 +297,38 @@ kill_sys_refs()
 {
     if [[ ! -z $sys_refs_pid ]]; then
         echo "killing sys_refs($sys_refs_pid)"
-        kill $sys_refs_pid
+        kill $sys_refs_pid > /dev/null 2>&1
         sys_refs_pid=
     fi
-
 }
 
 kill_perf()
 {
     if [[ ! -z $perf_pid ]]; then
         echo "killing perf($perf_pid)"
-        kill $perf_pid
+        kill $perf_pid > /dev/null 2>&1
         perf_pid=
     fi
+}
+
+run_perf_ipc()
+{       
+    local ipc_runtime=$1
+    local perf_log_ipc=perf-$target_pid-$dram_percent-ipc.log
+    local perf_cmd="$perf stat -p $target_pid \
+                    -e cycles,instructions \
+                    -o $perf_log_ipc -- sleep $ipc_runtime"
+    
+    $perf_cmd > $perf_log_ipc 2>&1
+
+    echo $($perf_ipc_parser < $perf_log_ipc)
+}
+
+output_perf_ipc()
+{
+    echo ""
+    echo "IPC baseline:        $perf_ipc_before"
+    echo "IPC after migration: $perf_ipc_after"
 }
 
 on_ctrlc()
@@ -312,12 +344,22 @@ parse_parameter "$@"
 hardware_detect
 check_parameter
 
+echo "Gathering basline IPC data (60 seconds)"
+perf_ipc_before=$(run_perf_ipc 60)
+
 prepare_sys_refs $target_pid
 run_sys_refs
-wait_pid_timeout $sys_refs_pid $sys_refs_runtime
-run_perf
 
-parse_perf_log
+wait_pid_timeout $sys_refs_pid $sys_refs_runtime
 
 kill_sys_refs
+run_perf
+
+echo "Gathering IPC data (60 seconds)"
+perf_ipc_after=$(run_perf_ipc 60)
+
+parse_perf_log
+parse_sys_refs_log
+output_perf_ipc
+
 kill_perf
