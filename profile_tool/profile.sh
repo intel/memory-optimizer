@@ -1,14 +1,14 @@
 #!/bin/bash
 
 
-cd "$(dirname "$0")"
+BASE_DIR=$(dirname $(readlink -e $0))
 
 # config variable
-sys_refs_yaml_template=sys-refs-template.yaml
-sys_refs_yaml=sys-refs.yaml
-sys_refs=sys-refs/sys-refs
-perf=pmutools/ocperf.py
-sys_refs_runtime=600
+SYS_REFS_YAML_TEMPLATE=$BASE_DIR/sys-refs-template.yaml
+SYS_REFS_YAML=$BASE_DIR/sys-refs.yaml
+SYS_REFS=$BASE_DIR/sys-refs/sys-refs
+PERF=$BASE_DIR/pmutools/ocperf.py
+SYS_REFS_RUNTIME=600
 
 # parameter variable
 target_pid=
@@ -25,10 +25,10 @@ perf_log=
 
 
 # parser
-perf_ipc_parser=./perf_parser_ipc.rb
-perf_ipc_calc=./perf_calc_ipc.rb
-perf_bw_parser=./perf_parser_bw.rb
-sysrefs_ratio_parser=./sysrefs_parser_ratio.rb
+PERF_IPC_PARSER=$BASE_DIR/perf_parser_ipc.rb
+PERF_IPC_CALC=$BASE_DIR/perf_calc_ipc.rb
+PERF_BW_PARSER=$BASE_DIR/perf_parser_bw.rb
+SYSREFS_RATIO_PARSER=$BASE_DIR/sysrefs_parser_ratio.rb
 
 usage() {
     echo "usage: $0:"
@@ -112,15 +112,15 @@ check_parameter() {
 
 prepare_sys_refs() {
     local pid=$1
-    if  [[ ! -e $sys_refs_yaml_template ]]; then
-        echo "Error: No $sys_refs_yaml_template file"
+    if  [[ ! -e $SYS_REFS_YAML_TEMPLATE ]]; then
+        echo "Error: No $SYS_REFS_YAML_TEMPLATE file"
         exit 10
     fi
 
-    cat $sys_refs_yaml_template > $sys_refs_yaml
+    cat $SYS_REFS_YAML_TEMPLATE > $SYS_REFS_YAML
 
     # NUMA part
-    cat >> $sys_refs_yaml <<EOF
+    cat >> $SYS_REFS_YAML <<EOF
   numa_nodes:
     $hot_node:
       type: DRAM
@@ -130,7 +130,7 @@ prepare_sys_refs() {
       demote_to: $hot_node
 EOF
     # policy part
-    cat >> $sys_refs_yaml <<EOF
+    cat >> $SYS_REFS_YAML <<EOF
 
 policies:
   - pid: $pid
@@ -141,15 +141,19 @@ EOF
 
 run_sys_refs() {
     echo "sys_refs_log: $sys_refs_log"
-    stdbuf -oL $sys_refs -d $dram_percent -c $sys_refs_yaml > $sys_refs_log 2>&1 &
+    stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML > $sys_refs_log 2>&1 &
     sys_refs_pid=$(pidof sys-refs)
     echo "sys-refs pid: $sys_refs_pid"
 }
 
 run_perf() {
-    local perf_cmd="$perf stat -p $target_pid -o $perf_log "
+    local perf_cmd="$PERF stat -p $target_pid -o $perf_log "
     local perf_cmd_end=" -- sleep $run_time"
     local perf_event=(
+        # CLX only, test only, with pmem support, No it doesn't work..
+        # cpu/event=0xbb,umask=0x1,offcore_rsp=0x7BFC007F5,name=total_read/  # pmem local/remote supported
+        # cpu/event=0xbb,umask=0x1,offcore_rsp=0x7BB8007F5,name=remote_read_COLD/
+        # cpu/event=0xbb,umask=0x1,offcore_rsp=0x7844007F5,name=local_read_HOT/
         # SLX only, test only
         cpu/event=0xbb,umask=0x1,offcore_rsp=0x7bc0007f5,name=total_read/
         cpu/event=0xbb,umask=0x1,offcore_rsp=0x7b80007f5,name=remote_read_COLD/
@@ -173,7 +177,7 @@ parse_perf_log() {
     fi
 
     cat $perf_log
-    $perf_bw_parser < $perf_log
+    $PERF_BW_PARSER < $perf_log
 }
 
 parse_sys_refs_log() {
@@ -183,7 +187,7 @@ parse_sys_refs_log() {
     fi
 
     echo ""
-    $sysrefs_ratio_parser < $sys_refs_log
+    $SYSREFS_RATIO_PARSER < $sys_refs_log
 }
 
 cpu_to_node() {
@@ -273,16 +277,16 @@ kill_perf()
 }
 
 run_perf_ipc()
-{       
+{
     local ipc_runtime=$1
     local perf_log_ipc=perf-$target_pid-$dram_percent-ipc.log
-    local perf_cmd="$perf stat -p $target_pid \
+    local perf_cmd="$PERF stat -p $target_pid \
                     -e cycles,instructions \
                     -o $perf_log_ipc -- sleep $ipc_runtime"
-    
+
     $perf_cmd > $perf_log_ipc 2>&1
 
-    echo $($perf_ipc_parser < $perf_log_ipc)
+    echo $($PERF_IPC_PARSER < $perf_log_ipc)
 }
 
 output_perf_ipc()
@@ -304,7 +308,7 @@ calc_ipc_drop()
 {
   local ipc_before=$1
   local ipc_after=$2
-  $perf_ipc_calc $ipc_before $ipc_after
+  $PERF_IPC_CALC $ipc_before $ipc_after
 }
 
 trap 'on_ctrlc' INT
@@ -319,7 +323,7 @@ perf_ipc_before=$(run_perf_ipc 60)
 prepare_sys_refs $target_pid
 run_sys_refs
 
-wait_pid_timeout $sys_refs_pid $sys_refs_runtime
+wait_pid_timeout $sys_refs_pid $SYS_REFS_RUNTIME
 
 kill_sys_refs
 run_perf
