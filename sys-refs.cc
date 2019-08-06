@@ -40,17 +40,19 @@ int debug_level()
 }
 
 static const struct option opts[] = {
-  {"interval",  required_argument,  NULL, 'i'},
-  {"sleep",     required_argument,  NULL, 's'},
-  {"loop",      required_argument,  NULL, 'l'},
-  {"output",    required_argument,  NULL, 'o'},
-  {"dram",      required_argument,  NULL, 'd'},
-  {"migrate",   required_argument,  NULL, 'm'},
-  {"verbose",   required_argument,  NULL, 'v'},
-  {"config",    required_argument,  NULL, 'c'},
-  {"help",      no_argument,        NULL, 'h'},
-  {"version",   no_argument,        NULL, 'r'},
-  {NULL,        0,                  NULL, 0}
+  {"interval",            required_argument,  NULL, 'i'},
+  {"sleep",               required_argument,  NULL, 's'},
+  {"loop",                required_argument,  NULL, 'l'},
+  {"output",              required_argument,  NULL, 'o'},
+  {"dram",                required_argument,  NULL, 'd'},
+  {"migrate",             required_argument,  NULL, 'm'},
+  {"verbose",             required_argument,  NULL, 'v'},
+  {"config",              required_argument,  NULL, 'c'},
+  {"progressive-profile", required_argument,  NULL, 'p'},
+  {"help",                no_argument,        NULL, 'h'},
+  {"version",             no_argument,        NULL, 'r'},
+
+  {NULL,               0,                  NULL, 0}
 };
 
 static void usage(char *prog)
@@ -65,6 +67,9 @@ static void usage(char *prog)
           "    -o|--output     The output file, defaults to refs-count\n"
           "    -d|--dram       The DRAM percent, wrt. DRAM+PMEM total size\n"
           "    -m|--migrate    Migrate what: 0|none, 1|hot, 2|cold, 3|both\n"
+          "    -p|--progressive-profile   The script path and name.\n"
+          "                               Group pages by refcount,\n"
+          "                               migrate and call script to profile each group.\n"
           "    -v|--verbose    Show debug info\n"
           "    -r|--version    Show version info\n"
           "    -c|--config     config file path name\n",
@@ -77,7 +82,7 @@ static void parse_cmdline(int argc, char *argv[])
 {
   int options_index = 0;
   int opt = 0;
-  const char *optstr = "hvri:s:l:o:d:m:c:";
+  const char *optstr = "hvri:s:l:o:d:m:c:p:";
 
   optind = 1;
   while ((opt = getopt_long(argc, argv, optstr, opts, &options_index)) != EOF) {
@@ -103,6 +108,9 @@ static void parse_cmdline(int argc, char *argv[])
       break;
     case 'm':
       option.migrate_what = Option::parse_migrate_name(optarg);
+      break;
+    case 'p':
+      option.progressive_profile = optarg;
       break;
     case 'v':
       ++option.debug_level;
@@ -136,6 +144,10 @@ int main(int argc, char *argv[])
   setlocale(LC_NUMERIC, "");
 
   parse_cmdline(argc, argv);
+
+  if (option.dump_options)
+    option.dump();
+
   register_signal_handler();
 
   gscan.apply_option();

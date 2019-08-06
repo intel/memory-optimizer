@@ -48,9 +48,6 @@ int OptionParser::reparse()
 
     ret_val = parse_policies(config["policies"]);
 
-    if (dump_options)
-      dump();
-
   } catch (...) {
     ret_val = -1;
     printf("ERROR: exception on parsing options/policies\n");
@@ -121,6 +118,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("anti_thrash_threshold", anti_thrash_threshold);
       OP_GET_VALUE("one_period_migration_size", one_period_migration_size);
       OP_GET_VALUE("interval_scale", interval_scale);
+      OP_GET_VALUE("progressive_profile", progressive_profile);
 #undef OP_GET_VALUE
 
       std::string str_val;

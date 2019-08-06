@@ -182,6 +182,9 @@ public:
   bool exit_on_converged = false;
 
   int interval_scale = 100;
+
+  std::string progressive_profile;
+
 private:
   PolicySet  policies;
 };
