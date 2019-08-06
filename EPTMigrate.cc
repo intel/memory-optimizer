@@ -303,6 +303,7 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type)
   uint8_t refs;
   int8_t  nid;
   int ret = -1;
+  bool refs_in_range;
 
   long nr_promote = parameter[type].nr_promote;
   long nr_demote = parameter[type].nr_demote;
@@ -332,20 +333,23 @@ int EPTMigrate::promote_and_demote(ProcIdlePageType type)
       goto next;
 
     if (numa_collection->get_node(nid)->is_pmem()) {
-
+      refs_in_range = refs > parameter[type].hot_threshold
+                      && refs <= parameter[type].hot_threshold_max;
       if ((refs == parameter[type].hot_threshold
           && parameter[type].promote_remain-- > 0)
-          || refs > parameter[type].hot_threshold)
+          || refs_in_range)
         save_migrate_parameter((void*)addr, nid,
                                addr_array_2d[HOT_MIGRATE],
                                from_nid_2d[HOT_MIGRATE],
                                target_nid_2d[HOT_MIGRATE]);
 
     } else {
+      refs_in_range = refs < parameter[type].cold_threshold
+                      && refs >= parameter[type].cold_threshold_min;
 
       if ((refs == parameter[type].cold_threshold
           && parameter[type].demote_remain-- > 0)
-          || refs < parameter[type].cold_threshold)
+          || refs_in_range)
         save_migrate_parameter((void*)addr, nid,
                                addr_array_2d[COLD_MIGRATE],
                                from_nid_2d[COLD_MIGRATE],

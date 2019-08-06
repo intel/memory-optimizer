@@ -48,10 +48,12 @@ struct MigrateStats: public MoveStats
 
 struct migrate_parameter {
   int hot_threshold;
+  int hot_threshold_max;
   long nr_promote;
   long promote_remain;
 
   int cold_threshold;
+  int cold_threshold_min;
   long nr_demote;
   long demote_remain;
 
@@ -65,18 +67,20 @@ struct migrate_parameter {
     demote_remain = 0;
     hot_threshold = 0;
     cold_threshold = 0;
+    hot_threshold_max = 0;
+    cold_threshold_min = 0;
     enabled = false;
     disable_reason = "None";
   }
 
   void dump() const {
-    printf("hot_threshold: %d nr_promote: %ld promote_remain: %ld\n"
-           "cold_threshold: %d nr_demote: %ld demote_remain: %ld\n"
+    printf("hot_threshold: [%d, %d] nr_promote: %ld promote_remain: %ld\n"
+           "cold_threshold: [%d, %d] nr_demote: %ld demote_remain: %ld\n"
            "enable: %d\n"
            "disable_reason: %s\n",
-           hot_threshold,
+           hot_threshold, hot_threshold_max,
            nr_promote, promote_remain,
-           cold_threshold,
+           cold_threshold_min, cold_threshold,
            nr_demote, demote_remain,
            (int)enabled, disable_reason);
   }
