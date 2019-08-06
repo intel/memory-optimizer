@@ -364,6 +364,12 @@ next:
                                  addr_array_2d,
                                  from_nid_2d, target_nid_2d);
 
+  if (!option.progressive_profile.empty()) {
+      call_progressive_profile_script(option.progressive_profile);
+      do_interleave_move_pages(type,
+                               addr_array_2d,
+                               target_nid_2d, from_nid_2d);
+  }
   return ret;
 }
 
@@ -458,4 +464,9 @@ void EPTMigrate::update_migrate_state(int migrate_type)
     page_migrate_stats[migrate_type].anon_kb
         += page_refs.size() << (page_refs.get_pageshift() - 10);
   }
+}
+
+void EPTMigrate::call_progressive_profile_script(std::string& script_path_name)
+{
+
 }
