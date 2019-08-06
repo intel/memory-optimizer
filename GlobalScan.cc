@@ -93,9 +93,15 @@ void GlobalScan::main_loop()
     nr_scan_rounds = 0;
     count_refs();
     calc_memory_size();
-    calc_migrate_parameter();
-    migrate();
-    count_migrate_stats();
+
+    if (option.progressive_profile.empty()) {
+      calc_migrate_parameter();
+      migrate();
+      count_migrate_stats();
+    } else {
+      progressive_profile();
+      break;
+    }
 
     if (option.exit_on_converged && exit_on_converged()) {
       printf("Exit: exit_on_converged done\n");
@@ -460,6 +466,37 @@ void GlobalScan::migrate()
     proc_vmstat.show_numa_stats(&numa_collection);
 
   show_migrate_speed(tv_secs(ts_begin, ts_end));
+}
+
+void GlobalScan::progressive_profile()
+{
+  Job job;
+  int nr = 0;
+
+  job.intent = JOB_MIGRATE;
+
+  for (int i = 0; i < nr_walks; ++i) {
+    calc_progressive_profile_parameter(REF_LOC_DRAM, i);
+
+    printf("\nStarting progressive_profile migration for refs %d : %s\n",
+           i, get_current_date().c_str());
+    for (auto& m: idle_ranges)
+    {
+      job.migration = m;
+      if (option.max_threads) {
+        work_queue.push(job);
+        ++nr;
+      } else
+        consumer_job(job);
+    }
+
+    for (; nr; --nr)
+    {
+      printd("wait migrate job %d\n", nr);
+      job = done_queue.pop();
+    }
+    printf("\nEnd of migration: %s\n", get_current_date().c_str());
+  }
 }
 
 void GlobalScan::show_migrate_speed(float delta_time)

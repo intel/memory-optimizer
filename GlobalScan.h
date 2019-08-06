@@ -48,6 +48,7 @@ class GlobalScan
     int collect();
     float walk_multi();
     void migrate();
+    void progressive_profile();
     void count_refs();
     void count_migrate_stats();
 #if 0
