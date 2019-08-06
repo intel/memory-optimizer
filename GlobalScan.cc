@@ -649,6 +649,69 @@ bool GlobalScan::in_adjust_ratio_stage()
   return error ? true : false;
 }
 
+ void GlobalScan::calc_progressive_profile_parameter(ref_location from_type, int page_refs)
+{
+  long move_count;
+
+  for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
+
+    if (!total_mem[type]) {
+      for (auto& range : idle_ranges) {
+        init_migration_parameter(range, type);
+        range->parameter[type].disable("No HOT or COLD pages");
+      }
+      continue;
+    }
+
+    printf("\nMemory info by %s for %s:\n"
+           "  total_mem: %ld kb\n"
+           "  total_dram: %ld kb\n"
+           "  total_pmem: %ld kb\n"
+           "  ratio: %d\n",
+           __func__, pagetype_name[type],
+           total_mem[type], total_dram[type], total_pmem[type],
+           percent(total_dram[type], total_mem[type]));
+
+    for (auto& range : idle_ranges) {
+      const histogram_2d_type& refs_count
+          = range->get_pagetype_refs(type).histogram_2d;
+
+      init_migration_parameter(range, type);
+      move_count = refs_count[from_type][page_refs];
+
+      if (!move_count) {
+        range->parameter[type].disable("No cold pages");
+        continue;
+      }
+
+      if (REF_LOC_DRAM == from_type) {
+        range->parameter[type].nr_demote = move_count;
+        range->parameter[type].demote_remain = move_count;
+        range->parameter[type].cold_threshold = page_refs;
+        range->parameter[type].cold_threshold_min = page_refs;
+        range->parameter[type].enable();
+      } else if (REF_LOC_PMEM == from_type) {
+        range->parameter[type].nr_promote = move_count;
+        range->parameter[type].promote_remain = move_count;
+        range->parameter[type].hot_threshold = page_refs;
+        range->parameter[type].hot_threshold_max = page_refs;
+        range->parameter[type].enable();
+      } else  {
+        range->parameter[type].disable("wrong from_type");
+      }
+    }
+
+    printf("\nPage selection for %s:\n", pagetype_name[type]);
+    for (auto& range : idle_ranges) {
+      const migrate_parameter& parameter = range->parameter[type];
+      range->dump_histogram(type);
+      printf("migration parameter dump:\n");
+      parameter.dump();
+      printf("\n");
+    }
+  }
+}
+
 void GlobalScan::calc_migrate_parameter()
 {
   long limit = option.one_period_migration_size;
@@ -724,6 +787,7 @@ void GlobalScan::calc_migrate_parameter()
           range->parameter[type].nr_promote += nr_increase;
           range->parameter[type].promote_remain = nr_increase;
           range->parameter[type].hot_threshold = hot_threshold;
+          range->parameter[type].hot_threshold_max = nr_walks;
           range->parameter[type].enable();
 
           nr_promote -= nr_increase;
@@ -737,6 +801,7 @@ void GlobalScan::calc_migrate_parameter()
           range->parameter[type].nr_demote += nr_increase;
           range->parameter[type].demote_remain = nr_increase;
           range->parameter[type].cold_threshold = cold_threshold;
+          range->parameter[type].cold_threshold_min = 0;
           range->parameter[type].enable();
 
           nr_demote -= nr_increase;
@@ -836,7 +901,9 @@ void GlobalScan::init_migration_parameter(EPTMigratePtr range, ProcIdlePageType 
 {
   range->parameter[type].clear();
   range->parameter[type].hot_threshold = nr_walks + 1;
+  range->parameter[type].hot_threshold_max = nr_walks + 1;
   range->parameter[type].cold_threshold = -1;
+  range->parameter[type].cold_threshold_min = -1;
   range->parameter[type].disable("by page selection");
 }
 
