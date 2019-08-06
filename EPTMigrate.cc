@@ -17,6 +17,10 @@
 #include <iostream>
 #include <algorithm>
 #include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <linux/limits.h>
 
 #include <numa.h>
 #include <numaif.h>
@@ -365,7 +369,10 @@ next:
                                  from_nid_2d, target_nid_2d);
 
   if (!option.progressive_profile.empty()) {
-      call_progressive_profile_script(option.progressive_profile);
+      call_progressive_profile_script(option.progressive_profile,
+                                      parameter[COLD_MIGRATE].cold_threshold,
+                                      addr_array_2d[COLD_MIGRATE].size(),
+                                      pagetype_size[type]);
       do_interleave_move_pages(type,
                                addr_array_2d,
                                target_nid_2d, from_nid_2d);
@@ -466,7 +473,36 @@ void EPTMigrate::update_migrate_state(int migrate_type)
   }
 }
 
-void EPTMigrate::call_progressive_profile_script(std::string& script_path_name)
+void EPTMigrate::call_progressive_profile_script(std::string& script_path_name,
+                                                 int refs_count,
+                                                 long page_count,
+                                                 int page_size)
 {
+  pid_t child_pid;
 
+  child_pid = fork();
+  if (child_pid == -1) {
+    return;
+  }
+
+  if (child_pid > 0) {
+    waitpid(child_pid, NULL, 0);
+  } else if (0 == child_pid) {
+    const char* cmdline = script_path_name.c_str();
+    char buf[128];
+
+    snprintf(buf, sizeof(buf), "%d", refs_count);
+    setenv("REF_COUNT", buf, true);
+
+    snprintf(buf, sizeof(buf), "%d", page_size);
+    setenv("PAGE_SIZE", buf, true);
+
+    snprintf(buf, sizeof(buf), "%ld", page_count);
+    setenv("PAGE_COUNT", buf, true);
+
+    if (execl(cmdline, cmdline, (char*)NULL) == -1) {
+      perror("failed to execl(): ");
+      exit(-1);
+    }
+  }
 }

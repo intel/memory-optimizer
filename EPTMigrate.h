@@ -156,7 +156,10 @@ class EPTMigrate : public EPTScan
 
     void update_migrate_state(int migrate_type);
 
-    void call_progressive_profile_script(std::string& script_path_name);
+    void call_progressive_profile_script(std::string& script_path_name,
+                                         int refs_count,
+                                         long page_count,
+                                         int page_size);
   public:
     static MigrateStats sys_migrate_stats;
 
