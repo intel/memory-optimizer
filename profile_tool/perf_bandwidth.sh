@@ -1,5 +1,8 @@
 #!/bin/bash
 
+SETUP_DIR=$(dirname $(readlink -e $0))
+source "$SETUP_DIR/variable_setup.sh"
+
 PERF_BW_EVENT=(
 # CLX only, test only, with pmem support, No it doesn't work..
 # cpu/event=0xbb,umask=0x1,offcore_rsp=0x7BFC007F5,name=total_read/  # pmem local/remote supported
@@ -26,6 +29,7 @@ for i in ${PERF_BW_EVENT[@]}; do
 done
 
 perf_cmd="$perf_cmd $perf_cmd_end"
+echo $perf_cmd
 echo perf_log: $perf_log
 $perf_cmd
 

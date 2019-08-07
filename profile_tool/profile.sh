@@ -1,18 +1,11 @@
 #!/bin/bash
 
+SETUP_DIR=$(dirname $(readlink -e $0))
+source "$SETUP_DIR/variable_setup.sh"
 
-BASE_DIR=$(dirname $(readlink -e $0))
-
-# config variable
-SYS_REFS_YAML_TEMPLATE=$BASE_DIR/sys-refs-template.yaml
-SYS_REFS_YAML=$BASE_DIR/sys-refs.yaml
-
-SYS_REFS=$BASE_DIR/sys-refs/sys-refs
-PERF=$BASE_DIR/pmutools/ocperf.py
 SYS_REFS_RUNTIME=600
 
 COLD_BW_PER_GB_SCRIPT=$BASE_DIR/cold_page_bw_per_gb.sh
-PERF_BW_SCRIPT=$BASE_DIR/perf_bandwidth.sh
 
 # parameter variable
 target_pid=
@@ -27,7 +20,7 @@ perf_pid=
 sys_refs_log=
 sys_refs_progressive_profile_log=
 perf_log=
-
+cold_page_bw_per_gb_log_list=
 
 # parser
 PERF_IPC_PARSER=$BASE_DIR/perf_parser_ipc.rb
@@ -114,6 +107,7 @@ check_parameter() {
     sys_refs_log=sys-refs-$target_pid-$dram_percent.log
     perf_log=perf-$target_pid-$dram_percent.log
     sys_refs_progressive_profile_log=sys-refs-progress-profile-$target_pid.log
+    cold_page_bw_per_gb_log_list=$COLD_PAGE_BW_PER_GB_LOG_LIST-$target_pid.log
 }
 
 prepare_sys_refs() {
@@ -303,6 +297,7 @@ run_cold_page_bw_per_gb()
 {
     echo "Gathering cold pages bandwidth per GB:"
     echo "log: $sys_refs_progressive_profile_log"
+    echo > $cold_page_bw_per_gb_log_list
     stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML -p $COLD_BW_PER_GB_SCRIPT 2>&1 | tee $sys_refs_log
 }
 
