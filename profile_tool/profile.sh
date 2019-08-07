@@ -297,8 +297,8 @@ run_cold_page_bw_per_gb()
 {
     echo "Gathering cold pages bandwidth per GB:"
     echo "log: $sys_refs_progressive_profile_log"
-    echo > $cold_page_bw_per_gb_log_list
-    stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML -p $COLD_BW_PER_GB_SCRIPT 2>&1 | tee $sys_refs_log
+    cat /dev/null > $cold_page_bw_per_gb_log_list
+    stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML -p $COLD_BW_PER_GB_SCRIPT 2>&1 | tee $sys_refs_progressive_profile_log
 }
 
 trap 'on_ctrlc' INT
