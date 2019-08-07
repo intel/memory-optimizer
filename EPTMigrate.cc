@@ -370,7 +370,7 @@ next:
 
   if (!option.progressive_profile.empty()) {
       call_progressive_profile_script(option.progressive_profile,
-                                      parameter[COLD_MIGRATE].cold_threshold,
+                                      parameter[type].cold_threshold,
                                       addr_array_2d[COLD_MIGRATE].size(),
                                       pagetype_size[type]);
       do_interleave_move_pages(type,
