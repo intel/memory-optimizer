@@ -490,15 +490,23 @@ void EPTMigrate::call_progressive_profile_script(std::string& script_path_name,
   } else if (0 == child_pid) {
     const char* cmdline = script_path_name.c_str();
     char buf[128];
+    struct {
+      const char* name;
+      const char* format_str;
+      long value;
+    } env_list[] = {
+      { "REF_COUNT",  "%ld", refs_count },
+      { "PAGE_SIZE",  "%ld", page_size  },
+      { "PAGE_COUNT", "%ld", page_count },
+      { "TARGET_PIDS","%ld", pid        },
+    };
 
-    snprintf(buf, sizeof(buf), "%d", refs_count);
-    setenv("REF_COUNT", buf, true);
-
-    snprintf(buf, sizeof(buf), "%d", page_size);
-    setenv("PAGE_SIZE", buf, true);
-
-    snprintf(buf, sizeof(buf), "%ld", page_count);
-    setenv("PAGE_COUNT", buf, true);
+    for (size_t i = 0; i < sizeof(env_list)/sizeof(env_list[0]); ++i) {
+      snprintf(buf, sizeof(buf),
+               env_list[i].format_str,
+               env_list[i].value);
+      setenv(env_list[i].name, buf, true);
+    }
 
     if (execl(cmdline, cmdline, (char*)NULL) == -1) {
       perror("failed to execl(): ");
