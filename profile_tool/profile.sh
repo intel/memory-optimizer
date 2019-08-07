@@ -27,6 +27,7 @@ PERF_IPC_PARSER=$BASE_DIR/perf_parser_ipc.rb
 PERF_IPC_CALC=$BASE_DIR/perf_calc_ipc.rb
 PERF_BW_PARSER=$BASE_DIR/perf_parser_bw.rb
 SYSREFS_RATIO_PARSER=$BASE_DIR/sysrefs_parser_ratio.rb
+COLD_PAGE_BW_PER_GB_PARSER=$BASE_DIR/bw_per_gb_parser.rb
 
 usage() {
     echo "usage: $0:"
@@ -301,6 +302,14 @@ run_cold_page_bw_per_gb()
     stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML -p $COLD_BW_PER_GB_SCRIPT 2>&1 | tee $sys_refs_progressive_profile_log
 }
 
+parse_cold_page_bw_per_gb()
+{
+    if  [[ ! -z $cold_page_bw_per_gb_log_list ]]; then
+        $COLD_PAGE_BW_PER_GB_PARSER $cold_page_bw_per_gb_log_list
+    fi
+}
+
+
 trap 'on_ctrlc' INT
 
 parse_parameter "$@"
@@ -313,6 +322,7 @@ perf_ipc_before=$(run_perf_ipc 60)
 prepare_sys_refs $target_pid
 
 run_cold_page_bw_per_gb
+parse_cold_page_bw_per_gb
 
 run_sys_refs
 wait_pid_timeout $sys_refs_pid $SYS_REFS_RUNTIME
