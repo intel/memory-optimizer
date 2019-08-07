@@ -6,9 +6,13 @@ BASE_DIR=$(dirname $(readlink -e $0))
 # config variable
 SYS_REFS_YAML_TEMPLATE=$BASE_DIR/sys-refs-template.yaml
 SYS_REFS_YAML=$BASE_DIR/sys-refs.yaml
+
 SYS_REFS=$BASE_DIR/sys-refs/sys-refs
 PERF=$BASE_DIR/pmutools/ocperf.py
 SYS_REFS_RUNTIME=600
+
+COLD_BW_PER_GB_SCRIPT=$BASE_DIR/cold_page_bw_per_gb.sh
+PERF_BW_SCRIPT=$BASE_DIR/perf_bandwidth.sh
 
 # parameter variable
 target_pid=
@@ -21,6 +25,7 @@ run_time=1200
 sys_refs_pid=
 perf_pid=
 sys_refs_log=
+sys_refs_progressive_profile_log=
 perf_log=
 
 
@@ -108,6 +113,7 @@ check_parameter() {
 
     sys_refs_log=sys-refs-$target_pid-$dram_percent.log
     perf_log=perf-$target_pid-$dram_percent.log
+    sys_refs_progressive_profile_log=sys-refs-progress-profile-$target_pid.log
 }
 
 prepare_sys_refs() {
@@ -146,29 +152,6 @@ run_sys_refs() {
     echo "sys-refs pid: $sys_refs_pid"
 }
 
-run_perf() {
-    local perf_cmd="$PERF stat -p $target_pid -o $perf_log "
-    local perf_cmd_end=" -- sleep $run_time"
-    local perf_event=(
-        # CLX only, test only, with pmem support, No it doesn't work..
-        # cpu/event=0xbb,umask=0x1,offcore_rsp=0x7BFC007F5,name=total_read/  # pmem local/remote supported
-        # cpu/event=0xbb,umask=0x1,offcore_rsp=0x7BB8007F5,name=remote_read_COLD/
-        # cpu/event=0xbb,umask=0x1,offcore_rsp=0x7844007F5,name=local_read_HOT/
-        # SLX only, test only
-        cpu/event=0xbb,umask=0x1,offcore_rsp=0x7bc0007f5,name=total_read/
-        cpu/event=0xbb,umask=0x1,offcore_rsp=0x7b80007f5,name=remote_read_COLD/
-        cpu/event=0xbb,umask=0x1,offcore_rsp=0x7840007f5,name=local_read_HOT/
-    )
-
-    #TODO: perf list to set right event in perf_event
-
-    for i in ${perf_event[@]}; do
-        perf_cmd="$perf_cmd -e $i "
-    done
-    perf_cmd="$perf_cmd $perf_cmd_end"
-    echo perf_log: $perf_log
-    $perf_cmd
-}
 
 parse_perf_log() {
     if [[ ! -f $perf_log ]]; then
@@ -276,6 +259,11 @@ kill_perf()
     fi
 }
 
+run_perf_bw()
+{
+    $PERF_BW_SCRIPT $PERF $target_pid $perf_log $run_time
+}
+
 run_perf_ipc()
 {
     local ipc_runtime=$1
@@ -311,6 +299,13 @@ calc_ipc_drop()
   $PERF_IPC_CALC $ipc_before $ipc_after
 }
 
+run_cold_page_bw_per_gb()
+{
+    echo "Gathering cold pages bandwidth per GB:"
+    echo "log: $sys_refs_progressive_profile_log"
+    stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML -p $COLD_BW_PER_GB_SCRIPT 2>&1 | tee $sys_refs_log
+}
+
 trap 'on_ctrlc' INT
 
 parse_parameter "$@"
@@ -321,12 +316,14 @@ echo "Gathering basline IPC data (60 seconds)"
 perf_ipc_before=$(run_perf_ipc 60)
 
 prepare_sys_refs $target_pid
+
+run_cold_page_bw_per_gb
+
 run_sys_refs
-
 wait_pid_timeout $sys_refs_pid $SYS_REFS_RUNTIME
-
 kill_sys_refs
-run_perf
+
+run_perf_bw
 
 echo "Gathering IPC data (60 seconds)"
 perf_ipc_after=$(run_perf_ipc 60)
