@@ -1,0 +1,16 @@
+options:
+  dump_options: true
+  # interval: 10
+  max_threads: 1
+  exit_on_converged: true
+  anti_thrash_threshold: 1
+  one_period_migration_size: 1048576
+  nr_scans: 10
+  nr_scan_rounds: 2
+  scan_period: 5
+  #nr_scans: 5
+  #nr_scan_rounds: 1
+  #scan_period: 120
+  debug_move_pages: 1
+  # split_rss_size: 9G
+  # bandwidth_mbps: 200    
