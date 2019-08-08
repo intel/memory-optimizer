@@ -289,9 +289,9 @@ on_ctrlc()
 
 calc_ipc_drop()
 {
-  local ipc_before=$1
-  local ipc_after=$2
-  $PERF_IPC_CALC $ipc_before $ipc_after
+    local ipc_before=$1
+    local ipc_after=$2
+    $PERF_IPC_CALC $ipc_before $ipc_after
 }
 
 run_cold_page_bw_per_gb()
@@ -299,7 +299,7 @@ run_cold_page_bw_per_gb()
     echo "Gathering cold pages bandwidth per GB:"
     echo "log: $sys_refs_progressive_profile_log"
     cat /dev/null > $cold_page_bw_per_gb_log_list
-    stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML -p $COLD_BW_PER_GB_SCRIPT 2>&1 | tee $sys_refs_progressive_profile_log
+    stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML -p $COLD_BW_PER_GB_SCRIPT > $sys_refs_progressive_profile_log 2>&1
 }
 
 parse_cold_page_bw_per_gb()
@@ -322,7 +322,6 @@ perf_ipc_before=$(run_perf_ipc 60)
 prepare_sys_refs $target_pid
 
 run_cold_page_bw_per_gb
-parse_cold_page_bw_per_gb
 
 run_sys_refs
 wait_pid_timeout $sys_refs_pid $SYS_REFS_RUNTIME
@@ -334,6 +333,7 @@ echo "Gathering IPC data (60 seconds)"
 perf_ipc_after=$(run_perf_ipc 60)
 
 parse_perf_log
+parse_cold_page_bw_per_gb
 parse_sys_refs_log
 output_perf_ipc
 
