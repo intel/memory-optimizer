@@ -1,10 +1,25 @@
 #!/bin/ruby
 
 $bw_per_gb_by_page_type = {}
-$failed_count = 0
-# hit count * 64 = bytes, then convert to MB/s
+
+LLC_CACHE_LINE_SIZE = 64
 def byte_to_MBs(hit_count, time)
-  hit_count * 64 / (1000000.0 * time)
+  hit_count * LLC_CACHE_LINE_SIZE / (1000000.0 * time)
+end
+
+def byte_to_KB(byte)
+  byte / 1024
+end
+
+def format_number(number)
+  str = number.to_s
+  next_str = nil
+  while (true)
+    next_str = str.gsub(/(\d+)(\d\d\d)/, '\1,\2')
+    break if 0 == (str <=> next_str)
+    str = next_str
+  end
+  str
 end
 
 def parse_one_file(file_name)
@@ -41,8 +56,13 @@ def parse_one_file(file_name)
   end
 
   remote_read_cold = byte_to_MBs(remote_read_cold, time)
-  bw_per_gb = remote_read_cold / (page_count * page_size)
-  {:state => state, :ref_count => ref_count, :page_size => page_size, :bw_per_gb => bw_per_gb}
+  total_byte = page_count * page_size
+  bw_per_gb = 1000000000 * remote_read_cold / total_byte
+
+  {:state => state, :ref_count => ref_count,
+    :page_size => page_size, :bw_per_gb => bw_per_gb,
+    :total_byte => total_byte}
+
 end
 
 def save_result(hash_table, result)
@@ -50,6 +70,56 @@ def save_result(hash_table, result)
   ref_index = result[:ref_count]
   hash_table[key] = [] unless hash_table.has_key? key
   hash_table[key][ref_index] = result
+end
+
+def output_bw_per_gb(bw_per_gb_result)
+  failed_count = 0
+
+  bw_per_gb_all = 0
+  total_all = 0
+  count_all = 0
+
+  bw_per_gb_result.each_pair do |page_type, result|
+    print "\nBW-per-GB for page size %dk:\n" % [byte_to_KB(page_type)]
+    print "Ref count    MB/s-per-GB    Memory size(KB)\n"
+    print "==========================================\n"
+
+    bw_per_gb_page_type = 0
+    total_page_type = 0
+    count_page_type = 0
+
+    result.reverse.each do |one_result|
+      if one_result[:state] == :success
+        bw_per_gb_page_type += one_result[:bw_per_gb]
+        total_page_type += one_result[:total_byte]
+        count_page_type += 1
+
+        print "%9d %14.2f %17s\n" \
+              % [ one_result[:ref_count], one_result[:bw_per_gb], \
+                  format_number(byte_to_KB(one_result[:total_byte])) ]
+      else
+        failed_count = failed_count + 1
+      end
+    end
+
+    bw_per_gb_all += bw_per_gb_page_type
+    count_all += count_page_type
+    total_all += total_page_type
+
+    bw_per_gb_page_type /= count_page_type
+    total_page_type = byte_to_KB(total_page_type)
+    print "Average BW-per-GB for page size %dk: %.2f\n" \
+          % [ byte_to_KB(page_type), bw_per_gb_page_type ]
+    print "Total size(KB) for page size %dk:    %s\n" \
+          % [ byte_to_KB(page_type), format_number(total_page_type) ]
+  end
+
+  bw_per_gb_all /= count_all
+  total_all = byte_to_KB(total_all)
+  print "\nAverage BW-per-GB for all: %.2f\n" % [ bw_per_gb_all ]
+  print "Total size(KB) for all:    %s\n" % [ format_number(total_all) ]
+  puts "failed count: #{failed_count}" if failed_count > 0
+
 end
 
 # Start here
@@ -64,15 +134,4 @@ rescue StandardError => e
   puts "Warning: #{e.message}"
 end
 
-puts "Cold pages BW per GB:"
-$bw_per_gb_by_page_type.each_pair do |page_type, result|
-  puts "  Page size: #{page_type}:"
-  result.each do |one_result|
-    if one_result[:state] == :success
-      puts "    ref_count[#{one_result[:ref_count]}]: #{one_result[:bw_per_gb]}"
-    else
-      $failed_count = $failed_count + 1
-    end
-  end
-end
-puts "    failed count: #{$failed_count}"
+output_bw_per_gb($bw_per_gb_by_page_type)
