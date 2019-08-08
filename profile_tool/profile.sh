@@ -77,7 +77,7 @@ parse_parameter() {
 
 check_parameter() {
     local will_exit=0
-
+    local log_dir=
     if [[ -z $hot_node ]]; then
         echo "Please use -h to indicate NUMA node for HOT pages"
         will_exit=1
@@ -105,10 +105,17 @@ check_parameter() {
     echo "  hot node = $hot_node"
     echo "  cold node = $cold_node"
 
-    sys_refs_log=sys-refs-$target_pid-$dram_percent.log
-    perf_log=perf-$target_pid-$dram_percent.log
-    sys_refs_progressive_profile_log=sys-refs-progress-profile-$target_pid.log
-    cold_page_bw_per_gb_log_list=$COLD_PAGE_BW_PER_GB_LOG_LIST-$target_pid.log
+    log_dir=$(get_log_dir $target_pid)
+    sys_refs_log=$log_dir/sys-refs-$target_pid-$dram_percent.log
+    perf_log=$log_dir/perf-$target_pid-$dram_percent.log
+    sys_refs_progressive_profile_log=$log_dir/sys-refs-progress-profile-$target_pid.log
+    cold_page_bw_per_gb_log_list=$log_dir/$COLD_PAGE_BW_PER_GB_LOG_LIST-$target_pid.log
+
+    if [[ -d $log_dir ]]; then
+        mv $log_dir $log_dir.old
+    fi
+    mkdir -p $log_dir
+
 }
 
 prepare_sys_refs() {

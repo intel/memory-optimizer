@@ -13,5 +13,10 @@ PERF=perf
 
 PERF_BW_SCRIPT=$BASE_DIR/perf_bandwidth.sh
 
-COLD_PAGE_BW_PER_GB_LOG_LIST=$BASE_DIR/cold-page-bw-per-gb-result-list
+COLD_PAGE_BW_PER_GB_LOG_LIST=cold-page-bw-per-gb-result-list
 
+get_log_dir()
+{
+    local pid=$1
+    echo $BASE_DIR/log/pid_$pid
+}
