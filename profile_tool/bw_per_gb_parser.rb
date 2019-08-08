@@ -80,21 +80,22 @@ def output_bw_per_gb(bw_per_gb_result)
   count_all = 0
 
   bw_per_gb_result.each_pair do |page_type, result|
-    print "\nBW-per-GB for page size %dk:\n" % [byte_to_KB(page_type)]
-    print "Ref count    MB/s-per-GB    Memory size(KB)\n"
-    print "==========================================\n"
+    print "\n%dK-page histogram:\n" % [byte_to_KB(page_type)]
+    puts "ref_count    MBps-per-GB         size(KB)\n"
+    puts "==========================================\n"
 
     bw_per_gb_page_type = 0
     total_page_type = 0
     count_page_type = 0
 
     result.reverse.each do |one_result|
+      next if one_result == nil
       if one_result[:state] == :success
         bw_per_gb_page_type += one_result[:bw_per_gb]
         total_page_type += one_result[:total_byte]
         count_page_type += 1
 
-        print "%9d %14.2f %17s\n" \
+        print "%9d %14.2f %16s\n" \
               % [ one_result[:ref_count], one_result[:bw_per_gb], \
                   format_number(byte_to_KB(one_result[:total_byte])) ]
       else
@@ -102,22 +103,23 @@ def output_bw_per_gb(bw_per_gb_result)
       end
     end
 
+    next if 0 == count_page_type
     bw_per_gb_all += bw_per_gb_page_type
     count_all += count_page_type
     total_all += total_page_type
 
     bw_per_gb_page_type /= count_page_type
     total_page_type = byte_to_KB(total_page_type)
-    print "Average BW-per-GB for page size %dk: %.2f\n" \
+    print "%dK-page average BW-per-GB: %.2f\n" \
           % [ byte_to_KB(page_type), bw_per_gb_page_type ]
-    print "Total size(KB) for page size %dk:    %s\n" \
+    print "%dK-page total size:        %s KB\n" \
           % [ byte_to_KB(page_type), format_number(total_page_type) ]
   end
 
   bw_per_gb_all /= count_all
   total_all = byte_to_KB(total_all)
-  print "\nAverage BW-per-GB for all: %.2f\n" % [ bw_per_gb_all ]
-  print "Total size(KB) for all:    %s\n" % [ format_number(total_all) ]
+  print "\nAll average BW-per-GB: %.2f\n" % [ bw_per_gb_all ]
+  print "All total size:        %s KB\n" % [ format_number(total_all) ]
   puts "failed count: #{failed_count}" if failed_count > 0
 
 end
