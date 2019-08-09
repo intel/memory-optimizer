@@ -93,6 +93,7 @@ class GlobalScan
     void init_migration_parameter(EPTMigratePtr range, ProcIdlePageType type);
     void calc_memory_size();
     bool in_adjust_ratio_stage();
+    bool should_target_aep_young();
   private:
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;

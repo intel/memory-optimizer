@@ -560,22 +560,24 @@ void GlobalScan::update_interval(bool finished)
 void GlobalScan::update_interval()
 {
   unsigned long target_bytes;
+  unsigned long young;
   if (option.interval)
     return;
 
   if (0 == nr_total_scans)
     return;
 
-  if (option.progressive_profile.empty()) {
+  if (should_target_aep_young()) {
     target_bytes = option.one_period_migration_size * 1024UL
                    * option.interval_scale / 100;
+    young = pmem_young_bytes;
   } else {
     target_bytes = all_bytes * option.dram_percent / 100;
+    young = young_bytes;
   }
 
   intervaler.set_target_y(target_bytes);
-
-  intervaler.add_pair(real_interval, young_bytes);
+  intervaler.add_pair(real_interval, young);
   interval = intervaler.estimate_x();
   if (interval > 10)
     interval = 10;
@@ -692,6 +694,17 @@ bool GlobalScan::in_adjust_ratio_stage()
 
   error = global_dram_ratio - option.dram_percent;
   return error ? true : false;
+}
+
+bool GlobalScan::should_target_aep_young()
+{
+  if (!option.progressive_profile.empty())
+    return false;
+
+  if (global_dram_ratio < 0 || global_dram_ratio >= 90)
+    return false;
+
+  return true;
 }
 
  void GlobalScan::calc_progressive_profile_parameter(ref_location from_type, int page_refs)
