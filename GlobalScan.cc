@@ -368,6 +368,7 @@ void GlobalScan::walk_once(int scans)
 
   young_bytes = 0;
   top_bytes = 0;
+  pmem_young_bytes = 0;
   all_bytes = 0;
 
   for (auto& m: idle_ranges) {
@@ -389,7 +390,9 @@ void GlobalScan::walk_once(int scans)
 
     if (1 == scans)
       job.migration->get_memory_type();
-    job.migration->gather_walk_stats(young_bytes, top_bytes, all_bytes);
+    job.migration->gather_walk_stats(young_bytes,
+                                     pmem_young_bytes,
+                                     top_bytes, all_bytes);
   }
 
   update_dram_free_anon_bytes();

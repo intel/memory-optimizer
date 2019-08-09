@@ -23,6 +23,7 @@ class EPTScan: public ProcIdlePages
     void prepare_walks(int max_walks);
     int walk_multi(int nr, float interval);
     void gather_walk_stats(unsigned long& young_bytes,
+                           unsigned long& pmem_young_bytes,
                            unsigned long& top_bytes,
                            unsigned long& all_bytes);
 

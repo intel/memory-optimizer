@@ -24,19 +24,23 @@ bool EPTScan::should_stop()
     return false;
 
   unsigned long young_bytes = 0;
+  unsigned long pmem_young_bytes = 0;
   unsigned long top_bytes = 0;
   unsigned long all_bytes = 0;
 
-  gather_walk_stats(young_bytes, top_bytes, all_bytes);
+  gather_walk_stats(young_bytes, pmem_young_bytes,
+                    top_bytes, all_bytes);
 
   return 2 * 100 * top_bytes < option.dram_percent * all_bytes;
 }
 
 void EPTScan::gather_walk_stats(unsigned long& young_bytes,
-                                      unsigned long& top_bytes,
-                                      unsigned long& all_bytes)
+                                unsigned long& pmem_young_bytes,
+                                unsigned long& top_bytes,
+                                unsigned long& all_bytes)
 {
   unsigned long y = 0;
+  unsigned long py = 0;
   unsigned long t = 0;
   unsigned long a = 0;
 
@@ -47,6 +51,7 @@ void EPTScan::gather_walk_stats(unsigned long& young_bytes,
 
   for (auto& prc: pagetype_refs) {
     y += prc.page_refs.get_young_bytes();
+    py += prc.page_refs.get_young_bytes(AddrSequence::LOC_PMEM);
     t += prc.page_refs.get_top_bytes();
     a += prc.page_refs.size() << prc.page_refs.get_pageshift();
   }
@@ -55,6 +60,7 @@ void EPTScan::gather_walk_stats(unsigned long& young_bytes,
           pid, va_start, va_end, t, y, a);
 
   young_bytes += y;
+  pmem_young_bytes += py;
   top_bytes += t;
   all_bytes += a;
 }

@@ -103,6 +103,7 @@ class GlobalScan
     float real_interval;
     struct timeval last_scan_start;
     unsigned long young_bytes;
+    unsigned long pmem_young_bytes;
     unsigned long top_bytes;
     unsigned long all_bytes;
     unsigned long dram_free_anon_bytes;
