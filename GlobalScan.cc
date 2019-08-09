@@ -721,11 +721,6 @@ bool GlobalScan::in_adjust_ratio_stage()
       init_migration_parameter(range, type);
       move_count = refs_count[from_type][page_refs];
 
-      if (!move_count) {
-        range->parameter[type].disable("No cold pages");
-        continue;
-      }
-
       if (REF_LOC_DRAM == from_type) {
         range->parameter[type].nr_demote = move_count;
         range->parameter[type].demote_remain = move_count;
