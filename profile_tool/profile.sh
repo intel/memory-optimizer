@@ -232,14 +232,15 @@ wait_pid_timeout()
         return 0
     fi
 
+    echo "Waitting for $wait_pid (Maximum $timeout seconds)"
     for i in $(seq 1 $timeout); do
         if [[ ! -d /proc/$wait_pid ]]; then
             break
         fi
         sleep 1
-        printf "\rWaitting for $wait_pid ($i/$timeout seconds)"
     done
-    printf "\n"
+    echo "Finished Wait for $wait_pid ($i/$timeout seconds)"
+    echo "\n"
     return 0
 }
 
