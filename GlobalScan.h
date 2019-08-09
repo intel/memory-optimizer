@@ -132,7 +132,7 @@ class GlobalScan
     long global_total_pmem;
     long global_total_dram;
     long global_total_mem;
-    long global_ratio;
+    long global_dram_ratio;
 };
 
 #endif

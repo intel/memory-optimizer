@@ -674,13 +674,13 @@ void GlobalScan::calc_memory_size()
     global_total_dram += total_dram[type];
   }
   global_total_mem = global_total_pmem + global_total_dram;
-  global_ratio = (100.0 * global_total_dram) / global_total_mem;
+  global_dram_ratio = (100.0 * global_total_dram) / global_total_mem;
 
   printf("global memory size state: total: %ld KB dram: %ld KB pmem: %ld KB\n"
          "ratio: %ld target ratio: %d\n",
          global_total_mem,
          global_total_dram, global_total_pmem,
-         global_ratio, option.dram_percent);
+         global_dram_ratio, option.dram_percent);
 }
 
 bool GlobalScan::in_adjust_ratio_stage()
@@ -690,7 +690,7 @@ bool GlobalScan::in_adjust_ratio_stage()
   if (!option.dram_percent)
     return false;
 
-  error = global_ratio - option.dram_percent;
+  error = global_dram_ratio - option.dram_percent;
   return error ? true : false;
 }
 
@@ -991,7 +991,7 @@ bool GlobalScan::exit_on_converged()
   }
 
   if (in_adjust_ratio_stage()) {
-    printf("exit_on_converged: in ratio adjustment stage: %ld%%\n", global_ratio);
+    printf("exit_on_converged: in ratio adjustment stage: %ld%%\n", global_dram_ratio);
     return false;
   }
 
