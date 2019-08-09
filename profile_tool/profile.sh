@@ -312,7 +312,7 @@ run_cold_page_bw_per_gb()
 parse_cold_page_bw_per_gb()
 {
     if  [[ ! -z $cold_page_bw_per_gb_log_list ]]; then
-        $COLD_PAGE_BW_PER_GB_PARSER $cold_page_bw_per_gb_log_list
+        $COLD_PAGE_BW_PER_GB_PARSER $(get_log_dir $target_pid) $cold_page_bw_per_gb_log_list
     fi
 }
 

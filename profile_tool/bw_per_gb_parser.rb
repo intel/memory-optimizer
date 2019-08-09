@@ -1,6 +1,9 @@
 #!/bin/ruby
+require 'fileutils'
+require_relative '../utility'
 
 $bw_per_gb_by_page_type = {}
+$log_dir = nil
 
 LLC_CACHE_LINE_SIZE = 64
 def byte_to_MBs(hit_count, time)
@@ -124,9 +127,51 @@ def output_bw_per_gb(bw_per_gb_result)
 
 end
 
+def generate_img(bw_per_gb_result, save_dir)
+  work_dir = FileUtils.getwd()
+
+  bw_per_gb_result.each_pair do |page_type, result|
+
+    raw_file_name = "bw_per_gb_raw.log"
+    begin
+      raw_file = File.new(raw_file_name, "w+")
+    rescue StandardError => e
+      puts "WARNING: generate_img: #{e.message}"
+      next
+    end
+
+    result.reverse.each do |one_result|
+      next if one_result == nil
+      if one_result[:state] == :success
+        new_line = one_result.values.join(' ')
+        new_line += "\n"
+        raw_file.write(new_line)
+      end
+    end
+    raw_file.close
+
+    gnuplot_proc = {
+        :cmd => work_dir + "/gnuplot_bw_per_gb.sh",
+        :out => work_dir + "/gnuplot_bw_per_gb_#{page_type}.out",
+        :err => work_dir + "/gnuplot_bw_per_gb_#{page_type}.err",
+        :cwd => work_dir,
+        :wait => true,
+        :pid => nil,
+    }
+    new_proc(gnuplot_proc)
+    if gnuplot_proc[:pid] then
+      FileUtils.mv(work_dir + "/bw-per-gb-histogram.png",
+                   save_dir + "/bw-per-gb-histogram-#{byte_to_KB(page_type)}K.png")
+    else
+      puts "Warning: Failed to generate BW-per-GB for page type: #{page_type}"
+    end
+  end
+end
+
 # Start here
 begin
-  file_name = ARGV[0]
+  $log_dir = ARGV[0]
+  file_name = ARGV[1]
   list_file = File.new(file_name, "r")
   list_file.each do |line|
     result = parse_one_file(line.chomp)
@@ -135,5 +180,9 @@ begin
 rescue StandardError => e
   puts "Warning: #{e.message}"
 end
-
-output_bw_per_gb($bw_per_gb_by_page_type)
+if (not $bw_per_gb_by_page_type.empty?)
+  output_bw_per_gb($bw_per_gb_by_page_type)
+  generate_img($bw_per_gb_by_page_type, $log_dir)
+else
+  puts "WARNING: No bw-per-gb data."
+end
