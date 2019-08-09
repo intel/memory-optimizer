@@ -64,8 +64,8 @@ class AddrSequence
     bool empty() const  { return 0 == addr_size; }
     unsigned long get_top_bytes() const { return top_bytes[LOC_DRAM] + top_bytes[LOC_PMEM]; }
     unsigned long get_young_bytes() const { return young_bytes[LOC_DRAM] + young_bytes[LOC_PMEM]; }
-    unsigned long get_top_bytes(int location) const { return top_bytes[location] }
-    unsigned long get_young_bytes(int location) const { return young_bytes[location] }
+    unsigned long get_top_bytes(int location) const { return top_bytes[location]; }
+    unsigned long get_young_bytes(int location) const { return young_bytes[location]; }
     int get_pageshift() const { return pageshift; }
 
     void set_pageshift(int shift);
