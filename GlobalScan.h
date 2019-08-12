@@ -134,10 +134,10 @@ class GlobalScan
     long total_dram[MAX_ACCESSED];
     long total_mem[MAX_ACCESSED];
 
-    long global_total_pmem;
-    long global_total_dram;
-    long global_total_mem;
-    long global_dram_ratio;
+    long global_total_pmem = 0;
+    long global_total_dram = 0;
+    long global_total_mem = 0;
+    long global_dram_ratio = 0;
 };
 
 #endif

@@ -702,7 +702,7 @@ bool GlobalScan::should_target_aep_young()
   if (!option.progressive_profile.empty())
     return false;
 
-  if (global_dram_ratio < 0 || global_dram_ratio >= 90)
+  if (global_dram_ratio <= 0 || global_dram_ratio >= 90)
     return false;
 
   return true;
