@@ -94,6 +94,9 @@ class GlobalScan
     void calc_memory_size();
     bool in_adjust_ratio_stage();
     bool should_target_aep_young();
+    void save_idle_ranges_last() {
+      idle_ranges_last = idle_ranges;
+    }
   private:
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;
@@ -113,6 +116,7 @@ class GlobalScan
 
     ProcessCollection process_collection;
     std::vector<std::shared_ptr<EPTMigrate>> idle_ranges;
+    std::vector<std::shared_ptr<EPTMigrate>> idle_ranges_last;
     std::vector<std::thread> worker_threads;
     Queue<Job> work_queue;
     Queue<Job> done_queue;

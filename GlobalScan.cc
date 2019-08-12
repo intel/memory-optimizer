@@ -98,6 +98,7 @@ void GlobalScan::main_loop()
       calc_migrate_parameter();
       migrate();
       count_migrate_stats();
+      save_idle_ranges_last();
     } else {
       progressive_profile();
       break;
