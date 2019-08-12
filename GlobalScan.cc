@@ -98,6 +98,7 @@ void GlobalScan::main_loop()
       calc_migrate_parameter();
       migrate();
       count_migrate_stats();
+      calc_hotness_drafting();
       save_idle_ranges_last();
     } else {
       progressive_profile();
@@ -684,6 +685,42 @@ void GlobalScan::calc_memory_size()
          global_total_mem,
          global_total_dram, global_total_pmem,
          global_dram_ratio, option.dram_percent);
+}
+
+void GlobalScan::calc_hotness_drafting()
+{
+  bool found;
+  size_t i, j;
+
+  if (idle_ranges_last.empty())
+    return;
+
+  if (!option.split_rss_size.empty()) {
+    printf("WARNING: hotness drafting calculation can NOT work with split_rss_size option,\n"
+           "please remove the option and try again.\n");
+    return;
+  }
+
+  for (i = 0; i < idle_ranges_last.size(); ++i) {
+    pid_t pid_last = idle_ranges_last[i]->get_pid();
+
+    for (found = false, j = 0; j < idle_ranges.size(); ++j) {
+      if (idle_ranges[j]->get_pid() == pid_last) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      printf("Skip hotness drafting calculation for pid %d\n", pid_last);
+      continue;
+    }
+
+    idle_ranges_last[i]->normalize_page_hotness();
+    idle_ranges[j]->normalize_page_hotness();
+  }
+
+  return;
 }
 
 bool GlobalScan::in_adjust_ratio_stage()
