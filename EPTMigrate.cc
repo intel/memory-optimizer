@@ -514,3 +514,45 @@ void EPTMigrate::call_progressive_profile_script(std::string& script_path_name,
     }
   }
 }
+
+int EPTMigrate::normalize_page_hotness()
+{
+  int ret = 0;
+
+  for (int i = 0; i < MAX_ACCESSED; ++i) {
+    AddrSequence& addr_seq = pagetype_refs[i].page_refs;
+    migrate_parameter& migrate_arg = parameter[i];
+
+    if (addr_seq.size() == 0)
+      continue;
+
+    ret = normalize_addr_sequence(addr_seq,
+                                  migrate_arg.hot_threshold,
+                                  migrate_arg.hot_threshold_max);
+    if (ret)
+      break;
+  }
+
+  return ret;
+}
+
+int EPTMigrate::normalize_addr_sequence(AddrSequence& addr_seq, long hot_threshold,
+                                        long hot_threshold_max)
+{
+  int rc;
+  unsigned long addr;
+  int8_t unused_nid;
+  uint8_t count, new_payload;
+
+  addr_seq.prepare_update();
+
+  rc = addr_seq.get_first(addr, count, unused_nid);
+  while (!rc) {
+    new_payload = (count >= hot_threshold
+                   && count <= hot_threshold_max) ? 1 : 0;
+    addr_seq.set_payload(addr, new_payload);
+    rc = addr_seq.get_next(addr, count, unused_nid);
+  }
+
+  return 0;
+}
