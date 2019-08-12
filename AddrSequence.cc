@@ -79,9 +79,19 @@ int AddrSequence::inc_payload(unsigned long addr, int n)
   if (in_append_period())
     ret_value = append_addr(addr, n);
   else
-    ret_value = update_addr(addr, n);
+    ret_value = update_addr(addr, n, true);
 
   return ret_value;
+}
+
+int AddrSequence::set_payload(unsigned long addr, int n)
+{
+  // set the payload to a direct val is NOT
+  // allowed in append period
+  if (in_append_period())
+    return -1;
+
+  return update_addr(addr, n, false);
 }
 
 int AddrSequence::update_nodeid(unsigned long addr, int8_t nid,
@@ -122,7 +132,8 @@ int AddrSequence::update_nodeid(unsigned long addr, int8_t nid,
   return rc;
 }
 
-int AddrSequence::update_addr(unsigned long addr, int n)
+int AddrSequence::update_addr(unsigned long addr, int n,
+                              bool is_inc_payload)
 {
   int rc = 0;
   unsigned long next_addr;
@@ -136,7 +147,7 @@ int AddrSequence::update_addr(unsigned long addr, int n)
           break;
 
       if (next_addr == addr) {
-          do_walk_update_payload(find_iter, addr, n);
+          do_walk_update_payload(find_iter, addr, n, is_inc_payload);
           return 0;
       } else if (next_addr > addr) {
           return ADDR_NOT_FOUND;
@@ -233,14 +244,16 @@ void AddrSequence::do_walk_move_next(walk_iterator& iter)
 }
 
 void AddrSequence::do_walk_update_payload(walk_iterator& iter,
-                                          unsigned addr, uint8_t payload)
+                                          unsigned addr, uint8_t payload,
+                                          bool is_inc_payload)
 {
-  // payload == 0: ignore
-  if (!payload)
-    return;
-
-  // payload == 1: increase
-  ++iter.cur_delta_ptr[iter.delta_index].payload;
+  if (is_inc_payload) {
+    if (!payload)
+      return;
+    ++iter.cur_delta_ptr[iter.delta_index].payload;
+  } else {
+    iter.cur_delta_ptr[iter.delta_index].payload = payload;
+  }
 
   update_addr_location_count(iter);
 }

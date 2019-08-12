@@ -89,6 +89,7 @@ class AddrSequence
     // will do ++payload
     // will ignore addresses not already there
     int inc_payload(unsigned long addr, int n);
+    int set_payload(unsigned long addr, int n);
     int update_nodeid(unsigned long addr, int8_t nid, int8_t location);
     int smooth_payloads();
 
@@ -116,7 +117,7 @@ class AddrSequence
     };
 
     int append_addr(unsigned long addr, int n);
-    int update_addr(unsigned long addr, int n);
+    int update_addr(unsigned long addr, int n, bool is_inc_payload);
 
     int create_cluster(unsigned long addr, int n);
     AddrCluster new_cluster(unsigned long addr, void* buffer);
@@ -146,7 +147,8 @@ class AddrSequence
                  unsigned long& addr, uint8_t& payload, int8_t& nid);
     void do_walk_move_next(walk_iterator& iter);
     void do_walk_update_payload(walk_iterator& iter,
-                                unsigned addr, uint8_t payload);
+                                unsigned addr, uint8_t payload,
+                                bool is_inc_payload);
     void do_walk_update_nid(walk_iterator& iter,
                             unsigned addr,
                             int8_t nid, int8_t location);
