@@ -22,6 +22,7 @@ sys_refs_progressive_profile_log=
 perf_log=
 cold_page_bw_per_gb_log_list=
 target_pid_cpu_affinity=
+start_timestamp=
 
 # parser
 PERF_IPC_PARSER=$BASE_DIR/perf_parser_ipc.rb
@@ -168,9 +169,8 @@ parse_perf_log() {
 
 parse_sys_refs_log() {
 
-    if [[ ! -f $sys_refs_log ]]; then
-        return 0;
-    fi
+    [[ -f $sys_refs_log ]] || return 0;
+
 
     echo ""
     $SYSREFS_RATIO_PARSER < $sys_refs_log
@@ -190,19 +190,15 @@ cpu_to_node() {
 
 node_to_cpu() {
     local node=$1
-    echo $(numactl -H | grep "node $node cpus:" | cut -f2 -d: | sed -e "s/^ //g" -e "s/ /,/g")
+    numactl -H | grep "node $node cpus:" | sed -e "s/.*: //g" -e "s/ /,/g"
 }
 
 hardware_detect() {
     local running_cpu=
 
     # skip if user provided -h or -c
-    if [[ ! -z $hot_node ]]; then
-        return 0
-    fi
-    if [[ ! -z $cold_node ]]; then
-        return 0
-    fi
+    [[ -z $hot_node ]] || return 0
+    [[ -z $cold_node ]] || return 0
 
     running_cpu=$(ps -o psr $target_pid | tail -n +2)
     cpu_to_node $running_cpu
@@ -228,9 +224,7 @@ wait_pid_timeout()
     local wait_pid=$1
     local timeout=$2
 
-    if [[ -z $wait_pid ]]; then
-        return 0
-    fi
+    [[ -n $wait_pid ]] || return 0
 
     # no timeout ? so let's keep wattting.
     if [[ -z $timeout ]]; then
@@ -326,9 +320,7 @@ parse_cold_page_bw_per_gb()
 
 save_pid_cpu_affinity()
 {
-    if [[ -z $target_pid ]]; then
-        return
-    fi
+    [[ -n $target_pid ]] || return
 
     target_pid_cpu_affinity=$(taskset -p $target_pid | cut -f2 -d: | sed -e "s/^ //g")
 }
@@ -339,13 +331,9 @@ bind_pid_cpu_affinity()
     local pid=$2
     local new_cpu_range=
 
-    if [[ -z $target_node ]]; then
-        return
-    fi
+    [[ -n $target_node ]] || return
+    [[ -n $pid ]] || return
 
-    if [[ -z $pid ]]; then
-        return
-    fi
 
     new_cpu_range=$(node_to_cpu $target_node)
     if [[ -z $new_cpu_range ]]; then
@@ -358,19 +346,23 @@ bind_pid_cpu_affinity()
 
 restore_pid_cpu_affinity()
 {
-    if [[ -z $target_pid ]]; then
-        return
-    fi
-
-    if [[ -z $target_pid_cpu_affinity ]]; then
-        return
-    fi
+    [[ -n $target_pid ]] || return
+    [[ -n $target_pid_cpu_affinity ]] || return
 
     taskset -p $target_pid_cpu_affinity $target_pid
 }
 
+mv_log_dir()
+{
+    local log_dir=$(get_log_dir $target_pid)
+    if [[ -d $log_dir ]]; then
+        mv $log_dir $log_dir_$start_timestamp
+    fi
+}
+
 trap 'on_ctrlc' INT
 
+start_timestamp=$(date +"%F-%H-%M-%S")
 parse_parameter "$@"
 hardware_detect
 check_parameter
