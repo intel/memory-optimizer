@@ -21,6 +21,7 @@ sys_refs_log=
 sys_refs_progressive_profile_log=
 perf_log=
 cold_page_bw_per_gb_log_list=
+target_pid_cpu_affinity=
 
 # parser
 PERF_IPC_PARSER=$BASE_DIR/perf_parser_ipc.rb
@@ -112,10 +113,10 @@ check_parameter() {
     cold_page_bw_per_gb_log_list=$log_dir/$COLD_PAGE_BW_PER_GB_LOG_LIST-$target_pid.log
 
     if [[ -d $log_dir ]]; then
-        mv $log_dir $log_dir.old
+        rm $log_dir/*
+    else
+        mkdir -p $log_dir
     fi
-    mkdir -p $log_dir
-
 }
 
 prepare_sys_refs() {
@@ -185,6 +186,11 @@ cpu_to_node() {
 
     echo "ERROR: failed get NODE id for $cpu"
     exit -1
+}
+
+node_to_cpu() {
+    local node=$1
+    echo $(numactl -H | grep "node $node cpus:" | cut -f2 -d: | sed -e "s/^ //g" -e "s/ /,/g")
 }
 
 hardware_detect() {
@@ -291,6 +297,7 @@ output_perf_ipc()
 on_ctrlc()
 {
     echo "Ctrl-C received"
+    restore_pid_cpu_affinity
     kill_sys_refs
     kill_perf
 }
@@ -317,12 +324,59 @@ parse_cold_page_bw_per_gb()
     fi
 }
 
+save_pid_cpu_affinity()
+{
+    if [[ -z $target_pid ]]; then
+        return
+    fi
+
+    target_pid_cpu_affinity=$(taskset -p $target_pid | cut -f2 -d: | sed -e "s/^ //g")
+}
+
+bind_pid_cpu_affinity()
+{
+    local target_node=$1
+    local pid=$2
+    local new_cpu_range=
+
+    if [[ -z $target_node ]]; then
+        return
+    fi
+
+    if [[ -z $pid ]]; then
+        return
+    fi
+
+    new_cpu_range=$(node_to_cpu $target_node)
+    if [[ -z $new_cpu_range ]]; then
+        echo "Failed to bind target pid $pid to node $target_node"
+        return
+    fi
+
+    taskset -pc $new_cpu_range $pid
+}
+
+restore_pid_cpu_affinity()
+{
+    if [[ -z $target_pid ]]; then
+        return
+    fi
+
+    if [[ -z $target_pid_cpu_affinity ]]; then
+        return
+    fi
+
+    taskset -p $target_pid_cpu_affinity $target_pid
+}
 
 trap 'on_ctrlc' INT
 
 parse_parameter "$@"
 hardware_detect
 check_parameter
+
+save_pid_cpu_affinity
+bind_pid_cpu_affinity $hot_node $target_pid
 
 echo "Gathering basline IPC data (60 seconds)"
 perf_ipc_before=$(run_perf_ipc 60)
@@ -339,6 +393,8 @@ run_perf_bw
 
 echo "Gathering IPC data (60 seconds)"
 perf_ipc_after=$(run_perf_ipc 60)
+
+restore_pid_cpu_affinity
 
 parse_perf_log
 parse_cold_page_bw_per_gb
