@@ -21,6 +21,7 @@ AddrSequence::AddrSequence()
   nr_walks = 0;
   pageshift = 0;
   pagesize = 0;
+  user_flags = 0;
   //set this to froce alloc buffer when add cluster
   buf_used_count = MAX_ITEM_COUNT;
   clear_location_count();

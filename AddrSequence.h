@@ -98,6 +98,15 @@ class AddrSequence
     int get_first(unsigned long& addr, uint8_t& payload, int8_t& nid);
     int get_next(unsigned long& addr, uint8_t& payload, int8_t& nid);
 
+    void set_user_flag(unsigned long bit) {
+      user_flags |= (1UL << bit);
+    }
+    void clear_user_flag(unsigned long bit) {
+      user_flags &= ~(1UL << bit);
+    }
+    bool is_user_flag_set(unsigned long bit) {
+      return user_flags & (1UL << bit);
+    }
 #ifdef ADDR_SEQ_SELF_TEST
     int self_test();
     int do_self_test(unsigned long pagesize, int max_loop, bool is_pref);
@@ -203,6 +212,8 @@ class AddrSequence
 #ifdef ADDR_SEQ_SELF_TEST
     std::map<unsigned long, uint8_t> test_map;
 #endif
+
+    unsigned long user_flags;
 };
 
 #endif

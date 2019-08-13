@@ -544,6 +544,14 @@ int EPTMigrate::normalize_addr_sequence(AddrSequence& addr_seq, long hot_thresho
   int8_t unused_nid;
   uint8_t count, new_payload;
 
+  // this is the only flag defined so far
+  // Let's move this into a common header if we need
+  // define more flags.
+  static const unsigned long FLAG_NORMALIZED = 0x1;
+
+  if (addr_seq.is_user_flag_set(FLAG_NORMALIZED))
+    return 0;
+
   addr_seq.prepare_update();
 
   rc = addr_seq.get_first(addr, count, unused_nid);
@@ -554,5 +562,6 @@ int EPTMigrate::normalize_addr_sequence(AddrSequence& addr_seq, long hot_thresho
     rc = addr_seq.get_next(addr, count, unused_nid);
   }
 
+  addr_seq.set_user_flag(FLAG_NORMALIZED);
   return 0;
 }
