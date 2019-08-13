@@ -98,7 +98,7 @@ void GlobalScan::main_loop()
       calc_migrate_parameter();
       migrate();
       count_migrate_stats();
-      calc_hotness_drafting();
+      calc_hotness_drifting();
       save_idle_ranges_last();
     } else {
       progressive_profile();
@@ -687,16 +687,17 @@ void GlobalScan::calc_memory_size()
          global_dram_ratio, option.dram_percent);
 }
 
-void GlobalScan::calc_hotness_drafting()
+void GlobalScan::calc_hotness_drifting()
 {
   bool found;
   size_t i, j;
+  int ret;
 
   if (idle_ranges_last.empty())
     return;
 
   if (!option.split_rss_size.empty()) {
-    printf("WARNING: hotness drafting calculation can NOT work with split_rss_size option,\n"
+    printf("WARNING: hotness drifting calculation can NOT work with split_rss_size option,\n"
            "please remove the option and try again.\n");
     return;
   }
@@ -712,15 +713,94 @@ void GlobalScan::calc_hotness_drafting()
     }
 
     if (!found) {
-      printf("Skip hotness drafting calculation for pid %d\n", pid_last);
+      printf("WARNING: failed to find pid: Skip hotness drifting calculation for pid %d\n", pid_last);
       continue;
     }
 
-    idle_ranges_last[i]->normalize_page_hotness();
-    idle_ranges[j]->normalize_page_hotness();
+    ret = 0;
+    ret += idle_ranges_last[i]->normalize_page_hotness();
+    ret += idle_ranges[j]->normalize_page_hotness();
+    if (ret) {
+      printf("WARNING: failed to normalize page hotness: Skip hotness drifting calculation for pid %d\n",
+             pid_last);
+      continue;
+    }
+
+    calc_page_hotness_drifting(idle_ranges_last[i], idle_ranges[j]);
   }
 
   return;
+}
+
+void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
+                                            EPTMigratePtr current)
+{
+  const int j_end = 2;
+  int8_t unused_nid;
+
+  long stable_hotness_count[MAX_ACCESSED];
+  long unstable_hotness_count[MAX_ACCESSED];
+  long total_count[MAX_ACCESSED];
+  int8_t final_hotness;
+
+  int rc[j_end];
+  unsigned long addr[j_end];
+  uint8_t hotness[j_end];
+  AddrSequence* addr_seq[j_end];
+
+  for (int i = 0; i < MAX_ACCESSED; ++i) {
+    addr_seq[0] = &last->get_pagetype_refs((ProcIdlePageType)i).page_refs;
+    addr_seq[1] = &current->get_pagetype_refs((ProcIdlePageType)i).page_refs;
+
+    stable_hotness_count[i] = 0;
+    unstable_hotness_count[i] = 0;
+    total_count[i] = 0;
+
+    if (addr_seq[0]->empty() && addr_seq[1]->empty())
+      continue;
+
+    for (int j = 0; j < j_end; ++j)
+      rc[j] = addr_seq[j]->get_first(addr[j], hotness[j], unused_nid);
+
+    while(!rc[0] && !rc[1]) {
+      if (addr[0] < addr[1]) {
+        if (hotness[0] == 1)
+          ++unstable_hotness_count[i];
+
+        rc[0] = addr_seq[0]->get_next(addr[0], hotness[0], unused_nid);
+        continue;
+      }
+
+      if (addr[0] > addr[1]) {
+        if (hotness[1] == 1)
+          ++unstable_hotness_count[i];
+
+        rc[1] = addr_seq[1]->get_next(addr[1], hotness[1], unused_nid);
+        continue;
+      }
+
+      final_hotness = hotness[0] + hotness[1];
+      if (final_hotness == 1)
+        ++unstable_hotness_count[i];
+      else if (final_hotness == 2)
+        ++stable_hotness_count[i];
+
+      for (int j = 0; j < j_end; ++j)
+        rc[j] = addr_seq[j]->get_next(addr[j], hotness[j], unused_nid);
+    }
+  }
+
+  printf("\nPage hotness drifting for PID %d:\n", last->get_pid());
+  for (int i = 0; i < MAX_ACCESSED; ++i) {
+    unstable_hotness_count[i] /= 2;
+    total_count[i] = stable_hotness_count[i] + unstable_hotness_count[i];
+    printf("%-12s: stable pages:%-16ld unstable pages:%-16ld drifting percent:%d%%\n",
+           pagetype_name[i],
+           stable_hotness_count[i],
+           unstable_hotness_count[i],
+           percent(unstable_hotness_count[i], total_count[i]));
+  }
+  printf("\n");
 }
 
 bool GlobalScan::in_adjust_ratio_stage()

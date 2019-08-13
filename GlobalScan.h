@@ -92,7 +92,8 @@ class GlobalScan
                         int anti_threshold);
     void init_migration_parameter(EPTMigratePtr range, ProcIdlePageType type);
     void calc_memory_size();
-    void calc_hotness_drafting();
+    void calc_hotness_drifting();
+    void calc_page_hotness_drifting(EPTMigratePtr last, EPTMigratePtr current);
     bool in_adjust_ratio_stage();
     bool should_target_aep_young();
     void save_idle_ranges_last() {
