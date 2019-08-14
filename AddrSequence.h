@@ -178,9 +178,10 @@ class AddrSequence
         int payload = iter.cur_delta_ptr[iter.delta_index].payload;
         int location = iter.cur_delta_ptr[iter.delta_index].location;
 
+        if (payload >= 1)
+          young_bytes[location] += pagesize;
         if (payload >= nr_walks)
           top_bytes[location] += pagesize;
-        young_bytes[location] += pagesize;
     }
   private:
     const static int BUF_SIZE = 0x10000; // 64KB;
