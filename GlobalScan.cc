@@ -892,7 +892,8 @@ void GlobalScan::calc_migrate_parameter()
   long save_nr_promote, save_nr_demote;
   long nr_increase;
   long delta;
-  int hot_threshold, cold_threshold;
+  int hot_threshold = nr_walks + 1;
+  int cold_threshold = -1;
 
   for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
     long shift = pagetype_shift[type] - 10;

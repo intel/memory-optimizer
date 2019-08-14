@@ -421,7 +421,7 @@ void AddrSequence::free_all_buf()
 
 int AddrSequence::do_self_test_compare(unsigned long pagesize, bool is_perf)
 {
-  unsigned long addr;
+  unsigned long addr = 0;
   uint8_t payload = 0;
   int8_t nid;
 
