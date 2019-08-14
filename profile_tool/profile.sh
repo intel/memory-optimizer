@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 SETUP_DIR=$(dirname $(readlink -e $0))
 source "$SETUP_DIR/variable_setup.sh"
@@ -370,7 +370,7 @@ check_parameter
 save_pid_cpu_affinity
 bind_pid_cpu_affinity $hot_node $target_pid
 
-echo "Gathering basline IPC data (60 seconds)"
+echo "Gathering baseline IPC data (60 seconds)"
 perf_ipc_before=$(run_perf_ipc 60)
 
 prepare_sys_refs $target_pid

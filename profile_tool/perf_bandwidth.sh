@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 SETUP_DIR=$(dirname $(readlink -e $0))
 source "$SETUP_DIR/variable_setup.sh"

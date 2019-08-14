@@ -1,4 +1,4 @@
-#!/bin/ruby
+#!/usr/bin/env ruby
 
 $stable = Hash.new {|hash, key| hash[key] = []}
 $unstable = Hash.new {|hash, key| hash[key] = []}
