@@ -225,8 +225,12 @@ float GlobalScan::walk_multi()
   nr_acceptable_scans = 0;
 
   printf("\nStarting page table scans: %s\n", get_current_date().c_str());
-  printf("%7s  %8s  %23s  %23s  %15s\n", "nr_scan", "interval", "young", "top hot", "all");
-  printf("====================================================================================\n");
+  printf("Auto-interval: %s\n",
+         should_target_aep_young() ? "aep_young" : "young");
+  printf("%7s  %8s  %23s  %23s  %23s  %15s\n",
+         "nr_scan", "interval", "young", "aep_young", "top hot", "all");
+  printf("================================================================="
+         "============================================\n");
 
   sleep_time_vector.reserve(option.nr_scans);
   for (scans = 0; scans < option.nr_scans;) {
@@ -399,10 +403,11 @@ void GlobalScan::walk_once(int scans)
 
   update_dram_free_anon_bytes();
 
-  printf("%7d  %8.3f  %'15lu %6.2f%%  %'15lu %6.2f%%  %'15lu\n",
+  printf("%7d  %8.3f  %'15lu %6.2f%%  %'15lu %6.2f%%  %'15lu %6.2f%%  %'15lu\n",
          scans,
          (double)real_interval,
          young_bytes >> 10, 100.0 * young_bytes / all_bytes,
+         pmem_young_bytes >> 10, 100.0 * pmem_young_bytes / all_bytes,
          top_bytes >> 10, 100.0 * top_bytes / all_bytes,
          all_bytes >> 10);
 }
