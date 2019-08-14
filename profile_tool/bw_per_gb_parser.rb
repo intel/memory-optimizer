@@ -14,6 +14,11 @@ def byte_to_KB(byte)
   byte / 1024
 end
 
+def div(a, b)
+  return 0 if b == 0
+  a / b
+end
+
 def format_number(number)
   str = number.to_s
   next_str = nil
@@ -60,7 +65,7 @@ def parse_one_file(file_name)
 
   remote_read_cold = byte_to_MBs(remote_read_cold, time)
   total_byte = page_count * page_size
-  bw_per_gb = 1000000000 * remote_read_cold / total_byte
+  bw_per_gb = 1000000000 * div(remote_read_cold, total_byte)
 
   {:state => state, :ref_count => ref_count,
     :page_size => page_size, :bw_per_gb => bw_per_gb,
@@ -106,12 +111,11 @@ def output_bw_per_gb(bw_per_gb_result)
       end
     end
 
-    next if 0 == count_page_type
     bw_per_gb_all += bw_per_gb_page_type
     count_all += count_page_type
     total_all += total_page_type
 
-    bw_per_gb_page_type /= count_page_type
+    bw_per_gb_page_type = div(bw_per_gb_page_type, count_page_type)
     total_page_type = byte_to_KB(total_page_type)
     print "%dK-page average BW-per-GB: %.2f\n" \
           % [ byte_to_KB(page_type), bw_per_gb_page_type ]
@@ -119,7 +123,7 @@ def output_bw_per_gb(bw_per_gb_result)
           % [ byte_to_KB(page_type), format_number(total_page_type) ]
   end
 
-  bw_per_gb_all /= count_all
+  bw_per_gb_all = div(bw_per_gb_all, count_all)
   total_all = byte_to_KB(total_all)
   print "\nAll average BW-per-GB: %.2f\n" % [ bw_per_gb_all ]
   print "All total size:        %s KB\n" % [ format_number(total_all) ]
