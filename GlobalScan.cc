@@ -586,8 +586,8 @@ void GlobalScan::update_interval()
   intervaler.set_target_y(target_bytes);
   intervaler.add_pair(real_interval, young);
   interval = intervaler.estimate_x();
-  if (interval > 10)
-    interval = 10;
+  // if (interval > 10)
+  // interval = 10;
 }
 
 #endif
@@ -824,7 +824,12 @@ bool GlobalScan::should_target_aep_young()
   if (!option.progressive_profile.empty())
     return false;
 
-  if (global_dram_ratio <= 0 || global_dram_ratio >= 90)
+  // cover the first time case
+  if (global_dram_ratio <= 0)
+    return false;
+
+  if ((100 - global_dram_ratio)
+      < (100 - option.dram_percent) / 2)
     return false;
 
   return true;
