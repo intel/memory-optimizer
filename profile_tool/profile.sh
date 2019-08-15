@@ -360,6 +360,17 @@ mv_log_dir()
     fi
 }
 
+move_mem_to_node()
+{
+    local node=$1
+    local pid=$2
+
+    [[ -n $node ]] || return;
+    [[ -n $pid ]] || return;
+
+    migratepages $pid all $node
+}
+
 trap 'on_ctrlc' INT
 
 start_timestamp=$(date +"%F-%H-%M-%S")
@@ -369,6 +380,7 @@ check_parameter
 
 save_pid_cpu_affinity
 bind_pid_cpu_affinity $hot_node $target_pid
+move_mem_to_node $hot_node $target_pid
 
 echo "Gathering baseline IPC data (60 seconds)"
 perf_ipc_before=$(run_perf_ipc 60)
