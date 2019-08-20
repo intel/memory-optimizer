@@ -20,3 +20,13 @@ get_log_dir()
     local pid=$1
     echo $BASE_DIR/log/pid_$pid
 }
+
+hw_get_cpu_model_id()
+{
+    cat /proc/cpuinfo | grep "model[[:space:]]*:" | uniq | awk '{print $3}'
+}
+
+hw_get_cpu_family_id()
+{
+    cat /proc/cpuinfo | grep "cpu family" | uniq | awk '{print $4}'
+}
