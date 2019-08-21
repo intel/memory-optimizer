@@ -3,16 +3,15 @@
 SETUP_DIR=$(dirname $(readlink -e $0))
 source "$SETUP_DIR/variable_setup.sh"
 
-SYS_REFS_RUNTIME=600
-
-COLD_BW_PER_GB_SCRIPT=$BASE_DIR/cold_page_bw_per_gb.sh
-
 # parameter variable
 target_pid=
 dram_percent=25
 hot_node=
 cold_node=
 run_time=1200
+dcpmem_size_mb=
+dcpmem_dimm_size=
+dcpmem_combine_type=
 
 # runtime variable
 sys_refs_pid=
@@ -23,49 +22,73 @@ perf_log=
 cold_page_bw_per_gb_log_list=
 target_pid_cpu_affinity=
 start_timestamp=
+dcpmem_bw_per_gb=
 
-# parser
+# sub scripts
 PERF_IPC_PARSER=$BASE_DIR/perf_parser_ipc.rb
 PERF_IPC_CALC=$BASE_DIR/perf_calc_ipc.rb
+
 PERF_BW_PARSER=$BASE_DIR/perf_parser_bw.rb
+
 SYSREFS_RATIO_PARSER=$BASE_DIR/sysrefs_parser_ratio.rb
+
+COLD_BW_PER_GB_SCRIPT=$BASE_DIR/cold_page_bw_per_gb.sh
 COLD_PAGE_BW_PER_GB_PARSER=$BASE_DIR/bw_per_gb_parser.rb
 
+DCPMEM_BW_PER_GB_CALC=$BASE_DIR/dcpmem_hw_bw_per_gb.rb
+
+# const
+SYS_REFS_RUNTIME=1200
+PERF_IPC_RUN_TIME=60
+DCPMEM_BW_PER_GB_RUN_TIME=60
+
 usage() {
-    echo "usage: $0:"
-    echo "       -p target PID."
-    echo "       -d dram percent for target PID."
-    echo "       -h NUMA node id for HOT pages."
-    echo "       -c NUMA node id for COLD pages."
-    echo "       -t Run time, in second unit."
-    echo "For example:"
-    echo "the target pid is 100, we want to leave 25% hot pages to NUMA node 1,"
-    echo "leave remain cold pages to NUMA node 3, run total 20 minutes:"
-    echo "$0 -p 100 -d 25 -h 1 -c 3 -t 1200"
+    cat <<EOF
+usage: $0:
+       -p target PID.
+       -d dram percent for target PID.
+       -h optional, NUMA node id for HOT pages.
+       -c optional, NUMA node id for COLD pages.
+       -t Run time, in second unit.
+       -s DCPMEM total size in system, in MB unit.
+       -m DCPMEM DIMM type: 128 256 512.
+       -i DCPMEM configuration: single 211 221 222.
+
+For example:
+The system has total 512G DCPMEM, combined by 128 X 4 in 2-1-1 configuration,
+the target pid is 100, we want to leave 25% hot pages to NUMA node 1,
+leave remain cold pages to NUMA node 3, run total 20 minutes:
+$0 -p 100 -d 25 -h 1 -c 3 -t 1200 -s 524288 -m 128 -i 211
+
+EOF
 }
 
 parse_parameter() {
-    while getopts ":p:d:h:c:t:" optname; do
+    while getopts ":p:d:h:c:t:s:m:i:" optname; do
         case "$optname" in
             "p")
-                # echo "-p $OPTARG"
                 target_pid=$OPTARG
                 ;;
             "d")
-                # echo "-d $OPTARG"
                 dram_percent=$OPTARG
                 ;;
             "h")
-                # echo "-h $OPTARG"
                 hot_node=$OPTARG
                 ;;
             "c")
-                # echo "-c $OPTARG"
                 cold_node=$OPTARG
                 ;;
             "t")
-                # echo "-t $OPTARG"
                 run_time=$OPTARG
+                ;;
+            "s")
+                dcpmem_size_mb=$OPTARG
+                ;;
+            "m")
+                dcpmem_dimm_size=$OPTARG
+                ;;
+            "i")
+                dcpmem_combine_type=$OPTARG
                 ;;
             ":")
                 echo "no value for option $OPTARG"
@@ -81,17 +104,32 @@ check_parameter() {
     local will_exit=0
     local log_dir=
     if [[ -z $hot_node ]]; then
-        echo "Please use -h to indicate NUMA node for HOT pages"
+        echo "Please use -h to indicate NUMA node for HOT pages."
         will_exit=1
     fi
 
     if [[ -z $cold_node ]]; then
-        echo "Please use -c to indicate NUMA node for COLD pages"
+        echo "Please use -c to indicate NUMA node for COLD pages."
         will_exit=1
     fi
 
     if [[ -z $target_pid ]]; then
-        echo "Please use -p to indicate target PID"
+        echo "Please use -p to indicate target PID."
+        will_exit=1
+    fi
+
+    if [[ -z $dcpmem_size_mb ]]; then
+        echo "Please use -s to indicate the total DPCMEM size in system."
+        will_exit=1
+    fi
+
+    if [[ -z $dcpmem_dimm_size ]]; then
+        echo "Please use -m to indicate the DCPMEM DIMM size."
+        will_exit=1
+    fi
+
+    if [[ -z $dcpmem_dimm_size ]]; then
+        echo "Please use -i to indicate the DCPMEM configuration."
         will_exit=1
     fi
 
@@ -100,12 +138,17 @@ check_parameter() {
         exit 1
     fi
 
-    echo "parameter dump:"
-    echo "  target PID = $target_pid"
-    echo "  DRAM percent = $dram_percent"
-    echo "  time = $run_time"
-    echo "  hot node = $hot_node"
-    echo "  cold node = $cold_node"
+cat<<EOF
+parameter dump:
+  Target Pid: $target_pid
+  DRAM percent: $dram_percent
+  Run time: $run_time
+  Hot node: $hot_node
+  Cold node: $cold_node
+  DCPMEM total size: $dcpmem_size_mb MB
+  DCPMEM dimm size: $dcpmem_dimm_size
+  DCPMEM configuration: $dcpmem_combine_type
+EOF
 
     log_dir=$(get_log_dir $target_pid)
     sys_refs_log=$log_dir/sys-refs-$target_pid-$dram_percent.log
@@ -334,7 +377,6 @@ bind_pid_cpu_affinity()
     [[ -n $target_node ]] || return
     [[ -n $pid ]] || return
 
-
     new_cpu_range=$(node_to_cpu $target_node)
     if [[ -z $new_cpu_range ]]; then
         echo "Failed to bind target pid $pid to node $target_node"
@@ -371,6 +413,7 @@ move_mem_to_node()
     migratepages $pid all $node
 }
 
+
 check_hw_compatibility()
 {
     local family=$(hw_get_cpu_family_id)
@@ -385,13 +428,27 @@ check_hw_compatibility()
     exit -1
 }
 
+calc_dcpmem_bw_per_gb()
+{
+    $DCPMEM_BW_PER_GB_CALC $PERF \
+        $target_pid \
+        $DCPMEM_BW_PER_GB_RUN_TIME \
+        $dcpmem_size_mb \
+        $dcpmem_dimm_size \
+        $dcpmem_combine_type
+}
+
+parse_dcpmem_bw_per_gb()
+{
+    echo "HW BW-per-GB: $dcpmem_bw_per_gb"
+}
+
 trap 'on_ctrlc' INT
 
 start_timestamp=$(date +"%F-%H-%M-%S")
 
 # Enable this before we release
 # check_hw_compatibility
-
 parse_parameter "$@"
 hardware_detect
 check_parameter
@@ -400,8 +457,11 @@ save_pid_cpu_affinity
 bind_pid_cpu_affinity $hot_node $target_pid
 move_mem_to_node $hot_node $target_pid
 
-echo "Gathering baseline IPC data (60 seconds)"
-perf_ipc_before=$(run_perf_ipc 60)
+echo "Gathering HW baseline data ($DCPMEM_BW_PER_GB_RUN_TIME seconds)"
+dcpmem_bw_per_gb=$(calc_dcpmem_bw_per_gb)
+
+echo "Gathering baseline IPC data ($PERF_IPC_RUN_TIME seconds)"
+perf_ipc_before=$(run_perf_ipc $PERF_IPC_RUN_TIME)
 
 prepare_sys_refs $target_pid
 
@@ -413,13 +473,14 @@ kill_sys_refs
 
 run_perf_bw
 
-echo "Gathering IPC data (60 seconds)"
-perf_ipc_after=$(run_perf_ipc 60)
+echo "Gathering IPC data ($PERF_IPC_RUN_TIME seconds)"
+perf_ipc_after=$(run_perf_ipc $PERF_IPC_RUN_TIME)
 
 restore_pid_cpu_affinity
 
 parse_perf_log
 parse_cold_page_bw_per_gb
+parse_dcpmem_bw_per_gb
 parse_sys_refs_log
 output_perf_ipc
 
