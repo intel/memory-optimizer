@@ -7,8 +7,8 @@ target_pid      = ARGV[1]
 perf_runtime    = ARGV[2] || 30
 dcpmem_size_mb  = ARGV[3] || 0
 dimm_size       = ARGV[4] || "256"
-power_budget    = ARGV[5] || "15"
-combine_type    = ARGV[6] || "222"
+combine_type    = ARGV[5] || "222"
+power_budget    = "15" # ARGV[5] || "15"
 
 HW_INFO_FILE = "dcpmem-hw-info.yaml"
 FALLBACK_SEQUENCE_INDICATOR = 50
@@ -36,7 +36,7 @@ def run_perf(perf_path, run_time, target_pid, log_file)
   begin
     `#{perf_cmd}`
   rescue => e
-    # puts e.message
+    STDERR.puts e.message
     return false
   end
   return true
@@ -85,7 +85,7 @@ def get_dcpmem_hw_info(hw_info_hash_table,
   key_array.each do |each_key|
     hash_obj = hash_obj[each_key]
     if not hash_obj
-      # puts "Failed to get dcpmem hw info with field \"#{each_key}\""
+      STDERR.puts "Failed to get dcpmem hw info with field \"#{each_key}\""
       return 0.0
     end
   end
@@ -111,7 +111,7 @@ end
 begin
   dcpmem_hw_info = YAML.load_file(HW_INFO_FILE)
 rescue => e
-  # puts e.message
+  STDERR.puts e.message
   puts "0"
   exit -1
 end
