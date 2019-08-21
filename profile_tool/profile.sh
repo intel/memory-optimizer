@@ -283,7 +283,6 @@ wait_pid_timeout()
         sleep 1
     done
     echo "Finished Wait for $wait_pid ($i/$timeout seconds)"
-    echo "\n"
     return 0
 }
 
@@ -440,7 +439,9 @@ calc_dcpmem_bw_per_gb()
 
 parse_dcpmem_bw_per_gb()
 {
-    echo "HW BW-per-GB: $dcpmem_bw_per_gb"
+    echo ""
+    echo "DCPMEM BW-per-GB: $dcpmem_bw_per_gb"
+    echo ""
 }
 
 trap 'on_ctrlc' INT
@@ -479,8 +480,8 @@ perf_ipc_after=$(run_perf_ipc $PERF_IPC_RUN_TIME)
 restore_pid_cpu_affinity
 
 parse_perf_log
-parse_cold_page_bw_per_gb
 parse_dcpmem_bw_per_gb
+parse_cold_page_bw_per_gb
 parse_sys_refs_log
 output_perf_ipc
 
