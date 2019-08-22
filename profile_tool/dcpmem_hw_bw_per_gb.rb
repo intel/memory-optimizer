@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require "yaml"
-require_relative "dcpmem_hw_bandwidth_variable.rb"
 
 perf            = ARGV[0]
 target_pid      = ARGV[1]
@@ -78,8 +77,8 @@ end
 def get_dcpmem_hw_info(hw_info_hash_table,
                        dimm_size, power_budget, combine_type,
                        access_type, read_write)
-  key_array = [ dimm_size.to_s, power_budget.to_s,
-                combine_type.to_s, access_type.to_s, read_write.to_s ]
+  key_array = [ dimm_size, power_budget,
+                combine_type, access_type, read_write ].map(&:to_s)
 
   hash_obj = hw_info_hash_table
   key_array.each do |each_key|
