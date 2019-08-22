@@ -93,45 +93,48 @@ The migration size in one period in KB unit, apply to all page size. The default
 
 An overview of nr_scans/nr_scan_rounds/scan_period:
 
-sample point 1       (A) # A period start at this point
-  sampling 1
-  auto-interval sleeping
-  sampling 2
-  auto-interval sleeping
-  ....
-  sampling nr_scans  (B)
-  Sleep scan_period - time cost from (A) to (B)
+Loop:
+    Scan window 1       (A)  # A period start at this point
+        Scan 1
+        Auto-interval sleeping
+        Scan 2
+        Auto-interval sleeping
+        ....
+        Scan nr_scans   (B)
 
-sample point 2
-  ...
-Sample point 3
-  ...
-Sample point nr_scans_rounds              (C)
-Do migration.                             (D)
-Sleep scan_period - time cost from (C) to (D)
+    Sleep for stable hot page  # scan_period - time cost from (A) to (B)
 
-Go back to (A) # A period end here
+    Scan window 2
+    ...
+    Scan window 3
+    ...
+    Scan window nr_scans_rounds         (C)
+
+    Do migration.                       (D)
+
+    Sleep for control overhead  # scan_period - time cost from (C) to (D)
+
 
 You can see 2 phase here:
 The (A) to (C) is SCAN phase.
 The (C) to (D) is MIGRATION phase.
 
 So:
-Total sampling count in one sampling point = nr_scans.
-Total sampling point count = nr_scan_rounds.
-Total sampling count in one period = nr_scans * nr_scan_rounds.
-Sleeping interval in SCAN phase = scan_period - time cost of a sampling point.
-Sleeping interval in MIGRATION phase = scan_period - time cost of a sampling point - time cost of migration.
+Total scan window count = nr_scan_rounds.
+Total scan count in one scan window = nr_scans.
+Total scan count in one period = nr_scans * nr_scan_rounds.
+Sleeping for stable hot page = scan_period - time cost of a scan window.
+Sleeping for control overhead = scan_period - time cost of a scan window - time cost of migration.
 
 
 nr_scans:
-The total scan rounds in one sampling point, The default suggested value depends on the page size and workload,
+The total scan count in one scan window, The default suggested value depends on the page size and workload,
 we now use 10 for 4K page size and 4 for 2M page size.
 The bigger nr_scans value can help to increase the scan accuracy, but also increase the time cost of scan phase,
 and decrease the HOT/COLD pages convergence speed which may decrease overall performance of workload further
 
 nr_scan_rounds:
-The total sampling count in one period before start to migration, the default suggested value depends on
+The total scan window in one period before start to migration, the default suggested value depends on
 the page size and workload, we now use 2 for 4K page size and 5 for 2M page size.
 More bigger more easier to filter out the "unstable" HOT pages, but increase the time cost of SCAN phase
 and decrease the HOT/COLD pages convergence speed which may decrease overall performance of workload further
