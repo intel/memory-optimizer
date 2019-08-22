@@ -1,0 +1,90 @@
+128:
+  15:
+    single:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+    211:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+    221:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+    222:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+256:
+  15:
+    single:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+    211:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+    221:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+    222:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+512:
+  15:
+    single:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+    211:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+    221:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
+    222:
+      seq:
+        read:  0
+        write: 0
+      rand:
+        read:  0
+        write: 0
