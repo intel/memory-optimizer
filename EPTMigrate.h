@@ -168,6 +168,7 @@ class EPTMigrate : public EPTScan
 
   public:
     migrate_parameter parameter[MAX_ACCESSED];
+    struct timeval ts_scan_finish;
 
   private:
     // The Virtual Address of hot/cold pages.

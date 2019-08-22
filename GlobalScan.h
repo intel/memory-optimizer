@@ -96,9 +96,11 @@ class GlobalScan
     void calc_page_hotness_drifting(EPTMigratePtr last, EPTMigratePtr current);
     bool in_adjust_ratio_stage();
     bool should_target_aep_young();
+    void save_scan_finish_ts();
     void save_idle_ranges_last() {
       idle_ranges_last = idle_ranges;
     }
+
   private:
     static const float MIN_INTERVAL;
     static const float MAX_INTERVAL;

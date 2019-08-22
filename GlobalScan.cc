@@ -91,6 +91,7 @@ void GlobalScan::main_loop()
       goto have_sleep;
 
     nr_scan_rounds = 0;
+    save_scan_finish_ts();
     count_refs();
     calc_memory_size();
 
@@ -753,6 +754,9 @@ void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
   uint8_t hotness[j_end];
   AddrSequence* addr_seq[j_end];
 
+  float elapsed_minute;
+  float drift_percent_avg;
+
   for (int i = 0; i < MAX_ACCESSED; ++i) {
     addr_seq[0] = &last->get_pagetype_refs((ProcIdlePageType)i).page_refs;
     addr_seq[1] = &current->get_pagetype_refs((ProcIdlePageType)i).page_refs;
@@ -799,11 +803,17 @@ void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
   for (int i = 0; i < MAX_ACCESSED; ++i) {
     unstable_hotness_count[i] /= 2;
     total_count[i] = stable_hotness_count[i] + unstable_hotness_count[i];
-    printf("%-12s: stable pages:%-16ld unstable pages:%-16ld drifting percent:%d%%\n",
+
+    elapsed_minute = tv_secs(last->ts_scan_finish, current->ts_scan_finish) / 60.0;
+    drift_percent_avg = percent(unstable_hotness_count[i], total_count[i]);
+    if (elapsed_minute)
+      drift_percent_avg = drift_percent_avg / elapsed_minute;
+
+    printf("%-12s: stable pages:%-16ld unstable pages:%-16ld drifting per minute:%.2f%%\n",
            pagetype_name[i],
            stable_hotness_count[i],
            unstable_hotness_count[i],
-           percent(unstable_hotness_count[i], total_count[i]));
+           drift_percent_avg);
   }
   printf("\n");
 }
@@ -1141,4 +1151,14 @@ bool GlobalScan::exit_on_converged()
     return false;
 
   return true;
+}
+
+void GlobalScan::save_scan_finish_ts()
+{
+  timeval ts;
+
+  gettimeofday(&ts, NULL);
+  for (auto& range : idle_ranges) {
+    range->ts_scan_finish = ts;
+  }
 }
