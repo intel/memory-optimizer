@@ -117,7 +117,10 @@ have_sleep:
     sleep_time = std::max(2 * walk_interval,
                           option.scan_period - elapsed);
 
-    printf("\nSleeping for %.2f seconds\n", sleep_time);
+    if (nr_scan_rounds)
+      printf("\nSleep for stable pages: %.2f seconds\n", sleep_time);
+    else
+      printf("\nSleep for low overheads: %.2f seconds\n", sleep_time);
 
     usleep(sleep_time * 1000000);
   }
