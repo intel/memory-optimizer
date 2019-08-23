@@ -1,0 +1,2 @@
+obj-m := ept_idle.o
+kvm-ept-idle-y := ept_idle.o
