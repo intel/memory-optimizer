@@ -74,6 +74,7 @@ void Option::dump()
   printf("use_free_dram_first = %d\n", (int)use_free_dram_first);
   printf("interval_scale = %d\n", interval_scale);
   printf("progressive_profile = %s\n", progressive_profile.c_str());
+  printf("stable_page_sleep = %d\n", stable_page_sleep);
 
   for (size_t i = 0; i < policies.size(); ++i) {
       printf("policy %ld:\n", i);
