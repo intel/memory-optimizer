@@ -8,12 +8,12 @@ SYS_REFS_YAML=$BASE_DIR/sys-refs.yaml
 
 #SYS_REFS=$BASE_DIR/sys-refs/sys-refs
 SYS_REFS=$BASE_DIR/../sys-refs
-#PERF=$BASE_DIR/pmutools/ocperf.py
-PERF=perf
+PERF=$BASE_DIR/pmutools/ocperf.py
 
 PERF_BW_SCRIPT=$BASE_DIR/perf_bandwidth.sh
 
 COLD_PAGE_BW_PER_GB_LOG_LIST=cold-page-bw-per-gb-result-list
+DCPMEM_HW_INFO_FILE=$BASE_DIR/dcpmem-hw-info.yaml
 
 get_log_dir()
 {

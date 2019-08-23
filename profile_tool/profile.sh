@@ -431,6 +431,7 @@ calc_dcpmem_bw_per_gb()
 {
     $DCPMEM_BW_PER_GB_CALC $PERF \
         $target_pid \
+        $DCPMEM_HW_INFO_FILE \
         $DCPMEM_BW_PER_GB_RUN_TIME \
         $dcpmem_size_mb \
         $dcpmem_dimm_size \

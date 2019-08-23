@@ -3,13 +3,13 @@ require "yaml"
 
 perf            = ARGV[0]
 target_pid      = ARGV[1]
-perf_runtime    = ARGV[2] || 30
-dcpmem_size_mb  = ARGV[3] || 0
-dimm_size       = ARGV[4] || "256"
-combine_type    = ARGV[5] || "222"
-power_budget    = "15" # ARGV[5] || "15"
+hw_info_file    = ARGV[2]
+perf_runtime    = ARGV[3] || 30
+dcpmem_size_mb  = ARGV[4] || 0
+dimm_size       = ARGV[5] || "256"
+combine_type    = ARGV[6] || "222"
+power_budget    = "15" # ARGV[7] || "15"
 
-HW_INFO_FILE = "dcpmem-hw-info.yaml"
 FALLBACK_SEQUENCE_INDICATOR = 50
 
 perf_log = "dcpmem-bw-per-gb-pid-#{target_pid}.log"
@@ -108,7 +108,7 @@ end
 
 # START
 begin
-  dcpmem_hw_info = YAML.load_file(HW_INFO_FILE)
+  dcpmem_hw_info = YAML.load_file(hw_info_file)
 rescue => e
   STDERR.puts e.message
   puts "0"
