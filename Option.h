@@ -131,7 +131,7 @@ public:
   int scan_period = 1;
 
   // in second unit
-  int stable_page_sleep = 0;
+  int max_stable_page_sleep = 1;
 
   int nr_walks = 0; // auto stop when nr_top_pages can fit in half DRAM size
   int nr_loops = 0;

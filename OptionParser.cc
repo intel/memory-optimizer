@@ -119,7 +119,7 @@ int OptionParser::parse_option(YAML::Node &&option_node)
       OP_GET_VALUE("one_period_migration_size", one_period_migration_size);
       OP_GET_VALUE("interval_scale", interval_scale);
       OP_GET_VALUE("progressive_profile", progressive_profile);
-      OP_GET_VALUE("stable_page_sleep", stable_page_sleep);
+      OP_GET_VALUE("max_stable_page_sleep", max_stable_page_sleep);
 #undef OP_GET_VALUE
 
       std::string str_val;

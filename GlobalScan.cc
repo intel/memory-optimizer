@@ -16,6 +16,7 @@
 #include <limits.h>
 #include <sys/time.h>
 #include <vector>
+#include <float.h>
 
 #include "lib/debug.h"
 #include "lib/stats.h"
@@ -56,9 +57,11 @@ void GlobalScan::main_loop()
   struct timeval ts_end;
   float sleep_time;
   float elapsed;
-  float walk_interval;
   float idle_sleep_time = 20;
-
+  float last_migration_elapsed = FLT_MAX;
+  float last_period_sleep_time = FLT_MAX;
+  float walk_interval;
+  
   if (!max_round)
     max_round = UINT_MAX;
 
@@ -87,8 +90,14 @@ void GlobalScan::main_loop()
 
     walk_interval = walk_multi();
 
-    if (++nr_scan_rounds < option.nr_scan_rounds)
-      goto have_sleep;
+    if (++nr_scan_rounds < option.nr_scan_rounds) {
+      sleep_time = std::min((float)option.max_stable_page_sleep,
+                            last_migration_elapsed + last_period_sleep_time);
+      sleep_time = std::max(walk_interval, sleep_time);
+      printf("\nSleep for stable pages: %.2f seconds\n", sleep_time);
+      usleep(sleep_time * 1000000);
+      continue;
+    }
 
     nr_scan_rounds = 0;
     save_scan_finish_ts();
@@ -97,7 +106,7 @@ void GlobalScan::main_loop()
 
     if (option.progressive_profile.empty()) {
       calc_migrate_parameter();
-      migrate();
+      last_migration_elapsed = migrate();
       count_migrate_stats();
       calc_hotness_drifting();
       save_idle_ranges_last();
@@ -111,18 +120,13 @@ void GlobalScan::main_loop()
       break;
     }
 
-have_sleep:
     gettimeofday(&ts_end, NULL);
     elapsed = tv_secs(ts_begin, ts_end);
-    sleep_time = std::max(2 * walk_interval,
-                          option.scan_period - elapsed);
+    sleep_time = std::max(0.0f, option.scan_period - elapsed);
 
-    if (nr_scan_rounds)
-      printf("\nSleep for stable pages: %.2f seconds\n", sleep_time);
-    else
-      printf("\nSleep for low overheads: %.2f seconds\n", sleep_time);
-
+    printf("\nSleep for low overheads: %.2f seconds\n", sleep_time);
     usleep(sleep_time * 1000000);
+    last_period_sleep_time = sleep_time;
   }
   stop_threads();
 }
@@ -448,8 +452,9 @@ void GlobalScan::consumer_loop()
   }
 }
 
-void GlobalScan::migrate()
+float GlobalScan::migrate()
 {
+  float time_cost;
   timeval ts_begin, ts_end;
   int nr = 0;
   Job job;
@@ -479,7 +484,10 @@ void GlobalScan::migrate()
   if (option.show_numa_stats)
     proc_vmstat.show_numa_stats(&numa_collection);
 
-  show_migrate_speed(tv_secs(ts_begin, ts_end));
+  time_cost = tv_secs(ts_begin, ts_end);
+  show_migrate_speed(time_cost);
+
+  return time_cost;
 }
 
 void GlobalScan::progressive_profile()
