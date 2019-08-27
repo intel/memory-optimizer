@@ -157,7 +157,7 @@ EOF
     cold_page_bw_per_gb_log_list=$log_dir/$COLD_PAGE_BW_PER_GB_LOG_LIST-$target_pid.log
 
     if [[ -d $log_dir ]]; then
-        rm $log_dir/*
+        rm -f $log_dir/*
     else
         mkdir -p $log_dir
     fi
@@ -336,6 +336,7 @@ on_ctrlc()
     restore_pid_cpu_affinity
     kill_sys_refs
     kill_perf
+    probe_kernel_module unload $DEFAULT_KERNEL_MODULE
 }
 
 calc_ipc_drop()
@@ -445,6 +446,35 @@ parse_dcpmem_bw_per_gb()
     echo ""
 }
 
+probe_kernel_module()
+{
+    local action=$1
+    local module_file=$2
+    local ret=
+    local output=
+
+    if [[ ! -f $module_file ]]; then
+        echo "Can NOT find kernel module: $module_file"
+        exit -1
+    fi
+
+    if [[ $action == "load" ]]; then
+        output=$(insmod $module_file)
+        ret=$?
+    elif [[ $action == "unload" ]]; then
+        output=$(rmmod $module_file)
+        ret=$?
+    else
+        output="Unknown action: $action"
+        ret=1
+    fi
+
+    if  (( $ret != 0 )); then
+        echo $output
+        exit -1
+    fi
+}
+
 trap 'on_ctrlc' INT
 
 start_timestamp=$(date +"%F-%H-%M-%S")
@@ -454,6 +484,8 @@ start_timestamp=$(date +"%F-%H-%M-%S")
 parse_parameter "$@"
 hardware_detect
 check_parameter
+
+probe_kernel_module load $DEFAULT_KERNEL_MODULE
 
 save_pid_cpu_affinity
 bind_pid_cpu_affinity $hot_node $target_pid
@@ -487,3 +519,4 @@ parse_sys_refs_log
 output_perf_ipc
 
 kill_perf
+probe_kernel_module unload $DEFAULT_KERNEL_MODULE
