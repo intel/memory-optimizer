@@ -4,7 +4,7 @@ include Kbuild
 # MODULE_DIR=$(shell pwd)
 
 default:
-	$(MAKE) -C $(KERNEL_SRC_DIR) M=$(MODULE_DIR)
+	$(MAKE) -C $(KERNEL_SRC_DIR) M=$(MODULE_DIR) modules
 
 clean:
 	rm -f *.o *.ko *.mod.c modules.order Module.symvers
