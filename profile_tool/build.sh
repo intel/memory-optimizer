@@ -46,7 +46,7 @@ build_memory_optimizer()
     echo "[Success] Memory optimizer building completed."
 }
 
-check_binary_tool_dependency()
+check_binary_tool_dependence()
 {
     local exist=
     local error=0
@@ -210,9 +210,9 @@ EOF
     return 0
 }
 
+check_binary_tool_dependence
 build_kernel_module
 build_memory_optimizer
-check_binary_tool_dependency
 check_perf_and_pmutool
 
 cat <<EOF
