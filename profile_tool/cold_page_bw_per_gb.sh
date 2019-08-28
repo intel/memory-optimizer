@@ -13,7 +13,7 @@ log=$(get_log_dir $target_pid)/perf-bw-per-gb-$target_pid-$ref_count-$page_size.
 
 
 echo > $log
-$PERF_BW_SCRIPT $PERF $target_pid $log 30
+$PERF_BW_SCRIPT $(get_perf_path) $target_pid $log 30
 
 cat >> $log <<EOF
 ref_count=$ref_count

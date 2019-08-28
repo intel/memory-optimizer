@@ -306,14 +306,14 @@ kill_perf()
 
 run_perf_bw()
 {
-    $PERF_BW_SCRIPT $PERF $target_pid $perf_log $run_time
+    $PERF_BW_SCRIPT $(get_perf_path) $target_pid $perf_log $run_time
 }
 
 run_perf_ipc()
 {
     local ipc_runtime=$1
     local perf_log_ipc=perf-$target_pid-$dram_percent-ipc.log
-    local perf_cmd="$PERF stat -p $target_pid \
+    local perf_cmd="$(get_perf_path) stat -p $target_pid \
                     -e cycles,instructions \
                     -o $perf_log_ipc -- sleep $ipc_runtime"
 
@@ -430,7 +430,7 @@ check_hw_compatibility()
 
 calc_dcpmem_bw_per_gb()
 {
-    $DCPMEM_BW_PER_GB_CALC $PERF \
+    $DCPMEM_BW_PER_GB_CALC $(get_perf_path) \
         $target_pid \
         $DCPMEM_HW_INFO_FILE \
         $DCPMEM_BW_PER_GB_RUN_TIME \
