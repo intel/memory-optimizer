@@ -57,4 +57,4 @@ cscope:
 	cscope-indexer -r
 	ctags -R --links=no
 clean:
-	$(RM) $(OBJS)
+	$(RM) -f $(OBJS)
