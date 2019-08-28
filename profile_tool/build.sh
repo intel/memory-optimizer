@@ -69,6 +69,8 @@ check_binary_tool_dependence()
         perf
         git
         sleep
+        lsmod
+        basename
     )
 
     echo "[Task] Check binary tools dependence..."

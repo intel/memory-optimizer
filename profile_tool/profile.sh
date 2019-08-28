@@ -446,12 +446,29 @@ parse_dcpmem_bw_per_gb()
     echo ""
 }
 
+find_kernel_module()
+{
+    local module_name=$1
+    local find_result=
+
+    if [[ -z $module_name ]]; then
+        return 0
+    fi
+
+    find_result=$(lsmod | grep $module_name)
+    if [[ -z $find_result ]]; then
+        return 0
+    fi
+    return 1
+}
+
 probe_kernel_module()
 {
     local action=$1
     local module_file=$2
     local ret=
     local output=
+    local module_name=
 
     if [[ ! -f $module_file ]]; then
         echo "Can NOT find kernel module: $module_file"
@@ -459,6 +476,14 @@ probe_kernel_module()
     fi
 
     if [[ $action == "load" ]]; then
+
+        # don't load same module but with different name/building again
+        module_name=$(basename $module_file .ko)
+        find_kernel_module $module_name
+        if (( $? == 1 )); then
+            return 0
+        fi
+
         output=$(insmod $module_file)
         ret=$?
     elif [[ $action == "unload" ]]; then
@@ -473,6 +498,8 @@ probe_kernel_module()
         echo $output
         exit -1
     fi
+
+    return 0
 }
 
 trap 'on_ctrlc' INT
