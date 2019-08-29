@@ -971,7 +971,7 @@ void GlobalScan::calc_migrate_parameter()
     nr_demote  >>= shift;
     save_nr_promote = nr_promote;
     save_nr_demote = nr_demote;
-    for (int i = 0; i <= nr_walks; ++i) {
+    for (int i = 0; i < nr_walks; ++i) {
       for (auto& range : idle_ranges) {
         const histogram_2d_type& refs_count
             = range->get_pagetype_refs(type).histogram_2d;

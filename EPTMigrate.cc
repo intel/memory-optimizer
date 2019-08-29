@@ -525,7 +525,7 @@ int EPTMigrate::normalize_page_hotness()
 
     if (addr_seq.size() == 0)
       continue;
-
+    //TODO: fix to global threshold
     ret = normalize_addr_sequence(addr_seq,
                                   migrate_arg.hot_threshold,
                                   migrate_arg.hot_threshold_max);
