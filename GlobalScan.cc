@@ -735,11 +735,24 @@ void GlobalScan::calc_hotness_drifting()
       continue;
     }
 
-    ret = 0;
-    ret += idle_ranges_last[i]->normalize_page_hotness();
-    ret += idle_ranges[j]->normalize_page_hotness();
+    for (auto& page_type: {PTE_ACCESSED, PMD_ACCESSED}) {
+      ret = 0;
+      if (total_mem[page_type] == 0)
+        continue;
+
+      ret += idle_ranges_last[i]->normalize_page_hotness(page_type,
+                                                         global_hot_threshold_last[page_type].value,
+                                                         global_hot_threshold_last[page_type].value_max);
+      ret += idle_ranges[j]->normalize_page_hotness(page_type,
+                                                    global_hot_threshold[page_type].value,
+                                                    global_hot_threshold[page_type].value_max);
+      if (ret)
+        break;
+    }
+
     if (ret) {
-      printf("WARNING: failed to normalize page hotness: Skip hotness drifting calculation for pid %d\n",
+      printf("WARNING: failed to normalize page hotness:"
+             " Skip hotness drifting calculation for pid %d\n",
              pid_last);
       continue;
     }
@@ -769,13 +782,13 @@ void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
   float elapsed_minute;
   float drift_percent_avg;
 
-  for (int i = 0; i < MAX_ACCESSED; ++i) {
-    addr_seq[0] = &last->get_pagetype_refs((ProcIdlePageType)i).page_refs;
-    addr_seq[1] = &current->get_pagetype_refs((ProcIdlePageType)i).page_refs;
+  for (auto& page_type: {PTE_ACCESSED, PMD_ACCESSED}) {
+    addr_seq[0] = &last->get_pagetype_refs(page_type).page_refs;
+    addr_seq[1] = &current->get_pagetype_refs(page_type).page_refs;
 
-    stable_hotness_count[i] = 0;
-    unstable_hotness_count[i] = 0;
-    total_count[i] = 0;
+    stable_hotness_count[page_type] = 0;
+    unstable_hotness_count[page_type] = 0;
+    total_count[page_type] = 0;
 
     if (addr_seq[0]->empty() && addr_seq[1]->empty())
       continue;
@@ -786,7 +799,7 @@ void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
     while(!rc[0] && !rc[1]) {
       if (addr[0] < addr[1]) {
         if (hotness[0] == 1)
-          ++unstable_hotness_count[i];
+          ++unstable_hotness_count[page_type];
 
         rc[0] = addr_seq[0]->get_next(addr[0], hotness[0], unused_nid);
         continue;
@@ -794,7 +807,7 @@ void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
 
       if (addr[0] > addr[1]) {
         if (hotness[1] == 1)
-          ++unstable_hotness_count[i];
+          ++unstable_hotness_count[page_type];
 
         rc[1] = addr_seq[1]->get_next(addr[1], hotness[1], unused_nid);
         continue;
@@ -802,9 +815,9 @@ void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
 
       final_hotness = hotness[0] + hotness[1];
       if (final_hotness == 1)
-        ++unstable_hotness_count[i];
+        ++unstable_hotness_count[page_type];
       else if (final_hotness == 2)
-        ++stable_hotness_count[i];
+        ++stable_hotness_count[page_type];
 
       for (int j = 0; j < j_end; ++j)
         rc[j] = addr_seq[j]->get_next(addr[j], hotness[j], unused_nid);
@@ -812,19 +825,19 @@ void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
   }
 
   printf("\nPage hotness drifting for PID %d:\n", last->get_pid());
-  for (int i = 0; i < MAX_ACCESSED; ++i) {
-    unstable_hotness_count[i] /= 2;
-    total_count[i] = stable_hotness_count[i] + unstable_hotness_count[i];
+  for (auto& page_type: {PTE_ACCESSED, PMD_ACCESSED}) {
+    unstable_hotness_count[page_type] /= 2;
+    total_count[page_type] = stable_hotness_count[page_type] + unstable_hotness_count[page_type];
 
     elapsed_minute = tv_secs(last->ts_scan_finish, current->ts_scan_finish) / 60.0;
-    drift_percent_avg = percent(unstable_hotness_count[i], total_count[i]);
+    drift_percent_avg = percent(unstable_hotness_count[page_type], total_count[page_type]);
     if (elapsed_minute)
       drift_percent_avg = drift_percent_avg / elapsed_minute;
 
     printf("%-12s: stable pages:%-16ld unstable pages:%-16ld drifting per minute:%.2f%%\n",
-           pagetype_name[i],
-           stable_hotness_count[i],
-           unstable_hotness_count[i],
+           pagetype_name[page_type],
+           stable_hotness_count[page_type],
+           unstable_hotness_count[page_type],
            drift_percent_avg);
   }
   printf("\n");

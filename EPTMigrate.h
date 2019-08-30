@@ -127,7 +127,8 @@ class EPTMigrate : public EPTScan
       return page_migrate_stats[type];
     }
 
-    int normalize_page_hotness();
+    int normalize_page_hotness(ProcIdlePageType page_type,
+                               long threshold, long threshold_max);
  private:
     size_t get_threshold_refs(ProcIdlePageType type, int& min_refs, int& max_refs);
 

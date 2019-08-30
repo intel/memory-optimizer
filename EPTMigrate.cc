@@ -515,24 +515,18 @@ void EPTMigrate::call_progressive_profile_script(std::string& script_path_name,
   }
 }
 
-int EPTMigrate::normalize_page_hotness()
+int EPTMigrate::normalize_page_hotness(ProcIdlePageType page_type,
+                                       long threshold, long threshold_max)
 {
   int ret = 0;
+  AddrSequence& addr_seq = pagetype_refs[page_type].page_refs;
 
-  for (int i = 0; i < MAX_ACCESSED; ++i) {
-    AddrSequence& addr_seq = pagetype_refs[i].page_refs;
-    migrate_parameter& migrate_arg = parameter[i];
+  if (addr_seq.size() == 0)
+    return 0;
 
-    if (addr_seq.size() == 0)
-      continue;
-    //TODO: fix to global threshold
-    ret = normalize_addr_sequence(addr_seq,
-                                  migrate_arg.hot_threshold,
-                                  migrate_arg.hot_threshold_max);
-    if (ret)
-      break;
-  }
-
+  ret = normalize_addr_sequence(addr_seq,
+                                threshold,
+                                threshold_max);
   return ret;
 }
 
