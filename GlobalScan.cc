@@ -61,7 +61,7 @@ void GlobalScan::main_loop()
   float last_migration_elapsed = FLT_MAX;
   float last_period_sleep_time = FLT_MAX;
   float walk_interval;
-  
+
   if (!max_round)
     max_round = UINT_MAX;
 
@@ -106,10 +106,11 @@ void GlobalScan::main_loop()
 
     if (option.progressive_profile.empty()) {
       calc_migrate_parameter();
+      calc_global_threshold();
       last_migration_elapsed = migrate();
       count_migrate_stats();
       calc_hotness_drifting();
-      save_idle_ranges_last();
+      save_context_last();
     } else {
       progressive_profile();
       break;
@@ -827,6 +828,43 @@ void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
            drift_percent_avg);
   }
   printf("\n");
+}
+
+void GlobalScan::calc_global_threshold()
+{
+  long page_count;
+  long threshold, threshold_max;
+  long kb_to_page_count;
+
+  for (int i = 0; i < MAX_ACCESSED + 1; ++i) {
+    histogram_2d_type& refs = EPTScan::get_sys_refs_count((ProcIdlePageType)i);
+
+    if (total_mem[i] == 0) {
+      global_hot_threshold[i].value = -1;
+      global_hot_threshold[i].value_max = -1;
+      continue;
+    }
+
+    if (option.dram_percent)
+      page_count = option.dram_percent * total_mem[i] / 100.0;
+    else
+      page_count = total_dram[i];
+
+    kb_to_page_count = pagetype_shift[i] - 10;
+    page_count >>= kb_to_page_count;
+
+    threshold = threshold_max = nr_walks;
+    for(; threshold >= 0; --threshold) {
+      page_count -= refs[REF_LOC_ALL][threshold];
+      if (page_count < 0)
+        break;
+    }
+
+    // exclude the last threshold, because it may contain some address out of
+    // global hot set.
+    global_hot_threshold[i].value = std::min(threshold_max, threshold + 1);
+    global_hot_threshold[i].value_max = threshold_max;
+  }
 }
 
 bool GlobalScan::in_adjust_ratio_stage()

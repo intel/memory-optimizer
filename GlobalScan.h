@@ -36,6 +36,12 @@ struct Job
   JobIntent intent;
 };
 
+struct threshold
+{
+  long value;
+  long value_max;
+};
+
 class GlobalScan
 {
   public:
@@ -94,11 +100,15 @@ class GlobalScan
     void calc_memory_size();
     void calc_hotness_drifting();
     void calc_page_hotness_drifting(EPTMigratePtr last, EPTMigratePtr current);
+    void calc_global_threshold();
     bool in_adjust_ratio_stage();
     bool should_target_aep_young();
     void save_scan_finish_ts();
-    void save_idle_ranges_last() {
+    void save_context_last() {
       idle_ranges_last = idle_ranges;
+
+      for (int i = 0; i < MAX_ACCESSED + 1; ++i)
+        global_hot_threshold_last[i] = global_hot_threshold[i];
     }
 
   private:
@@ -134,9 +144,12 @@ class GlobalScan
 
     IntervalFitting<float, unsigned long, 5> intervaler;
 
-    long total_pmem[MAX_ACCESSED];
-    long total_dram[MAX_ACCESSED];
-    long total_mem[MAX_ACCESSED];
+    struct threshold global_hot_threshold[MAX_ACCESSED + 1];
+    struct threshold global_hot_threshold_last[MAX_ACCESSED + 1];
+
+    long total_pmem[MAX_ACCESSED + 1];
+    long total_dram[MAX_ACCESSED + 1];
+    long total_mem[MAX_ACCESSED + 1];
 
     long global_total_pmem = 0;
     long global_total_dram = 0;
