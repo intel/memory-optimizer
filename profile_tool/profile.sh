@@ -37,6 +37,8 @@ PARSER_COLD_PAGE_BW_PER_GB=$BASE_DIR/parser_bw_per_gb.rb
 
 CALC_DCPMEM_BW_PER_GB=$BASE_DIR/calc_dcpmem_bw_per_gb.rb
 
+PARSER_SYSREFS_HOTNESS_DRIFITING=$BASE_DIR/parser_sysrefs_hotness_drifting.rb
+
 # const
 SYS_REFS_RUNTIME=1200
 PERF_IPC_RUN_TIME=60
@@ -502,6 +504,13 @@ probe_kernel_module()
     return 0
 }
 
+parse_hotness_drifting()
+{
+    echo ""
+    echo "The hotness drifiting of pid $target_pid:"
+    $PARSER_SYSREFS_HOTNESS_DRIFITING < $sys_refs_log
+}
+
 trap 'on_ctrlc' INT
 
 start_timestamp=$(date +"%F-%H-%M-%S")
@@ -516,6 +525,8 @@ probe_kernel_module load $DEFAULT_KERNEL_MODULE
 
 save_pid_cpu_affinity
 bind_pid_cpu_affinity $hot_node $target_pid
+
+echo "Moving the memory of pid $target_pid into hot node $hot_node..."
 move_mem_to_node $hot_node $target_pid
 
 echo "Gathering HW baseline data ($DCPMEM_BW_PER_GB_RUN_TIME seconds)"
@@ -544,6 +555,7 @@ parse_dcpmem_bw_per_gb
 parse_cold_page_bw_per_gb
 parse_sys_refs_log
 output_perf_ipc
+parse_hotness_drifting
 
 kill_perf
 probe_kernel_module unload $DEFAULT_KERNEL_MODULE
