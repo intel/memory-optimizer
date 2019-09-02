@@ -25,17 +25,17 @@ start_timestamp=
 dcpmem_bw_per_gb=
 
 # sub scripts
-PERF_IPC_PARSER=$BASE_DIR/perf_parser_ipc.rb
-PERF_IPC_CALC=$BASE_DIR/perf_calc_ipc.rb
+PARSER_PERF_IPC=$BASE_DIR/parser_perf_ipc.rb
+CALC_PERF_IPC=$BASE_DIR/calc_perf_ipc.rb
 
-PERF_BW_PARSER=$BASE_DIR/perf_parser_bw.rb
+PARSER_PERF_BW=$BASE_DIR/parser_perf_bw.rb
 
-SYSREFS_RATIO_PARSER=$BASE_DIR/sysrefs_parser_ratio.rb
+PARSER_SYSREFS_RATIO=$BASE_DIR/parser_sysrefs_ratio.rb
 
-COLD_BW_PER_GB_SCRIPT=$BASE_DIR/cold_page_bw_per_gb.sh
-COLD_PAGE_BW_PER_GB_PARSER=$BASE_DIR/bw_per_gb_parser.rb
+CALC_COLD_PAGE_BW_PER_GB=$BASE_DIR/calc_cold_page_bw_per_gb.sh
+PARSER_COLD_PAGE_BW_PER_GB=$BASE_DIR/parser_bw_per_gb.rb
 
-DCPMEM_BW_PER_GB_CALC=$BASE_DIR/dcpmem_hw_bw_per_gb.rb
+CALC_DCPMEM_BW_PER_GB=$BASE_DIR/calc_dcpmem_bw_per_gb.rb
 
 # const
 SYS_REFS_RUNTIME=1200
@@ -207,7 +207,7 @@ parse_perf_log() {
     fi
 
     cat $perf_log
-    $PERF_BW_PARSER < $perf_log
+    $PARSER_PERF_BW < $perf_log
 }
 
 parse_sys_refs_log() {
@@ -216,7 +216,7 @@ parse_sys_refs_log() {
 
 
     echo ""
-    $SYSREFS_RATIO_PARSER < $sys_refs_log
+    $PARSER_SYSREFS_RATIO < $sys_refs_log
 }
 
 cpu_to_node() {
@@ -306,7 +306,7 @@ kill_perf()
 
 run_perf_bw()
 {
-    $PERF_BW_SCRIPT $(get_perf_path) $target_pid $perf_log $run_time
+    $CALC_PERF_BW $(get_perf_path) $target_pid $perf_log $run_time
 }
 
 run_perf_ipc()
@@ -319,7 +319,7 @@ run_perf_ipc()
 
     $perf_cmd > $perf_log_ipc 2>&1
 
-    echo $($PERF_IPC_PARSER < $perf_log_ipc)
+    echo $($PARSER_PERF_IPC < $perf_log_ipc)
 }
 
 output_perf_ipc()
@@ -343,7 +343,7 @@ calc_ipc_drop()
 {
     local ipc_before=$1
     local ipc_after=$2
-    $PERF_IPC_CALC $ipc_before $ipc_after
+    $CALC_PERF_IPC $ipc_before $ipc_after
 }
 
 run_cold_page_bw_per_gb()
@@ -351,13 +351,13 @@ run_cold_page_bw_per_gb()
     echo "Gathering cold pages bandwidth per GB:"
     echo "log: $sys_refs_progressive_profile_log"
     cat /dev/null > $cold_page_bw_per_gb_log_list
-    stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML -p $COLD_BW_PER_GB_SCRIPT > $sys_refs_progressive_profile_log 2>&1
+    stdbuf -oL $SYS_REFS -d $dram_percent -c $SYS_REFS_YAML -p $CALC_COLD_PAGE_BW_PER_GB > $sys_refs_progressive_profile_log 2>&1
 }
 
 parse_cold_page_bw_per_gb()
 {
     if  [[ ! -z $cold_page_bw_per_gb_log_list ]]; then
-        $COLD_PAGE_BW_PER_GB_PARSER $(get_log_dir $target_pid) $cold_page_bw_per_gb_log_list
+        $PARSER_COLD_PAGE_BW_PER_GB $(get_log_dir $target_pid) $cold_page_bw_per_gb_log_list
     fi
 }
 
@@ -430,7 +430,7 @@ check_hw_compatibility()
 
 calc_dcpmem_bw_per_gb()
 {
-    $DCPMEM_BW_PER_GB_CALC $(get_perf_path) \
+    $CALC_DCPMEM_BW_PER_GB $(get_perf_path) \
         $target_pid \
         $DCPMEM_HW_INFO_FILE \
         $DCPMEM_BW_PER_GB_RUN_TIME \
