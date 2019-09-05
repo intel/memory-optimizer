@@ -126,6 +126,6 @@ if run_perf(perf, perf_runtime, target_pid, perf_log)
   hw_bw_per_gb = calc_hw_bw_per_gb(sequence_indicator,
                                    hw_seq_bandwidth,
                                    hw_rand_bandwidth,
-                                   dcpmem_size_mb)
+                                   dcpmem_size_mb.to_f)
 end
 puts "#{hw_bw_per_gb}"
