@@ -13,11 +13,19 @@ while (line = STDIN.gets)
   end
 end
 
+def array_sum(array_obj)
+    result=0
+    array_obj.each do |element|
+        result += element
+    end
+    return result
+end
+
 $percent.each_pair do |key, value_array|
   max = value_array.max
   min = value_array.min
   if value_array.size != 0
-    avg = value_array.sum.to_f / value_array.size
+    avg = array_sum(value_array).to_f / value_array.size
   else
     avg = 0
   end
