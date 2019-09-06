@@ -19,17 +19,42 @@ hw_seq_bandwidth = 0
 hw_rand_bandwidth = 0
 hw_bw_per_gb = 0
 
-def run_perf(perf_path, run_time, target_pid, log_file)
+perf_event = [
+  "-e offcore_response.all_pf_data_rd.any_response",
+  "-e offcore_response.all_data_rd.any_response",
+  "-e l2_rqsts.all_pf",
+  "-e l2_rqsts.all_demand_data_rd"
+]
+
+
+def get_workload_type(perf_path, target_pid, log_file)
+  event = [ "-e l2_rqsts.all_demand_data_rd:G" ]
+  guest_event_count = 0
+
+  if run_perf(perf_path, event, 5, target_pid, log_file) then
+    File.open(log_file, "r") do |file|
+      file.each_line do |line|
+        case line
+        when /([\d,]+)\s+l2_rqsts\.all_demand_data_rd/
+          guest_event_count += $1.delete(",").to_f
+        end
+      end
+    end
+  end
+
+  return :guest_process if guest_event_count != 0
+  return :normal_process
+end
+
+
+def run_perf(perf_path, perf_event_array, run_time, target_pid, log_file)
   perf_begin = [ "#{perf_path}", "stat",
                  "-p #{target_pid}" ]
-  perf_event = [ "-e offcore_response.all_pf_data_rd.any_response",
-                 "-e offcore_response.all_data_rd.any_response",
-                 "-e l2_rqsts.all_pf",
-                 "-e l2_rqsts.all_demand_data_rd" ]
+
   perf_end = [ "-o #{log_file}",
                "-- sleep #{run_time}" ]
 
-  perf_cmd = perf_begin + perf_event + perf_end
+  perf_cmd = perf_begin + perf_event_array + perf_end
   perf_cmd = perf_cmd.join(" ")
 
   begin
@@ -42,22 +67,22 @@ def run_perf(perf_path, run_time, target_pid, log_file)
 end
 
 def calc_sequence_indicator(perf_log_file)
-  perf_all_data_rd_pf = nil
-  perf_all_data_rd = nil
-  perf_l2_rqsts_all_pf = nil
-  perf_l2_rqsts_all_demand = nil
+  perf_all_data_rd_pf = 0
+  perf_all_data_rd = 0
+  perf_l2_rqsts_all_pf = 0
+  perf_l2_rqsts_all_demand = 0
 
   File.open(perf_log_file, "r") do |file|
     file.each_line do |line|
       case line
-      when /([\d,]+)\s+offcore_response_all_pf_data_rd_any_response/
-        perf_all_data_rd_pf = $1.delete(",").to_f
-      when /([\d,]+)\s+offcore_response_all_data_rd_any_response/
-        perf_all_data_rd = $1.delete(",").to_f
-      when /([\d,]+)\s+l2_rqsts_all_pf/
-        perf_l2_rqsts_all_pf = $1.delete(",").to_f
-      when /([\d,]+)\s+l2_rqsts_all_demand_data_rd/
-        perf_l2_rqsts_all_demand = $1.delete(",").to_f
+      when /([\d,]+)\s+offcore_response\.all_pf_data_rd\.any_response/
+        perf_all_data_rd_pf += $1.delete(",").to_f
+      when /([\d,]+)\s+offcore_response\.all_data_rd\.any_response/
+        perf_all_data_rd += $1.delete(",").to_f
+      when /([\d,]+)\s+l2_rqsts\.all_pf/
+        perf_l2_rqsts_all_pf += $1.delete(",").to_f
+      when /([\d,]+)\s+l2_rqsts\.all_demand_data_rd/
+        perf_l2_rqsts_all_demand += $1.delete(",").to_f
       end
     end
   end
@@ -115,7 +140,18 @@ rescue => e
   exit -1
 end
 
-if run_perf(perf, perf_runtime, target_pid, perf_log)
+workload_type = get_workload_type(perf, target_pid, perf_log)
+if :guest_process == workload_type then
+  event_modifier=":G"
+else
+  event_modifier=":u"
+end
+
+perf_event = perf_event.map do |each|
+  each += event_modifier
+end
+
+if run_perf(perf, perf_event, perf_runtime, target_pid, perf_log)
   sequence_indicator = calc_sequence_indicator(perf_log)
   hw_seq_bandwidth = get_dcpmem_hw_info(dcpmem_hw_info,
                                         dimm_size, power_budget, combine_type,
