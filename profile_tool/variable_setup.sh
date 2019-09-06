@@ -16,7 +16,7 @@ DCPMEM_HW_INFO_FILE=$BASE_DIR/dcpmem_hw_information.yaml
 # kernel default source path
 DEFAULT_KERNEL_SRC_DIR=/lib/modules/$(uname -r)/build
 DEFAULT_KERNEL_MODULE_DIR=$BASE_DIR/../kernel_module
-DEFAULT_KERNEL_MODULE=$DEFAULT_KERNEL_MODULE_DIR/ept_idle.ko
+DEFAULT_KERNEL_MODULE=$DEFAULT_KERNEL_MODULE_DIR/kvm_ept_idle.ko
 
 # installed perf path and pmu tools
 DEFAULT_PMUTOOL_REMOTE_REPO=https://github.com/andikleen/pmu-tools.git
