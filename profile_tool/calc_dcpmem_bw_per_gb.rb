@@ -127,5 +127,10 @@ if run_perf(perf, perf_runtime, target_pid, perf_log)
                                    hw_seq_bandwidth,
                                    hw_rand_bandwidth,
                                    dcpmem_size_mb.to_f)
+  STDERR.puts "HW BW-per-GB calculation:"
+  STDERR.puts "hw_seq_bandwidth = #{hw_seq_bandwidth}"
+  STDERR.puts "hw_rand_bandwidth = #{hw_rand_bandwidth}"
+  STDERR.puts "workload sequence indicator = #{sequence_indicator}"
+
 end
 puts "#{hw_bw_per_gb}"
