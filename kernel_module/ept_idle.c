@@ -9,11 +9,50 @@
 #include <linux/kvm_host.h>
 #include <linux/bitmap.h>
 #include <linux/sched/mm.h>
-#include <linux/fdtable.h>
+#include <linux/version.h>
+#include <linux/module.h>
 #include <asm/tlbflush.h>
+#include <linux/fdtable.h>
 #include "ept_idle.h"
+#include "ept_idle_native_pagewalk.h"
 
 /* #define DEBUG 1 */
+
+/*
+   Fallback to use 0 as invalid pattern for kernel doens't support KVM_INVALID_SPTE
+   ept_idle can sitll work in this situation but the scan accuracy may drop, depends on
+   the access frequences of the workload.
+*/
+#ifndef KVM_INVALID_SPTE
+#define KVM_INVALID_SPTE 0
+#endif
+
+
+#if LINUX_VERSION_CODE == KERNEL_VERSION(4, 17, 0)
+# define pgtable_l5_enabled() (pgtable_l5_enabled)
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
+# define pgtable_l5_enabled() (0)
+#endif
+
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0)
+# define kvm_arch_mmu_pointer(vcpu) (vcpu->arch.mmu)
+/*For RedHat 7.7 beta*/
+#elif LINUX_VERSION_CODE == KERNEL_VERSION(3, 10, 0)
+# define kvm_arch_mmu_pointer(vcpu) (vcpu->arch.mmu)
+#else
+# define kvm_arch_mmu_pointer(vcpu) (&vcpu->arch.mmu)
+#endif
+
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0)
+# define kvm_mmu_ad_disabled(mmu) (mmu->mmu_role.base.ad_disabled)
+/*For RedHat 7.7 beta*/
+#elif LINUX_VERSION_CODE == KERNEL_VERSION(3, 10, 0)
+# define kvm_mmu_ad_disabled(mmu) (mmu->mmu_role.base.ad_disabled)
+#else
+# define kvm_mmu_ad_disabled(mmu) (mmu->base_role.ad_disabled)
+#endif
 
 #ifdef DEBUG
 
@@ -218,7 +257,7 @@ static int get_mm_and_kvm_by_pid(pid_t nr,
 			kvm = file->private_data;
 			if (kvm)
 				kvm_get_kvm(kvm);
-			break;
+            break;
 		}
 	}
 
@@ -386,7 +425,7 @@ static int ept_page_range(struct ept_idle_ctrl *eic,
 		return -EINVAL;
 	}
 
-	mmu = vcpu->arch.mmu;
+	mmu = kvm_arch_mmu_pointer(vcpu);
 	if (!VALID_PAGE(mmu->root_hpa)) {
 		spin_unlock(&eic->kvm->mmu_lock);
 		return -EINVAL;
@@ -558,8 +597,8 @@ static int ept_idle_supports_cpu(struct kvm *kvm)
 		return -EINVAL;
 
 	spin_lock(&kvm->mmu_lock);
-	mmu = vcpu->arch.mmu;
-	if (mmu->mmu_role.base.ad_disabled) {
+	mmu = kvm_arch_mmu_pointer(vcpu);
+	if (kvm_mmu_ad_disabled(mmu)) {
 		printk(KERN_NOTICE
 		       "CPU does not support EPT A/D bits tracking\n");
 		ret = -EINVAL;
@@ -841,7 +880,7 @@ static int mm_idle_walk_range(struct ept_idle_ctrl *eic,
 		if (vma) {
 			if (end > vma->vm_start) {
 				local_irq_disable();
-				ret = walk_page_range(start, end, walk);
+				ret = ept_idle_walk_page_range(start, end, walk);
 				local_irq_enable();
 			} else
 				set_restart_gpa(vma->vm_start, "VMA-HOLE");
@@ -958,7 +997,7 @@ struct file_operations proc_idle_page_oprations = {
 	.read           = ept_idle_read,
 	.open           = ept_idle_open,
 	.release        = ept_idle_release,
-    .unlocked_ioctl = ept_idle_ioctl
+	.unlocked_ioctl = ept_idle_ioctl
 };
 
 static int ept_idle_entry(void)
@@ -972,9 +1011,6 @@ static int ept_idle_entry(void)
 
 	return 0;
 }
-
-
-
 
 static void ept_idle_exit(void)
 {

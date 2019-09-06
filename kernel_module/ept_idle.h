@@ -1,6 +1,8 @@
 #ifndef _EPT_IDLE_H
 #define _EPT_IDLE_H
 
+#include "ept_idle_common.h"
+
 #define SCAN_HUGE_PAGE		O_NONBLOCK	/* only huge page */
 #define SCAN_SKIM_IDLE		O_NOFOLLOW	/* stop on PMD_IDLE_PTES */
 #define SCAN_DIRTY_PAGE		O_NOATIME   /* report pte/pmd dirty bit */
