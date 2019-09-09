@@ -9,11 +9,11 @@
         write: 0
     "211":
       seq:
-        read:  0
-        write: 0
+        read:  9900
+        write: 900
       rand:
-        read:  0
-        write: 0
+        read:  370
+        write: 90
     "221":
       seq:
         read:  0
