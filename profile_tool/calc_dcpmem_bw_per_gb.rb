@@ -1,18 +1,21 @@
 #!/usr/bin/env ruby
 require "yaml"
+require_relative "calc_workload_type"
 
 perf            = ARGV[0]
 target_pid      = ARGV[1]
-hw_info_file    = ARGV[2]
-perf_runtime    = ARGV[3] || 30
-dcpmem_size_mb  = ARGV[4] || 0
-dimm_size       = ARGV[5] || "256"
-combine_type    = ARGV[6] || "222"
+log_dir         = ARGV[2]
+hw_info_file    = ARGV[3]
+perf_runtime    = ARGV[4] || 30
+dcpmem_size_mb  = ARGV[5] || 0
+dimm_size       = ARGV[6] || "256"
+combine_type    = ARGV[7] || "222"
 power_budget    = "15" # ARGV[7] || "15"
 
 FALLBACK_SEQUENCE_INDICATOR = 50
 
-perf_log = "dcpmem-bw-per-gb-pid-#{target_pid}.log"
+perf_log = "#{log_dir}/dcpmem-bw-per-gb-pid-#{target_pid}.log"
+workload_type_log = "#{log_dir}/dcpmem-bw-per-gb-workload-type-pid-#{target_pid}.log"
 dcpmem_hw_info = nil
 sequence_indicator = 0
 hw_seq_bandwidth = 0
@@ -25,27 +28,6 @@ perf_event = [
   "-e l2_rqsts.all_pf",
   "-e l2_rqsts.all_demand_data_rd"
 ]
-
-
-def get_workload_type(perf_path, target_pid, log_file)
-  event = [ "-e l2_rqsts.all_demand_data_rd:G" ]
-  guest_event_count = 0
-
-  if run_perf(perf_path, event, 5, target_pid, log_file) then
-    File.open(log_file, "r") do |file|
-      file.each_line do |line|
-        case line
-        when /([\d,]+)\s+l2_rqsts\.all_demand_data_rd/
-          guest_event_count += $1.delete(",").to_f
-        end
-      end
-    end
-  end
-
-  return :guest_process if guest_event_count != 0
-  return :normal_process
-end
-
 
 def run_perf(perf_path, perf_event_array, run_time, target_pid, log_file)
   perf_begin = [ "#{perf_path}", "stat",
@@ -132,6 +114,7 @@ def calc_hw_bw_per_gb(sequence_indicator,
 end
 
 # START
+
 begin
   dcpmem_hw_info = YAML.load_file(hw_info_file)
 rescue => e
@@ -140,8 +123,7 @@ rescue => e
   exit -1
 end
 
-workload_type = get_workload_type(perf, target_pid, perf_log)
-if :guest_process == workload_type then
+if WORKLOAD_TYPE_KVM == get_workload_type(perf, target_pid, workload_type_log, 2) then
   event_modifier=":G"
 else
   event_modifier=":u"
