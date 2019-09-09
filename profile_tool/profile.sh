@@ -555,7 +555,6 @@ dcpmem_bw_per_gb=$(calc_dcpmem_bw_per_gb)
 
 echo "Gathering baseline IPC data ($PERF_IPC_RUN_TIME seconds)"
 perf_ipc_before=$(run_perf_ipc $PERF_IPC_RUN_TIME "before")
-run_perf_ipc $PERF_IPC_RUN_TIME "before"
 
 prepare_sys_refs $target_pid
 
