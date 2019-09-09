@@ -23,6 +23,7 @@ cold_page_bw_per_gb_log_list=
 target_pid_cpu_affinity=
 start_timestamp=
 dcpmem_bw_per_gb=
+workload_type=
 
 # sub scripts
 PARSER_PERF_IPC=$BASE_DIR/parser_perf_ipc.rb
@@ -104,7 +105,6 @@ parse_parameter() {
 
 check_parameter() {
     local will_exit=0
-    local log_dir=
     if [[ -z $hot_node ]]; then
         echo "Please use -h to indicate NUMA node for HOT pages."
         will_exit=1
@@ -314,10 +314,17 @@ run_perf_bw()
 run_perf_ipc()
 {
     local ipc_runtime=$1
-    local perf_log_ipc=perf-$target_pid-$dram_percent-ipc.log
-    local perf_cmd="$(get_perf_path) stat -p $target_pid \
-                    -e cycles,instructions \
-                    -o $perf_log_ipc -- sleep $ipc_runtime"
+    local log_file_suffix=$2
+
+    local perf_log_ipc="$log_dir/perf-$target_pid-$dram_percent-ipc-$log_file_suffix.log"
+    local event=(cycles instructions)
+    local perf_cmd="$(get_perf_path) stat -p $target_pid -o $perf_log_ipc "
+    local perf_cmd_end=" -- sleep $ipc_runtime"
+
+    for i in ${event[@]}; do
+        perf_cmd="$perf_cmd -e $(add_perf_event_modifier $i $workload_type) "
+    done
+    perf_cmd="$perf_cmd $perf_cmd_end"
 
     $perf_cmd > $perf_log_ipc 2>&1
 
@@ -359,7 +366,7 @@ run_cold_page_bw_per_gb()
 parse_cold_page_bw_per_gb()
 {
     if  [[ ! -z $cold_page_bw_per_gb_log_list ]]; then
-        $PARSER_COLD_PAGE_BW_PER_GB $(get_log_dir $target_pid) $cold_page_bw_per_gb_log_list
+        $PARSER_COLD_PAGE_BW_PER_GB $log_dir $cold_page_bw_per_gb_log_list
     fi
 }
 
@@ -433,12 +440,13 @@ check_hw_compatibility()
 calc_dcpmem_bw_per_gb()
 {
     $CALC_DCPMEM_BW_PER_GB $(get_perf_path) \
-        $target_pid \
-        $DCPMEM_HW_INFO_FILE \
-        $DCPMEM_BW_PER_GB_RUN_TIME \
-        $dcpmem_size_mb \
-        $dcpmem_dimm_size \
-        $dcpmem_combine_type
+                           $target_pid \
+                           $log_dir \
+                           $DCPMEM_HW_INFO_FILE \
+                           $DCPMEM_BW_PER_GB_RUN_TIME \
+                           $dcpmem_size_mb \
+                           $dcpmem_dimm_size \
+                           $dcpmem_combine_type
 }
 
 parse_dcpmem_bw_per_gb()
@@ -511,6 +519,16 @@ parse_hotness_drifting()
     $PARSER_SYSREFS_HOTNESS_DRIFITING < $sys_refs_log
 }
 
+get_workload_type()
+{
+    local target_pid=$1
+    local log="$log_dir/workload-type-$target_pid.log"
+    local workload_type=
+
+    workload_type=$($CALC_WORKLOAD_TYPE $(get_perf_path) $target_pid $log 2)
+    echo "$workload_type"
+}
+
 trap 'on_ctrlc' INT
 
 start_timestamp=$(date +"%F-%H-%M-%S")
@@ -521,19 +539,23 @@ parse_parameter "$@"
 hardware_detect
 check_parameter
 
+workload_type=$(get_workload_type $target_pid)
+echo "Pid $target_pid type: $workload_type"
+
 probe_kernel_module load $DEFAULT_KERNEL_MODULE
 
 save_pid_cpu_affinity
 bind_pid_cpu_affinity $hot_node $target_pid
 
-echo "Moving the memory of pid $target_pid into hot node $hot_node..."
+echo "Moving the memory of pid $target_pid into hot node $hot_node"
 move_mem_to_node $hot_node $target_pid
 
 echo "Gathering HW baseline data ($DCPMEM_BW_PER_GB_RUN_TIME seconds)"
 dcpmem_bw_per_gb=$(calc_dcpmem_bw_per_gb)
 
 echo "Gathering baseline IPC data ($PERF_IPC_RUN_TIME seconds)"
-perf_ipc_before=$(run_perf_ipc $PERF_IPC_RUN_TIME)
+perf_ipc_before=$(run_perf_ipc $PERF_IPC_RUN_TIME "before")
+run_perf_ipc $PERF_IPC_RUN_TIME "before"
 
 prepare_sys_refs $target_pid
 
@@ -546,7 +568,7 @@ kill_sys_refs
 run_perf_bw
 
 echo "Gathering IPC data ($PERF_IPC_RUN_TIME seconds)"
-perf_ipc_after=$(run_perf_ipc $PERF_IPC_RUN_TIME)
+perf_ipc_after=$(run_perf_ipc $PERF_IPC_RUN_TIME "after")
 
 restore_pid_cpu_affinity
 
