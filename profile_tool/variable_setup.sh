@@ -12,6 +12,7 @@ SYS_REFS_YAML=$BASE_DIR/sys-refs.yaml
 CALC_PERF_BW=$BASE_DIR/calc_perf_bw.sh
 COLD_PAGE_BW_PER_GB_LOG_LIST=cold-page-bw-per-gb-result-list
 DCPMEM_HW_INFO_FILE=$BASE_DIR/dcpmem_hw_information.yaml
+CALC_WORKLOAD_TYPE=$BASE_DIR/calc_workload_type.rb
 
 # kernel default source path
 DEFAULT_KERNEL_SRC_DIR=/lib/modules/$(uname -r)/build
@@ -50,4 +51,26 @@ get_perf_path()
     fi
 
     return 0
+}
+
+add_perf_event_modifier()
+{
+    local event=$1
+    local type=$2
+    local modifier=
+    local last_char=${event:0-1:1}
+
+    if [[ $last_char != "/" ]]; then
+        modifier=":"
+    else
+        modifier=""
+    fi
+
+    if [[ $type == "kvm" ]]; then
+        modifier=$modifier"G"
+    else
+        modifier=$modifier"u"
+    fi
+
+    echo "$event$modifier"
 }
