@@ -45,5 +45,4 @@ if __FILE__ == $0
   else
     puts WORKLOAD_TYPE_NORMAL_STR
   end
-  return 0
 end
