@@ -812,7 +812,7 @@ static int mm_idle_pmd_entry(pmd_t *pmd, unsigned long addr,
 		pte_page_type = PMD_IDLE_PTES;
 	else
 		pte_page_type = IDLE_PAGE_TYPE_MAX;
-
+#if 0
 	if (!pmd_present(*pmd))
 		page_type = PMD_HOLE;
 	else if (!test_and_clear_bit(_PAGE_BIT_ACCESSED, (unsigned long *)pmd)) {
@@ -826,7 +826,17 @@ static int mm_idle_pmd_entry(pmd_t *pmd, unsigned long addr,
 		page_type = PMD_ACCESSED;
 	} else
 		page_type = pte_page_type;
-
+#else
+	// don't clear A bit in PMD for 4K page, which confilcted with pmd_bad()
+	if (!pmd_present(*pmd))
+		page_type = PMD_HOLE;
+	else if (!pmd_large(*pmd))
+		page_type = pte_page_type;
+	else if (!test_and_clear_bit(_PAGE_BIT_ACCESSED, (unsigned long *)pmd))
+		page_type = PMD_IDLE;
+	else
+		page_type = PMD_ACCESSED;
+#endif
 	if (page_type != IDLE_PAGE_TYPE_MAX)
 		err = eic_add_page(eic, addr, next, page_type);
 	else
