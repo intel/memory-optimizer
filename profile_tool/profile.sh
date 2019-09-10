@@ -9,7 +9,6 @@ dram_percent=25
 hot_node=
 cold_node=
 run_time=1200
-dcpmem_size_mb=
 dcpmem_dimm_size=
 dcpmem_combine_type=
 
@@ -53,7 +52,6 @@ usage: $0:
        -h optional, NUMA node id for HOT pages.
        -c optional, NUMA node id for COLD pages.
        -t Run time, in second unit.
-       -s DCPMEM total size in system, in MB unit.
        -m DCPMEM DIMM type: 128 256 512.
        -i DCPMEM configuration: single 211 221 222.
 
@@ -83,9 +81,6 @@ parse_parameter() {
                 ;;
             "t")
                 run_time=$OPTARG
-                ;;
-            "s")
-                dcpmem_size_mb=$OPTARG
                 ;;
             "m")
                 dcpmem_dimm_size=$OPTARG
@@ -120,11 +115,6 @@ check_parameter() {
         will_exit=1
     fi
 
-    if [[ -z $dcpmem_size_mb ]]; then
-        echo "Please use -s to indicate the total DPCMEM size in system."
-        will_exit=1
-    fi
-
     if [[ -z $dcpmem_dimm_size ]]; then
         echo "Please use -m to indicate the DCPMEM DIMM size."
         will_exit=1
@@ -147,7 +137,6 @@ parameter dump:
   Run time: $run_time
   Hot node: $hot_node
   Cold node: $cold_node
-  DCPMEM total size: $dcpmem_size_mb MB
   DCPMEM dimm size: $dcpmem_dimm_size
   DCPMEM configuration: $dcpmem_combine_type
 EOF
@@ -444,7 +433,6 @@ calc_dcpmem_bw_per_gb()
                            $log_dir \
                            $DCPMEM_HW_INFO_FILE \
                            $DCPMEM_BW_PER_GB_RUN_TIME \
-                           $dcpmem_size_mb \
                            $dcpmem_dimm_size \
                            $dcpmem_combine_type
 }

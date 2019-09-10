@@ -7,9 +7,8 @@ target_pid      = ARGV[1]
 log_dir         = ARGV[2]
 hw_info_file    = ARGV[3]
 perf_runtime    = ARGV[4] || 30
-dcpmem_size_mb  = ARGV[5] || 0
-dimm_size       = ARGV[6] || "256"
-combine_type    = ARGV[7] || "222"
+dimm_size       = ARGV[5] || "256"
+combine_type    = ARGV[6] || "222"
 power_budget    = "15" # ARGV[7] || "15"
 
 FALLBACK_SEQUENCE_INDICATOR = 50
@@ -101,16 +100,14 @@ def get_dcpmem_hw_info(hw_info_hash_table,
 end
 
 def calc_hw_bw_per_gb(sequence_indicator,
-                      hw_seq_bandwidth, hw_rand_bandwidth,
-                      dcpmem_size_mb)
+                      hw_seq_bandwidth, hw_rand_bandwidth)
   hw_bandwidth = 0
-  return 0 if dcpmem_size_mb == 0
   return 0 if hw_seq_bandwidth == 0
   return 0 if hw_rand_bandwidth == 0
 
   hw_bandwidth = hw_rand_bandwidth + sequence_indicator * (hw_seq_bandwidth - hw_rand_bandwidth)
   hw_bandwidth = 0 if hw_bandwidth < 0
-  return 1000.0 * (hw_bandwidth / dcpmem_size_mb)
+  return hw_bandwidth
 end
 
 # START
@@ -143,8 +140,7 @@ if run_perf(perf, perf_event, perf_runtime, target_pid, perf_log)
                                          "rand", "read")
   hw_bw_per_gb = calc_hw_bw_per_gb(sequence_indicator,
                                    hw_seq_bandwidth,
-                                   hw_rand_bandwidth,
-                                   dcpmem_size_mb.to_f)
+                                   hw_rand_bandwidth)
   STDERR.puts "HW BW-per-GB calculation:"
   STDERR.puts "hw_seq_bandwidth = #{hw_seq_bandwidth}"
   STDERR.puts "hw_rand_bandwidth = #{hw_rand_bandwidth}"
