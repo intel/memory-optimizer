@@ -8,7 +8,7 @@ SYS_REFS=$DEFAULT_SYS_REFS_DIR/sys-refs
 SYS_REFS_YAML_TEMPLATE=$BASE_DIR/sys-refs-template.yaml
 SYS_REFS_YAML=$BASE_DIR/sys-refs.yaml
 
-# workload and dcpmem BW-per-GB
+# workload and dcpmem MBps-per-GB
 CALC_PERF_BW=$BASE_DIR/calc_perf_bw.sh
 COLD_PAGE_BW_PER_GB_LOG_LIST=cold-page-bw-per-gb-result-list
 DCPMEM_HW_INFO_FILE=$BASE_DIR/dcpmem_hw_information.yaml

@@ -440,7 +440,7 @@ calc_dcpmem_bw_per_gb()
 parse_dcpmem_bw_per_gb()
 {
     echo ""
-    echo "DCPMEM BW-per-GB: $dcpmem_bw_per_gb"
+    echo "DCPMEM MBps-per-GB: $dcpmem_bw_per_gb"
     echo ""
 }
 

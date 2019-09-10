@@ -15,7 +15,7 @@ set origin 0.05, 0.0
 #change title font to
 set key outside right font ",20"
 
-set title "BW-per-GB histogram" font ",24"
+set title "MBps-per-GB histogram" font ",24"
 
 set xtics
 set xrange [0:] reverse
@@ -27,7 +27,7 @@ set xtics font ",20"
 set ytics
 set ytics 0,25
 set grid ytics
-set ylabel "BW-per-GB" font ",20" offset -7,0
+set ylabel "MBps-per-GB" font ",20" offset -7,0
 set ytics format "%.f MBps/GB" font ",20" textcolor rgb color1 #offset 0.5,0.1
 set ytics font ",20"
 
@@ -45,4 +45,4 @@ set style fill solid 1.0
 set out "bw-per-gb-histogram.png"
 plot \
     file using 2:(column(5)/1024.0/1024.0) title "Size" with boxes linecolor rgb color2 axis x1y2, \
-    file using 2:(column(4)) title "BW-per-GB" with linespoints linecolor rgb color1 linewidth draw_linewidth axis x1y1
+    file using 2:(column(4)) title "MBps-per-GB" with linespoints linecolor rgb color1 linewidth draw_linewidth axis x1y1

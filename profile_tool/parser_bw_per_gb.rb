@@ -117,7 +117,7 @@ def output_bw_per_gb(bw_per_gb_result)
 
     bw_per_gb_page_type = div(bw_per_gb_page_type, count_page_type)
     total_page_type = byte_to_KB(total_page_type)
-    print "%dK-page average BW-per-GB: %.2f\n" \
+    print "%dK-page average MBps-per-GB: %.2f\n" \
           % [ byte_to_KB(page_type), bw_per_gb_page_type ]
     print "%dK-page total size:        %s KB\n" \
           % [ byte_to_KB(page_type), format_number(total_page_type) ]
@@ -125,7 +125,7 @@ def output_bw_per_gb(bw_per_gb_result)
 
   bw_per_gb_all = div(bw_per_gb_all, count_all)
   total_all = byte_to_KB(total_all)
-  print "\nAll average BW-per-GB: %.2f\n" % [ bw_per_gb_all ]
+  print "\nAll average MBps-per-GB: %.2f\n" % [ bw_per_gb_all ]
   print "All total size:        %s KB\n" % [ format_number(total_all) ]
   puts "failed count: #{failed_count}" if failed_count > 0
 
@@ -167,7 +167,7 @@ def generate_img(bw_per_gb_result, save_dir)
       FileUtils.mv(work_dir + "/bw-per-gb-histogram.png",
                    save_dir + "/bw-per-gb-histogram-#{byte_to_KB(page_type)}K.png")
     else
-      puts "Warning: Failed to generate BW-per-GB for page type: #{page_type}"
+      puts "Warning: Failed to generate MBps-per-GB for page type: #{page_type}"
     end
   end
 end
