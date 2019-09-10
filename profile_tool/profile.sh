@@ -279,8 +279,12 @@ wait_pid_timeout()
 
 kill_sys_refs()
 {
-    if [[ ! -z $sys_refs_pid ]]; then
-        echo "killing sys_refs($sys_refs_pid)"
+    if [[ -z $sys_refs_pid ]]; then
+        return 0
+    fi
+
+    if [[ -d /proc/$sys_refs_pid ]]; then
+        echo "Killing sys_refs($sys_refs_pid)"
         kill $sys_refs_pid > /dev/null 2>&1
         sys_refs_pid=
     fi
