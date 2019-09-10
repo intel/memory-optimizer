@@ -132,7 +132,8 @@ void MoveStats::save_migrate_states(unsigned long page_shift,
 
 
 MovePages::MovePages() :
-  flags(MPOL_MF_MOVE | MPOL_MF_SW_YOUNG),
+    //  flags(MPOL_MF_MOVE | MPOL_MF_SW_YOUNG),
+  flags(MPOL_MF_MOVE),
   page_shift(PAGE_SHIFT),
   batch_size(ULONG_MAX),
   throttler(NULL)
