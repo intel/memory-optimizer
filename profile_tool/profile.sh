@@ -369,19 +369,18 @@ save_pid_cpu_affinity()
 bind_pid_cpu_affinity()
 {
     local target_node=$1
-    local pid=$2
     local new_cpu_range=
 
     [[ -n $target_node ]] || return
-    [[ -n $pid ]] || return
+    [[ -n $target_pid ]] || return
 
     new_cpu_range=$(node_to_cpu $target_node)
     if [[ -z $new_cpu_range ]]; then
-        echo "Failed to bind target pid $pid to node $target_node"
+        echo "Failed to bind target pid $target_pid to node $target_node"
         return
     fi
 
-    taskset -pc $new_cpu_range $pid
+    taskset -a -pc $new_cpu_range $target_pid
 }
 
 restore_pid_cpu_affinity()
@@ -389,7 +388,7 @@ restore_pid_cpu_affinity()
     [[ -n $target_pid ]] || return
     [[ -n $target_pid_cpu_affinity ]] || return
 
-    taskset -p $target_pid_cpu_affinity $target_pid
+    taskset -a -p $target_pid_cpu_affinity $target_pid
 }
 
 create_log_dir()
@@ -541,7 +540,7 @@ probe_kernel_module load $DEFAULT_KERNEL_MODULE
 
 disable_numabalance_save
 save_pid_cpu_affinity
-bind_pid_cpu_affinity $hot_node $target_pid
+bind_pid_cpu_affinity $hot_node
 
 echo "Moving the memory of pid $target_pid into hot node $hot_node"
 move_mem_to_node $hot_node $target_pid
