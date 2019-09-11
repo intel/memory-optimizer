@@ -355,7 +355,7 @@ run_cold_page_bw_per_gb()
 parse_cold_page_bw_per_gb()
 {
     if  [[ ! -z $cold_page_bw_per_gb_log_list ]]; then
-        $PARSER_COLD_PAGE_BW_PER_GB $log_dir $cold_page_bw_per_gb_log_list
+        $PARSER_COLD_PAGE_BW_PER_GB $log_dir $cold_page_bw_per_gb_log_list $dcpmem_bw_per_gb
     fi
 }
 
@@ -437,13 +437,6 @@ calc_dcpmem_bw_per_gb()
                            $DCPMEM_BW_PER_GB_RUN_TIME \
                            $dcpmem_dimm_size \
                            $dcpmem_combine_type
-}
-
-parse_dcpmem_bw_per_gb()
-{
-    echo ""
-    echo "DCPMEM MBps-per-GB: $dcpmem_bw_per_gb"
-    echo ""
 }
 
 find_kernel_module()
@@ -574,7 +567,6 @@ perf_ipc_after=$(run_perf_ipc $PERF_IPC_RUN_TIME "after")
 restore_pid_cpu_affinity
 
 parse_perf_log
-parse_dcpmem_bw_per_gb
 parse_cold_page_bw_per_gb
 parse_sys_refs_log
 output_perf_ipc

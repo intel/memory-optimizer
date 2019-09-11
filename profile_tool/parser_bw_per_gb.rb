@@ -4,6 +4,8 @@ require_relative '../utility'
 
 $bw_per_gb_by_page_type = {}
 $log_dir = nil
+$dcpmem_bw_per_gb = 0
+$file_name = ""
 
 LLC_CACHE_LINE_SIZE = 64
 def byte_to_MBs(hit_count, time)
@@ -17,6 +19,24 @@ end
 def div(a, b)
   return 0 if b == 0
   a / b
+end
+
+def percent(a, b)
+  return 0 if b == 0
+  100.0 * a / b
+end
+
+def page_type_to_name(page_type_byte)
+  case page_type_byte
+  when 4096
+    return "4K"
+  when 2097152
+    return "2M"
+  when 1073741824
+    return "1G"
+  else
+    return "UK"
+  end
 end
 
 def format_number(number)
@@ -80,12 +100,16 @@ def save_result(hash_table, result)
   hash_table[key][ref_index] = result
 end
 
-def output_bw_per_gb(bw_per_gb_result)
+def output_bw_per_gb(bw_per_gb_result, dcpmem_bw_per_gb)
   failed_count = 0
 
   bw_per_gb_all = 0
   total_all = 0
   count_all = 0
+
+  total_suit_dcpmem_page_type = 0
+  total_suit_dcpmem = 0
+  page_type_name=""
 
   bw_per_gb_result.each_pair do |page_type, result|
     print "\n%dK-page histogram:\n" % [byte_to_KB(page_type)]
@@ -95,6 +119,7 @@ def output_bw_per_gb(bw_per_gb_result)
     bw_per_gb_page_type = 0
     total_page_type = 0
     count_page_type = 0
+    total_suit_dcpmem_page_type = 0
 
     result.reverse.each do |one_result|
       next if one_result == nil
@@ -103,8 +128,13 @@ def output_bw_per_gb(bw_per_gb_result)
         total_page_type += one_result[:total_byte]
         count_page_type += 1
 
+        if one_result[:bw_per_gb] <= dcpmem_bw_per_gb then
+          total_suit_dcpmem_page_type += one_result[:total_byte]
+        end
+
         print "%9d %14.2f %16s\n" \
-              % [ one_result[:ref_count], one_result[:bw_per_gb], \
+              % [ one_result[:ref_count], \
+                  one_result[:bw_per_gb], \
                   format_number(byte_to_KB(one_result[:total_byte])) ]
       else
         failed_count = failed_count + 1
@@ -114,20 +144,36 @@ def output_bw_per_gb(bw_per_gb_result)
     bw_per_gb_all += bw_per_gb_page_type
     count_all += count_page_type
     total_all += total_page_type
+    total_suit_dcpmem += total_suit_dcpmem_page_type
 
     bw_per_gb_page_type = div(bw_per_gb_page_type, count_page_type)
     total_page_type = byte_to_KB(total_page_type)
-    print "%dK-page average MBps-per-GB: %.2f\n" \
-          % [ byte_to_KB(page_type), bw_per_gb_page_type ]
-    print "%dK-page total size:        %s KB\n" \
-          % [ byte_to_KB(page_type), format_number(total_page_type) ]
+    total_suit_dcpmem_page_type = byte_to_KB(total_suit_dcpmem_page_type)
+    page_type_name = page_type_to_name(page_type)
+
+    print "DCPMEM MBps-per-GB: %35.2f\n" % [dcpmem_bw_per_gb]
+    print "%s page average MBps-per-GB: %26.2f\n" \
+          % [ page_type_name, bw_per_gb_page_type ]
+    print "%s page total size: %35s KB\n" \
+          % [ page_type_name, format_number(total_page_type) ]
+    print "%s page less than dcpmem MBps-per-GB size: %12s KB (%.2f%%)\n" \
+          % [ page_type_name, \
+              format_number(total_suit_dcpmem_page_type), \
+              percent(total_suit_dcpmem_page_type, total_page_type) ]
   end
 
   bw_per_gb_all = div(bw_per_gb_all, count_all)
   total_all = byte_to_KB(total_all)
-  print "\nAll average MBps-per-GB: %.2f\n" % [ bw_per_gb_all ]
-  print "All total size:        %s KB\n" % [ format_number(total_all) ]
+  total_suit_dcpmem = byte_to_KB(total_suit_dcpmem)
+
+  print "\nDCPMEM MBps-per-GB: %35.2f\n" % [ dcpmem_bw_per_gb ]
+  print "All average MBps-per-GB: %30.2f\n" % [ bw_per_gb_all ]
+  print "All total size: %39s KB\n" % [ format_number(total_all) ]
+  print "All less than dcpmem MBps-per-GB size: %16s KB (%2.2f%%)\n" \
+          % [ format_number(total_suit_dcpmem), \
+              percent(total_suit_dcpmem, total_all) ]
   puts "failed count: #{failed_count}" if failed_count > 0
+  puts ""
 
 end
 
@@ -175,8 +221,10 @@ end
 # Start here
 begin
   $log_dir = ARGV[0]
-  file_name = ARGV[1]
-  list_file = File.new(file_name, "r")
+  $file_name = ARGV[1]
+  $dcpmem_bw_per_gb = ARGV[2].to_f
+
+  list_file = File.new($file_name, "r")
   list_file.each do |line|
     result = parse_one_file(line.chomp)
     save_result($bw_per_gb_by_page_type, result)
@@ -185,8 +233,8 @@ rescue StandardError => e
   puts "Warning: #{e.message}"
 end
 if (not $bw_per_gb_by_page_type.empty?)
-  output_bw_per_gb($bw_per_gb_by_page_type)
+  output_bw_per_gb($bw_per_gb_by_page_type, $dcpmem_bw_per_gb)
   generate_img($bw_per_gb_by_page_type, $log_dir)
 else
-  puts "WARNING: No bw-per-gb data."
+  puts "WARNING: No MBps-per-GB data."
 end
