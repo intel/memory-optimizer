@@ -26,3 +26,4 @@ PMUTOOLS_PERF=$DEFAULT_PMUTOOL_DIR/ocperf.py
 PMUTOOLS_EVENT_DOWNLOAD=$DEFAULT_PMUTOOL_DIR/event_download.py
 PERF=perf
 
+NUMA_BALANCE_PATH="/proc/sys/kernel/numa_balancing"

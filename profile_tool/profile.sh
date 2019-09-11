@@ -20,9 +20,9 @@ sys_refs_progressive_profile_log=
 perf_log=
 cold_page_bw_per_gb_log_list=
 target_pid_cpu_affinity=
-start_timestamp=
 dcpmem_bw_per_gb=
 workload_type=
+numa_balance_setting=
 
 # sub scripts
 PARSER_PERF_IPC=$BASE_DIR/parser_perf_ipc.rb
@@ -334,6 +334,7 @@ on_ctrlc()
     kill_sys_refs
     kill_perf
     probe_kernel_module unload $DEFAULT_KERNEL_MODULE
+    enable_numabalance_restore
 }
 
 calc_ipc_drop()
@@ -518,10 +519,23 @@ get_workload_type()
     echo "$workload_type"
 }
 
+disable_numabalance_save()
+{
+    [[ ! -f $NUMA_BALANCE_PATH ]] && return 0
+    numa_balance_setting=$(cat $NUMA_BALANCE_PATH)
+    echo 0 > $NUMA_BALANCE_PATH
+}
+
+enable_numabalance_restore()
+{
+    [[ -z $numa_balance_setting ]] && return 0
+    echo $numa_balance_setting > $NUMA_BALANCE_PATH
+    numa_balance_setting=
+}
+
+# START
+
 trap 'on_ctrlc' INT
-
-start_timestamp=$(date +"%F-%H-%M-%S")
-
 check_hw_compatibility
 parse_parameter "$@"
 hardware_detect
