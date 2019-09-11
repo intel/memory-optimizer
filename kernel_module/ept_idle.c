@@ -827,7 +827,7 @@ static int mm_idle_pmd_entry(pmd_t *pmd, unsigned long addr,
 	} else
 		page_type = pte_page_type;
 #else
-	// don't clear A bit in PMD for 4K page, which confilcted with pmd_bad()
+	// don't clear A bit in PMD for 4K page, which conflicted with pmd_bad()
 	if (!pmd_present(*pmd))
 		page_type = PMD_HOLE;
 	else if (!pmd_large(*pmd))
