@@ -146,12 +146,7 @@ EOF
     perf_log=$log_dir/perf-$target_pid-$dram_percent.log
     sys_refs_progressive_profile_log=$log_dir/sys-refs-progress-profile-$target_pid.log
     cold_page_bw_per_gb_log_list=$log_dir/$COLD_PAGE_BW_PER_GB_LOG_LIST-$target_pid.log
-
-    if [[ -d $log_dir ]]; then
-        rm -f $log_dir/*
-    else
-        mkdir -p $log_dir
-    fi
+    create_log_dir $log_dir
 }
 
 prepare_sys_refs() {
@@ -396,12 +391,14 @@ restore_pid_cpu_affinity()
     taskset -p $target_pid_cpu_affinity $target_pid
 }
 
-mv_log_dir()
+create_log_dir()
 {
-    local log_dir=$(get_log_dir $target_pid)
+    local log_dir=$1
     if [[ -d $log_dir ]]; then
-        mv $log_dir $log_dir_$start_timestamp
+        rm -rf "$log_dir.old"
+        mv $log_dir $log_dir.old
     fi
+    mkdir -p $log_dir
 }
 
 move_mem_to_node()
