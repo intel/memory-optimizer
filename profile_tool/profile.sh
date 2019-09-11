@@ -421,13 +421,13 @@ check_hw_compatibility()
     local family=$(hw_get_cpu_family_id)
     local model=$(hw_get_cpu_model_id)
 
-    if [[ $family = "6" ]] && [[ $model = 85 ]]; then
-        echo "CPU_ID: family:$family model:$model Running on SLX platform."
+    if [[ $family = "6" ]] && [[ $model = "85" ]]; then
+        echo "Running on SLX/CLX platform [CPU_ID: family:$family model:$model]."
         return 0
     fi
 
-    echo "CPU_ID: family:$family model:$model Running on unsupported platform."
-    exit -1
+    echo "WARNING: Running on unsupported platform [CPU_ID: family:$family model:$model], the result may not be accurate enough."
+    return 0
 }
 
 calc_dcpmem_bw_per_gb()
@@ -525,8 +525,7 @@ trap 'on_ctrlc' INT
 
 start_timestamp=$(date +"%F-%H-%M-%S")
 
-# Enable this before we release
-# check_hw_compatibility
+check_hw_compatibility
 parse_parameter "$@"
 hardware_detect
 check_parameter
