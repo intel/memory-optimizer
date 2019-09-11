@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SETUP_DIR=$(dirname $(readlink -e $0))
-source "$SETUP_DIR/variable_setup.sh"
+source "$SETUP_DIR/common_library.sh"
 
 PERF_BW_EVENT=(
 # CLX only, test only, with pmem support, No it doesn't work..
