@@ -539,6 +539,7 @@ echo "Pid $target_pid type: $workload_type"
 
 probe_kernel_module load $DEFAULT_KERNEL_MODULE
 
+disable_numabalance_save
 save_pid_cpu_affinity
 bind_pid_cpu_affinity $hot_node $target_pid
 
@@ -565,6 +566,7 @@ echo "Gathering IPC data ($PERF_IPC_RUN_TIME seconds)"
 perf_ipc_after=$(run_perf_ipc $PERF_IPC_RUN_TIME "after")
 
 restore_pid_cpu_affinity
+enable_numabalance_restore
 
 parse_perf_log
 parse_cold_page_bw_per_gb
