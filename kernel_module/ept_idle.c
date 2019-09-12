@@ -19,12 +19,14 @@
 /* #define DEBUG 1 */
 
 /*
-   Fallback to use 0 as invalid pattern for kernel doens't support KVM_INVALID_SPTE
+   Fallback to false for kernel doens't support KVM_INVALID_SPTE
    ept_idle can sitll work in this situation but the scan accuracy may drop, depends on
    the access frequences of the workload.
 */
-#ifndef KVM_INVALID_SPTE
-#define KVM_INVALID_SPTE 0
+#ifdef KVM_INVALID_SPTE
+  #define KVM_CHECK_INVALID_SPTE(val) (val) == KVM_INVALID_SPTE
+#else
+  #define KVM_CHECK_INVALID_SPTE(val) (0)
 #endif
 
 
@@ -278,7 +280,7 @@ static int ept_pte_range(struct ept_idle_ctrl *eic,
 
 	pte = pte_offset_kernel(pmd, addr);
 	do {
-		if (pte->pte == KVM_INVALID_SPTE) {
+		if (KVM_CHECK_INVALID_SPTE(pte->pte)) {
 			page_type = PTE_IDLE;
 		} else if (!ept_pte_present(*pte))
 			page_type = PTE_HOLE;
@@ -319,7 +321,7 @@ static int ept_pmd_range(struct ept_idle_ctrl *eic,
 	pmd = pmd_offset(pud, addr);
 	do {
 		next = pmd_addr_end(addr, end);
-		if (pmd->pmd == KVM_INVALID_SPTE) {
+		if (KVM_CHECK_INVALID_SPTE(pmd->pmd)) {
 			page_type = PMD_IDLE;
 		} else if (!ept_pmd_present(*pmd))
 			page_type = PMD_HOLE;	/* likely won't hit here */
