@@ -225,6 +225,8 @@ node_to_cpu() {
 hardware_detect() {
     local running_cpu=
 
+    [[ -n $target_pid ]] || return 0
+
     # skip if user provided -h or -c
     [[ -z $hot_node ]] || return 0
     [[ -z $cold_node ]] || return 0
