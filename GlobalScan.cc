@@ -593,7 +593,8 @@ void GlobalScan::update_interval()
                    * option.interval_scale / 100;
     young = pmem_young_bytes;
   } else {
-    target_bytes = all_bytes * option.dram_percent / 100;
+    // the extra /2 is for anti-thrashing
+    target_bytes = all_bytes * option.dram_percent / 200.0;
     young = young_bytes;
   }
 
