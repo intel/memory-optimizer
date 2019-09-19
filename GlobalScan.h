@@ -147,13 +147,13 @@ class GlobalScan
     struct threshold global_hot_threshold[MAX_ACCESSED + 1];
     struct threshold global_hot_threshold_last[MAX_ACCESSED + 1];
 
-    long total_pmem[MAX_ACCESSED + 1];
-    long total_dram[MAX_ACCESSED + 1];
-    long total_mem[MAX_ACCESSED + 1];
+    long total_pmem_kb[MAX_ACCESSED + 1];
+    long total_dram_kb[MAX_ACCESSED + 1];
+    long total_mem_kb[MAX_ACCESSED + 1];
 
-    long global_total_pmem = 0;
-    long global_total_dram = 0;
-    long global_total_mem = 0;
+    long global_total_pmem_kb = 0;
+    long global_total_dram_kb = 0;
+    long global_total_mem_kb = 0;
     long global_dram_ratio = 0;
 };
 

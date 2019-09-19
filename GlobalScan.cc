@@ -682,26 +682,26 @@ void GlobalScan::get_memory_type()
 
 void GlobalScan::calc_memory_size()
 {
-  global_total_pmem = 0;
-  global_total_dram = 0;
-  global_total_mem = 0;
+  global_total_pmem_kb = 0;
+  global_total_dram_kb = 0;
+  global_total_mem_kb = 0;
   for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
     long shift = pagetype_shift[type] - 10;
 
-    total_pmem[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_PMEM) << shift;
-    total_dram[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_DRAM) << shift;
-    total_mem[type] = total_pmem[type] + total_dram[type];
+    total_pmem_kb[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_PMEM) << shift;
+    total_dram_kb[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_DRAM) << shift;
+    total_mem_kb[type] = total_pmem_kb[type] + total_dram_kb[type];
 
-    global_total_pmem += total_pmem[type];
-    global_total_dram += total_dram[type];
+    global_total_pmem_kb += total_pmem_kb[type];
+    global_total_dram_kb += total_dram_kb[type];
   }
-  global_total_mem = global_total_pmem + global_total_dram;
-  global_dram_ratio = (100.0 * global_total_dram) / global_total_mem;
+  global_total_mem_kb = global_total_pmem_kb + global_total_dram_kb;
+  global_dram_ratio = (100.0 * global_total_dram_kb) / global_total_mem_kb;
 
   printf("global memory size state: total: %ld KB dram: %ld KB pmem: %ld KB\n"
          "ratio: %ld target ratio: %d\n",
-         global_total_mem,
-         global_total_dram, global_total_pmem,
+         global_total_mem_kb,
+         global_total_dram_kb, global_total_pmem_kb,
          global_dram_ratio, option.dram_percent);
 }
 
@@ -737,7 +737,7 @@ void GlobalScan::calc_hotness_drifting()
 
     for (auto& page_type: {PTE_ACCESSED, PMD_ACCESSED}) {
       ret = 0;
-      if (total_mem[page_type] == 0)
+      if (total_mem_kb[page_type] == 0)
         continue;
 
       ret += idle_ranges_last[i]->normalize_page_hotness(page_type,
@@ -852,16 +852,16 @@ void GlobalScan::calc_global_threshold()
   for (int i = 0; i < MAX_ACCESSED + 1; ++i) {
     histogram_2d_type& refs = EPTScan::get_sys_refs_count((ProcIdlePageType)i);
 
-    if (total_mem[i] == 0) {
+    if (total_mem_kb[i] == 0) {
       global_hot_threshold[i].value = -1;
       global_hot_threshold[i].value_max = -1;
       continue;
     }
 
     if (option.dram_percent)
-      page_count = option.dram_percent * total_mem[i] / 100.0;
+      page_count = option.dram_percent * total_mem_kb[i] / 100.0;
     else
-      page_count = total_dram[i];
+      page_count = total_dram_kb[i];
 
     kb_to_page_count = pagetype_shift[i] - 10;
     page_count >>= kb_to_page_count;
@@ -913,7 +913,7 @@ bool GlobalScan::should_target_aep_young()
 
   for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
 
-    if (!total_mem[type]) {
+    if (!total_mem_kb[type]) {
       for (auto& range : idle_ranges) {
         init_migration_parameter(range, type);
         range->parameter[type].disable("No HOT or COLD pages");
@@ -927,8 +927,8 @@ bool GlobalScan::should_target_aep_young()
            "  total_pmem: %ld kb\n"
            "  ratio: %d\n",
            __func__, pagetype_name[type],
-           total_mem[type], total_dram[type], total_pmem[type],
-           percent(total_dram[type], total_mem[type]));
+           total_mem_kb[type], total_dram_kb[type], total_pmem_kb[type],
+           percent(total_dram_kb[type], total_mem_kb[type]));
 
     for (auto& range : idle_ranges) {
       const histogram_2d_type& refs_count
@@ -980,7 +980,7 @@ void GlobalScan::calc_migrate_parameter()
   for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
     long shift = pagetype_shift[type] - 10;
 
-    if (!total_mem[type]) {
+    if (!total_mem_kb[type]) {
       for (auto& range : idle_ranges) {
         init_migration_parameter(range, type);
         range->parameter[type].disable("No HOT or COLD pages");
@@ -990,8 +990,8 @@ void GlobalScan::calc_migrate_parameter()
 
     if (dram_percent) {
       long adjust = limit / 8;
-      dram_target = total_mem[type] * (dram_percent / 100.0);
-      delta = dram_target - total_dram[type];
+      dram_target = total_mem_kb[type] * (dram_percent / 100.0);
+      delta = dram_target - total_dram_kb[type];
       delta = delta < 0 ?
                       std::max(delta, 0 - limit + adjust) :
                       std::min(delta, limit - adjust);
@@ -1002,8 +1002,8 @@ void GlobalScan::calc_migrate_parameter()
       nr_demote = limit / 2;
     }
 
-    // nr_promote = std::min(total_pmem[type], nr_promote);
-    // nr_demote = std::min(total_dram[type], nr_demote);
+    // nr_promote = std::min(total_pmem_kb[type], nr_promote);
+    // nr_demote = std::min(total_dram_kb[type], nr_demote);
 
     printf("\nMemory info by %s for %s:\n"
            "  total_mem: %ld kb\n"
@@ -1013,8 +1013,8 @@ void GlobalScan::calc_migrate_parameter()
            "  promote: %ld kb\n"
            "  demote: %ld kb\n",
            __func__, pagetype_name[type],
-           total_mem[type], total_dram[type], total_pmem[type],
-           percent(total_dram[type], total_mem[type]),
+           total_mem_kb[type], total_dram_kb[type], total_pmem_kb[type],
+           percent(total_dram_kb[type], total_mem_kb[type]),
            nr_promote, nr_demote);
 
     // from KB to page count
