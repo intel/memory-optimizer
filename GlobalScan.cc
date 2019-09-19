@@ -581,6 +581,7 @@ void GlobalScan::update_interval()
 {
   unsigned long target_bytes;
   unsigned long young;
+
   if (option.interval)
     return;
 
@@ -893,6 +894,10 @@ bool GlobalScan::in_adjust_ratio_stage()
 
 bool GlobalScan::should_target_aep_young()
 {
+  long target_dram_kb;
+  long one_period_migration_kb;
+  static const long max_delta_kb = 102400; // 100 MB
+
   if (!option.progressive_profile.empty())
     return false;
 
@@ -900,8 +905,15 @@ bool GlobalScan::should_target_aep_young()
   if (global_dram_ratio <= 0)
     return false;
 
+  // cover the aep little used case
   if ((100 - global_dram_ratio)
       < (100 - option.dram_percent) / 2)
+    return false;
+
+  target_dram_kb = global_total_mem_kb * option.dram_percent / 100.0;
+  one_period_migration_kb = option.one_period_migration_size;
+  if (std::abs(global_total_dram_kb - target_dram_kb)
+      <= max_delta_kb)
     return false;
 
   return true;
