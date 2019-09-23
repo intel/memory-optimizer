@@ -984,7 +984,7 @@ void GlobalScan::calc_migrate_parameter()
   long dram_percent = option.dram_percent;
   long dram_target;
   long nr_demote, nr_promote;
-  long nr_increase;
+  long nr_4k_page, nr_page_type;
   long delta;
   int cold_threshold = -1;
   float demote_ratio;
@@ -1008,7 +1008,7 @@ void GlobalScan::calc_migrate_parameter()
                         : std::min(delta, limit - adjust);
     nr_promote = (limit + delta) / 2;
     nr_demote = (limit - delta) / 2;
-  } else  {
+  } else {
     nr_promote = limit / 2;
     nr_demote = limit / 2;
   }
@@ -1024,14 +1024,16 @@ void GlobalScan::calc_migrate_parameter()
 
       init_migration_parameter(range, type);
       if (promote_page_count < promote_page_limit) {
-        nr_increase = std::min((long)refs_count[REF_LOC_PMEM][nr_walks],
+        nr_4k_page = refs_count[REF_LOC_PMEM][nr_walks] * pagetype_4k_page_count[type];
+        nr_4k_page = std::min(nr_4k_page,
                                promote_page_limit - promote_page_count);
-        range->parameter[type].nr_promote = nr_increase;
-        range->parameter[type].promote_remain = nr_increase;
+        nr_page_type = nr_4k_page / pagetype_4k_page_count[type];
+        range->parameter[type].nr_promote = nr_page_type;
+        range->parameter[type].promote_remain = nr_page_type;
         range->parameter[type].hot_threshold = nr_walks;
         range->parameter[type].hot_threshold_max = nr_walks;
         range->parameter[type].enable();
-        promote_page_count += pagetype_4k_page_count[type] * nr_increase;
+        promote_page_count += nr_4k_page;
       }
     }
   }
@@ -1056,10 +1058,12 @@ void GlobalScan::calc_migrate_parameter()
             continue;
 
           cold_threshold = i;
-          nr_increase = std::min((long)refs_count[REF_LOC_DRAM][cold_threshold],
+          nr_4k_page = refs_count[REF_LOC_DRAM][cold_threshold] * pagetype_4k_page_count[type];
+          nr_4k_page = std::min(nr_4k_page,
                                  demote_page_limit - demote_page_count);
-          range->parameter[type].nr_demote += nr_increase;
-          range->parameter[type].demote_remain = nr_increase;
+          nr_page_type = nr_4k_page / pagetype_4k_page_count[type];
+          range->parameter[type].nr_demote += nr_page_type;
+          range->parameter[type].demote_remain = nr_page_type;
           range->parameter[type].cold_threshold = cold_threshold;
           range->parameter[type].cold_threshold_min = 0;
           range->parameter[type].enable();
@@ -1067,7 +1071,7 @@ void GlobalScan::calc_migrate_parameter()
           if (!in_adjust_ratio_stage())
             anti_thrashing(range, type, option.anti_thrash_threshold);
 
-          demote_page_count += pagetype_4k_page_count[type] * nr_increase;
+          demote_page_count += nr_4k_page;
         }
 
         if (range->parameter[type].nr_promote == 0
