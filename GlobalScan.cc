@@ -82,6 +82,7 @@ void GlobalScan::main_loop()
       if (idle_ranges.empty()) {
         printf("No target process, sleeping for %f seconds\n", idle_sleep_time);
         usleep(idle_sleep_time * 1000000);
+
         continue;
       }
 
@@ -1014,10 +1015,9 @@ void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_k
       avail_cold_page_kb += sys_refs [REF_LOC_DRAM][i] << to_kb;
   }
 
-  avail_hot_page_kb = std::min(avail_hot_page_kb, limit);
-
-  promote_limit_kb = avail_hot_page_kb;
-  demote_limit_kb = avail_hot_page_kb * demote_ratio;
+  promote_limit_kb = std::min(avail_hot_page_kb, limit);
+  demote_limit_kb = std::min((long)(promote_limit_kb * demote_ratio), limit);
+  promote_limit_kb = demote_limit_kb / demote_ratio;
 
   if (demote_ratio > 1.0) {
     if (demote_limit_kb == 0) {
