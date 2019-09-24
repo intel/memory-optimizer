@@ -79,6 +79,7 @@ class GlobalScan
     void update_pid_context();
     void get_memory_type();
     void calc_progressive_profile_parameter(ref_location from_type, int page_refs);
+    void calc_migrate_count(long& promote_limit, long& demote_limit);
     void calc_migrate_parameter();
 
     unsigned long accept_hot_bytes()   { return dram_hot_target * 12 / 8; }

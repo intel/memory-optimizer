@@ -978,50 +978,83 @@ bool GlobalScan::should_target_aep_young()
   }
 }
 
-void GlobalScan::calc_migrate_parameter()
+void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_kb)
 {
   long limit = option.one_period_migration_size;
   long dram_percent = option.dram_percent;
-  long dram_target;
-  long nr_demote, nr_promote;
-  long nr_kb, nr_page;
-  long delta;
-  int cold_threshold = -1;
+  long demote_kb, promote_kb;
+  long avail_hot_page_kb = 0;
+  long avail_cold_page_kb = 0;
   float demote_ratio;
-  long promote_page_limit_kb;
-  long promote_page_count_kb;
-  long demote_page_limit_kb;
-  long demote_page_count_kb;
 
   // calc the demote ratio
   if (dram_percent) {
     long adjust = limit / 8;
+    long dram_target;
+    long delta;
+
     dram_target = global_total_mem_kb * (dram_percent / 100.0);
     delta = dram_target - global_total_dram_kb;
     delta = delta < 0 ? std::max(delta, 0 - limit + adjust)
                         : std::min(delta, limit - adjust);
-    nr_promote = (limit + delta) / 2;
-    nr_demote = (limit - delta) / 2;
+    promote_kb = (limit + delta) / 2;
+    demote_kb = (limit - delta) / 2;
   } else {
-    nr_promote = limit / 2;
-    nr_demote = limit / 2;
+    promote_kb = limit / 2;
+    demote_kb = limit / 2;
   }
-  demote_ratio = (float)nr_demote / nr_promote;
+  demote_ratio = (float)demote_kb / promote_kb;
 
-  // select hot page and apply the one_period_migration_size
-  promote_page_limit_kb = option.one_period_migration_size;
-  promote_page_count_kb = 0;
+  for (auto& type : {PTE_ACCESSED, PMD_ACCESSED}) {
+    const histogram_2d_type& sys_refs = EPTScan::get_sys_refs_count(type);
+    const int to_kb = pagetype_shift[type] - 10;
+
+    avail_hot_page_kb += sys_refs[REF_LOC_PMEM][nr_walks] << to_kb;
+    for (int i = 0; i < nr_walks; ++i)
+      avail_cold_page_kb += sys_refs [REF_LOC_DRAM][i] << to_kb;
+  }
+
+  avail_hot_page_kb = std::min(avail_hot_page_kb, limit);
+
+  promote_limit_kb = avail_hot_page_kb;
+  demote_limit_kb = avail_hot_page_kb * demote_ratio;
+
+  if (demote_ratio > 1.0) {
+    if (demote_limit_kb == 0) {
+      demote_limit_kb = demote_kb;
+    } else if (avail_cold_page_kb < demote_limit_kb) {
+      promote_limit_kb = avail_cold_page_kb / demote_ratio;
+      demote_limit_kb = avail_cold_page_kb;
+    }
+  }
+}
+
+void GlobalScan::calc_migrate_parameter()
+{
+  long nr_kb, nr_page;
+  long promote_limit_kb;
+  long promote_count_kb;
+  long demote_limit_kb;
+  long demote_count_kb;
+
+  calc_migrate_count(promote_limit_kb, demote_limit_kb);
+
+  promote_count_kb = 0;
   for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
     for (auto& range : idle_ranges) {
       const histogram_2d_type& refs_count
           = range->get_pagetype_refs(type).histogram_2d;
-      int page_type_to_kb = pagetype_shift[type] - 10;
+      int shift = pagetype_shift[type] - 10;
 
       init_migration_parameter(range, type);
-      if (promote_page_count_kb < promote_page_limit_kb) {
-        nr_kb = refs_count[REF_LOC_PMEM][nr_walks] << page_type_to_kb;
-        nr_kb = std::min(nr_kb, promote_page_limit_kb - promote_page_count_kb);
-        nr_page = nr_kb >> page_type_to_kb;
+      if (promote_count_kb < promote_limit_kb) {
+
+        if (refs_count[REF_LOC_PMEM][nr_walks] == 0)
+          continue;
+
+        nr_kb = refs_count[REF_LOC_PMEM][nr_walks] << shift;
+        nr_kb = std::min(nr_kb, promote_limit_kb - promote_count_kb);
+        nr_page = nr_kb >> shift;
 
         range->parameter[type].nr_promote = nr_page;
         range->parameter[type].promote_remain = nr_page;
@@ -1029,51 +1062,43 @@ void GlobalScan::calc_migrate_parameter()
         range->parameter[type].hot_threshold_max = nr_walks;
         range->parameter[type].enable();
 
-        promote_page_count_kb += nr_kb;
+        promote_count_kb += nr_kb;
       }
     }
   }
 
-  // cover the pure DRAM case
-  if (0 == promote_page_count_kb && demote_ratio > 1.0)
-    demote_page_limit_kb = nr_demote;
-  else
-    demote_page_limit_kb = promote_page_count_kb * demote_ratio;
-
-  demote_page_count_kb = 0;
+  demote_count_kb = 0;
   for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
     for (int i = 0; i < nr_walks; ++i) {
       for (auto& range : idle_ranges) {
         const histogram_2d_type& refs_count
             = range->get_pagetype_refs(type).histogram_2d;
-        int page_type_to_kb = pagetype_shift[type] - 10;
+        int shift = pagetype_shift[type] - 10;
 
-        if (demote_page_count_kb < demote_page_limit_kb) {
+        if (demote_count_kb < demote_limit_kb) {
 
-          // Skip disabled range (for example fail to anti-thrashing)
-          if (!range->parameter[type].enabled)
+          if (refs_count[REF_LOC_DRAM][i] == 0)
             continue;
 
-          cold_threshold = i;
-          nr_kb = refs_count[REF_LOC_DRAM][cold_threshold] << page_type_to_kb;
-          nr_kb = std::min(nr_kb, demote_page_limit_kb - demote_page_count_kb);
-          nr_page = nr_kb >> page_type_to_kb;
+          // ONLY Skip disabled range by anti-thrashing
+          if (!range->parameter[type].enabled
+              && range->parameter[type].nr_demote != 0)
+            continue;
+
+          nr_kb = refs_count[REF_LOC_DRAM][i] << shift;
+          nr_kb = std::min(nr_kb, demote_limit_kb - demote_count_kb);
+          nr_page = nr_kb >> shift;
 
           range->parameter[type].nr_demote += nr_page;
           range->parameter[type].demote_remain = nr_page;
-          range->parameter[type].cold_threshold = cold_threshold;
+          range->parameter[type].cold_threshold = i;
           range->parameter[type].cold_threshold_min = 0;
           range->parameter[type].enable();
 
           if (!in_adjust_ratio_stage())
             anti_thrashing(range, type, option.anti_thrash_threshold);
 
-          demote_page_count_kb += nr_kb;
-        }
-
-        if (range->parameter[type].nr_promote == 0
-            && range->parameter[type].nr_demote == 0) {
-          range->parameter[type].disable("No HOT/COLD pages");
+          demote_count_kb += nr_kb;
         }
       }
     }
@@ -1082,7 +1107,6 @@ void GlobalScan::calc_migrate_parameter()
     for (auto& range : idle_ranges) {
       const migrate_parameter& parameter = range->parameter[type];
       range->dump_histogram(type);
-      printf("migration parameter dump:\n");
       parameter.dump();
       printf("\n");
     }
@@ -1147,7 +1171,7 @@ void GlobalScan::init_migration_parameter(EPTMigratePtr range, ProcIdlePageType 
   range->parameter[type].hot_threshold_max = nr_walks + 1;
   range->parameter[type].cold_threshold = -1;
   range->parameter[type].cold_threshold_min = -1;
-  range->parameter[type].enable();
+  range->parameter[type].disable("No HOT/COLD pages");
 }
 
 bool GlobalScan::is_all_migration_done()
