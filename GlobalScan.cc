@@ -1040,8 +1040,8 @@ void GlobalScan::calc_migrate_parameter()
   calc_migrate_count(promote_limit_kb, demote_limit_kb);
 
   promote_count_kb = 0;
-  for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
-    for (auto& range : idle_ranges) {
+  for (auto& range : idle_ranges) {
+    for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
       const histogram_2d_type& refs_count
           = range->get_pagetype_refs(type).histogram_2d;
       int shift = pagetype_shift[type] - 10;
@@ -1068,9 +1068,10 @@ void GlobalScan::calc_migrate_parameter()
   }
 
   demote_count_kb = 0;
-  for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
-    for (int i = 0; i < nr_walks; ++i) {
-      for (auto& range : idle_ranges) {
+
+  for (int i = 0; i < nr_walks; ++i) {
+    for (auto& range : idle_ranges) {
+      for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
         const histogram_2d_type& refs_count
             = range->get_pagetype_refs(type).histogram_2d;
         int shift = pagetype_shift[type] - 10;
@@ -1102,7 +1103,9 @@ void GlobalScan::calc_migrate_parameter()
         }
       }
     }
+  }
 
+  for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
     printf("\nPage selection for %s:\n", pagetype_name[type]);
     for (auto& range : idle_ranges) {
       const migrate_parameter& parameter = range->parameter[type];
