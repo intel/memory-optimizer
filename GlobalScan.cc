@@ -894,12 +894,26 @@ bool GlobalScan::in_adjust_ratio_stage()
   return error ? true : false;
 }
 
-bool GlobalScan::should_target_aep_young()
+bool GlobalScan::in_unbalanced_stage()
 {
   long target_dram_kb;
-  long one_period_migration_kb;
-  static const long max_delta_kb = 102400; // 100 MB
+  long max_delta_kb;
 
+  if (!option.dram_percent)
+    return false;
+
+  // 102400 is 100MB here
+  max_delta_kb = std::max(global_total_mem_kb / 100, 102400L);
+
+  target_dram_kb = global_total_mem_kb * option.dram_percent / 100;
+  if (std::abs(global_total_dram_kb - target_dram_kb) > max_delta_kb)
+    return true;
+
+  return false;
+}
+
+bool GlobalScan::should_target_aep_young()
+{
   if (!option.progressive_profile.empty())
     return false;
 
@@ -912,13 +926,7 @@ bool GlobalScan::should_target_aep_young()
       < (100 - option.dram_percent) / 2)
     return false;
 
-  target_dram_kb = global_total_mem_kb * option.dram_percent / 100.0;
-  one_period_migration_kb = option.one_period_migration_size;
-  if (std::abs(global_total_dram_kb - target_dram_kb)
-      <= max_delta_kb)
-    return false;
-
-  return true;
+  return in_unbalanced_stage();
 }
 
  void GlobalScan::calc_progressive_profile_parameter(ref_location from_type, int page_refs)
@@ -981,7 +989,12 @@ bool GlobalScan::should_target_aep_young()
 
 void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_kb)
 {
+    // gap = actual aep bytes - target aep bytes;
+
   long limit = option.one_period_migration_size;
+    // if (unbalance and aep is too many)
+    //   limit = max(option.one_period_migration_size, gap/8);
+
   long dram_percent = option.dram_percent;
   long demote_kb, promote_kb;
   long avail_hot_page_kb = 0;
@@ -1006,14 +1019,23 @@ void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_k
   }
   demote_ratio = (float)demote_kb / promote_kb;
 
+  // dram => aep
+
+  // for nrefs = nr_walks
   for (auto& type : {PTE_ACCESSED, PMD_ACCESSED}) {
     const histogram_2d_type& sys_refs = EPTScan::get_sys_refs_count(type);
     const int to_kb = pagetype_shift[type] - 10;
 
     avail_hot_page_kb += sys_refs[REF_LOC_PMEM][nr_walks] << to_kb;
+
+    // avail_hot_page_kb += sys_refs[REF_LOC_PMEM][nr_walks - 1] << to_kb;
+
     for (int i = 0; i < nr_walks; ++i)
       avail_cold_page_kb += sys_refs [REF_LOC_DRAM][i] << to_kb;
   }
+
+  //  demote_ratio promote <  demote <
+  //             promote < demote
 
   promote_limit_kb = std::min(avail_hot_page_kb, limit);
   demote_limit_kb = std::min((long)(promote_limit_kb * demote_ratio), limit);
