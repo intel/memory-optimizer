@@ -1,5 +1,18 @@
 #include "tlb_flush.h"
-#include <asm/tlbflush.h>
+
+
+/* copied from 4.20 kernel:
+ * See Documentation/x86/tlb.txt for details.  We choose 33
+ * because it is large enough to cover the vast majority (at
+ * least 95%) of allocations, and is small enough that we are
+ * confident it will not cause too much overhead.  Each single
+ * flush is about 100 ns, so this caps the maximum overhead at
+ * _about_ 3,000 ns.
+ *
+ * This is in units of pages.
+ */
+static unsigned long copied_tlb_single_page_flush_ceiling __read_mostly = 33;
+
 
 static bool copied_tlb_is_not_lazy(int cpu, void *data)
 {
@@ -34,12 +47,29 @@ static void copied_flush_tlb_func_common(const struct flush_tlb_info *f,
 	/* This code cannot presently handle being reentered. */
 	VM_WARN_ON(!irqs_disabled());
 
+	/*
+	 * The init_mm is unexported variable, but we don't need
+	 * check this here for our case, we just want to flush
+	 * the TLB on remote CPU cores which is running the task
+	 * using f->mm as memory space
+	 */
+#if 0
 	if (unlikely(loaded_mm == &init_mm))
 		return;
+#else
+	if (unlikely(loaded_mm != f->mm)) {
+		return;
+	}
+#endif
 
 	VM_WARN_ON(this_cpu_read(cpu_tlbstate.ctxs[loaded_mm_asid].ctx_id) !=
 		   loaded_mm->context.ctx_id);
 
+	/*
+	 * The caller of this function will set is_lazy to false explicitly
+	 * so we don't need handle this case, just skip this.
+	 */
+ #if 0
 	if (this_cpu_read(cpu_tlbstate.is_lazy)) {
 		/*
 		 * We're in lazy mode.  We need to at least flush our
@@ -53,6 +83,7 @@ static void copied_flush_tlb_func_common(const struct flush_tlb_info *f,
 		switch_mm_irqs_off(NULL, &init_mm, NULL);
 		return;
 	}
+#endif
 
 	if (unlikely(local_tlb_gen == mm_tlb_gen)) {
 		/*
@@ -61,7 +92,7 @@ static void copied_flush_tlb_func_common(const struct flush_tlb_info *f,
 		 * be handled can catch us all the way up, leaving no work for
 		 * the second flush.
 		 */
-		trace_tlb_flush(reason, 0);
+		// trace_tlb_flush(reason, 0);
 		return;
 	}
 
@@ -118,13 +149,13 @@ static void copied_flush_tlb_func_common(const struct flush_tlb_info *f,
 		}
 		if (local)
 			count_vm_tlb_events(NR_TLB_LOCAL_FLUSH_ONE, nr_invalidate);
-		trace_tlb_flush(reason, nr_invalidate);
+		// trace_tlb_flush(reason, nr_invalidate);
 	} else {
 		/* Full flush. */
 		local_flush_tlb();
 		if (local)
 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
-		trace_tlb_flush(reason, TLB_FLUSH_ALL);
+		// trace_tlb_flush(reason, TLB_FLUSH_ALL);
 	}
 
 	/* Both paths above update our state to mm_tlb_gen. */
@@ -134,14 +165,20 @@ static void copied_flush_tlb_func_common(const struct flush_tlb_info *f,
 static void copied_flush_tlb_func_remote(void *info)
 {
 	const struct flush_tlb_info *f = info;
+	bool saved_lazy;
 
 	inc_irq_stat(irq_tlb_count);
 
 	if (f->mm && f->mm != this_cpu_read(cpu_tlbstate.loaded_mm))
 		return;
 
+	saved_lazy = this_cpu_read(cpu_tlbstate.is_lazy);
+	this_cpu_write(cpu_tlbstate.is_lazy, false);
+
 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
-	flush_tlb_func_common(f, false, TLB_REMOTE_SHOOTDOWN);
+	copied_flush_tlb_func_common(f, false, TLB_REMOTE_SHOOTDOWN);
+
+	this_cpu_write(cpu_tlbstate.is_lazy, saved_lazy);
 }
 
 
@@ -149,12 +186,19 @@ static void copied_native_flush_tlb_others(const struct cpumask *cpumask,
 			     const struct flush_tlb_info *info)
 {
 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH);
+
+#if 0
 	if (info->end == TLB_FLUSH_ALL)
 		trace_tlb_flush(TLB_REMOTE_SEND_IPI, TLB_FLUSH_ALL);
 	else
 		trace_tlb_flush(TLB_REMOTE_SEND_IPI,
 				(info->end - info->start) >> PAGE_SHIFT);
-
+#endif
+	/*
+	 * Use non-UV system way in first version to reduce porting affort,
+	 * we will support UV system later if necessary
+	 */
+#if 0
 	if (is_uv_system()) {
 		/*
 		 * This whole special case is confused.  UV has a "Broadcast
@@ -176,10 +220,11 @@ static void copied_native_flush_tlb_others(const struct cpumask *cpumask,
 		cpu = smp_processor_id();
 		cpumask = uv_flush_tlb_others(cpumask, info);
 		if (cpumask)
-			smp_call_function_many(cpumask, flush_tlb_func_remote,
+			smp_call_function_many(cpumask, copied_flush_tlb_func_remote,
 					       (void *)info, 1);
 		return;
 	}
+#endif
 
 	/*
 	 * If no page tables were freed, we can skip sending IPIs to
@@ -192,10 +237,10 @@ static void copied_native_flush_tlb_others(const struct cpumask *cpumask,
 	 * doing a speculative memory access.
 	 */
 	if (info->freed_tables)
-		smp_call_function_many(cpumask, flush_tlb_func_remote,
+		smp_call_function_many(cpumask, copied_flush_tlb_func_remote,
 			       (void *)info, 1);
 	else
-		on_each_cpu_cond_mask(tlb_is_not_lazy, flush_tlb_func_remote,
+		on_each_cpu_cond_mask(copied_tlb_is_not_lazy, copied_flush_tlb_func_remote,
 				(void *)info, 1, GFP_ATOMIC, cpumask);
 }
 
@@ -219,7 +264,7 @@ void copied_flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
 
 	/* Should we flush just the requested range? */
 	if ((end != TLB_FLUSH_ALL) &&
-	    ((end - start) >> stride_shift) <= tlb_single_page_flush_ceiling) {
+	    ((end - start) >> stride_shift) <= copied_tlb_single_page_flush_ceiling) {
 		info.start = start;
 		info.end = end;
 	} else {
@@ -227,15 +272,16 @@ void copied_flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
 		info.end = TLB_FLUSH_ALL;
 	}
 
+	/* This should never happend in our case */
 	if (mm == this_cpu_read(cpu_tlbstate.loaded_mm)) {
 		VM_WARN_ON(irqs_disabled());
 		local_irq_disable();
-		flush_tlb_func_local(&info, TLB_LOCAL_MM_SHOOTDOWN);
+		copied_flush_tlb_func_common(&info, true, TLB_LOCAL_MM_SHOOTDOWN);
 		local_irq_enable();
 	}
 
 	if (cpumask_any_but(mm_cpumask(mm), cpu) < nr_cpu_ids)
-		flush_tlb_others(mm_cpumask(mm), &info);
+		copied_native_flush_tlb_others(mm_cpumask(mm), &info);
 
 	put_cpu();
 }
