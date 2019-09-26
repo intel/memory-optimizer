@@ -582,6 +582,7 @@ void GlobalScan::update_interval()
 {
   unsigned long target_bytes;
   unsigned long young;
+  int index;
 
   if (option.interval)
     return;
@@ -593,15 +594,18 @@ void GlobalScan::update_interval()
     target_bytes = option.one_period_migration_size * 1024UL
                    * option.interval_scale / 100;
     young = pmem_young_bytes;
+    index = 0;
   } else {
     // the extra /2 is for anti-thrashing
     target_bytes = all_bytes * option.dram_percent / 200.0;
     young = young_bytes;
+    index = 1;
   }
 
-  intervaler.set_target_y(target_bytes);
-  intervaler.add_pair(real_interval, young);
-  interval = intervaler.estimate_x();
+  intervaler[index].set_target_y(target_bytes);
+  intervaler[index].add_pair(real_interval, young);
+  interval = intervaler[index].estimate_x();
+
   // if (interval > 10)
   // interval = 10;
 }

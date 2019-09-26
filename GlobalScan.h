@@ -144,7 +144,7 @@ class GlobalScan
     ProcVmstat proc_vmstat;
     Sysfs sysfs;
 
-    IntervalFitting<float, unsigned long, 5> intervaler;
+    IntervalFitting<float, unsigned long, 5> intervaler[2];
 
     struct threshold global_hot_threshold[MAX_ACCESSED + 1];
     struct threshold global_hot_threshold_last[MAX_ACCESSED + 1];
