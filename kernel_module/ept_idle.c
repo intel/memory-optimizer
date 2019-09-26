@@ -15,6 +15,7 @@
 #include <linux/fdtable.h>
 #include "ept_idle.h"
 #include "ept_idle_native_pagewalk.h"
+#include "tlb_flush.h"
 
 /* #define DEBUG 1 */
 
@@ -754,6 +755,8 @@ static int ept_idle_release(struct inode *inode, struct file *file)
 		spin_unlock(&kvm->mmu_lock);
 
 		kvm_put_kvm(kvm);
+	} else if (eic->mm) {
+		copied_flush_tlb_mm_range(eic->mm, 0UL, TLB_FLUSH_ALL, 0UL, true);
 	}
 
 	if (eic->mm)
