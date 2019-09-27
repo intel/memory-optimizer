@@ -263,10 +263,11 @@ float GlobalScan::walk_multi()
 
     update_interval();
 
-    sleep_time = interval - elapsed;
-    sleep_time_vector.push_back(sleep_time);
-    if (sleep_time > 0) {
-      usleep(sleep_time * 1000000);
+    if (scans < option.nr_scans) {
+      sleep_time = interval - elapsed;
+      sleep_time_vector.push_back(sleep_time);
+      if (sleep_time > 0)
+        usleep(sleep_time * 1000000);
     }
 
     // for handling overflow case
