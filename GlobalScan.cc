@@ -922,7 +922,7 @@ bool GlobalScan::should_target_aep_young()
     return false;
 
   // cover the first time case
-  if (global_dram_ratio <= 0)
+  if (global_total_mem_kb <= 0)
     return false;
 
   // cover the aep little used case
