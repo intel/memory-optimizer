@@ -993,17 +993,28 @@ bool GlobalScan::should_target_aep_young()
 
 void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_kb)
 {
-    // gap = actual aep bytes - target aep bytes;
-
-  long limit = option.one_period_migration_size;
-    // if (unbalance and aep is too many)
-    //   limit = max(option.one_period_migration_size, gap/8);
-
   long dram_percent = option.dram_percent;
   long demote_kb, promote_kb;
-  long avail_hot_page_kb = 0;
-  long avail_cold_page_kb = 0;
+  long avail_hot_page_kb;
+  long avail_cold_page_kb;
+  long target_aep_kb;
+  long gap;
+  long limit;
   float demote_ratio;
+  long page_kb;
+  long saved_promote_kb;
+  long saved_demote_kb;
+  int cold_threshold;
+  int hot_threshold;
+  bool too_many_aep;
+
+  target_aep_kb = global_total_mem_kb * (100 - option.dram_percent) / 100;
+  gap = global_total_pmem_kb - target_aep_kb;
+
+  too_many_aep = in_unbalanced_stage() && gap > 0;
+  limit = too_many_aep ?
+          std::max((long)option.one_period_migration_size, gap / 8)
+          : option.one_period_migration_size;
 
   // calc the demote ratio
   if (dram_percent) {
@@ -1021,29 +1032,48 @@ void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_k
     promote_kb = limit / 2;
     demote_kb = limit / 2;
   }
+
+  saved_promote_kb = promote_kb;
+  saved_demote_kb = demote_kb;
   demote_ratio = (float)demote_kb / promote_kb;
 
-  // dram => aep
+  avail_hot_page_kb = 0;
+  avail_cold_page_kb = 0;
+  for (int i = 0; i <= nr_walks; ++i) {
+    for (auto& type : {PTE_ACCESSED, PMD_ACCESSED}) {
+      const histogram_2d_type& sys_refs = EPTScan::get_sys_refs_count(type);
+      const int to_kb = pagetype_shift[type] - 10;
 
-  // for nrefs = nr_walks
-  for (auto& type : {PTE_ACCESSED, PMD_ACCESSED}) {
-    const histogram_2d_type& sys_refs = EPTScan::get_sys_refs_count(type);
-    const int to_kb = pagetype_shift[type] - 10;
+      hot_threshold = nr_walks - i;
+      if (!too_many_aep) {
+        if (hot_threshold >= nr_walks)
+          avail_hot_page_kb += sys_refs[REF_LOC_PMEM][hot_threshold] << to_kb;
+        goto cold_pages;
+      }
 
-    avail_hot_page_kb += sys_refs[REF_LOC_PMEM][nr_walks] << to_kb;
+      if (hot_threshold <= 0)
+        goto cold_pages;
+      if (promote_kb <= 0)
+        goto cold_pages;
 
-    // avail_hot_page_kb += sys_refs[REF_LOC_PMEM][nr_walks - 1] << to_kb;
+      page_kb = std::min((long)(sys_refs[REF_LOC_PMEM][hot_threshold] << to_kb), promote_kb);
+      avail_hot_page_kb += page_kb;
+      promote_kb -= page_kb;
 
-    for (int i = 0; i < nr_walks; ++i)
-      avail_cold_page_kb += sys_refs [REF_LOC_DRAM][i] << to_kb;
+cold_pages:
+      cold_threshold = i;
+      if (cold_threshold >= nr_walks)
+        continue;
+
+      avail_cold_page_kb += sys_refs [REF_LOC_DRAM][cold_threshold] << to_kb;
+    }
   }
 
-  //  demote_ratio promote <  demote <
-  //             promote < demote
-
   promote_limit_kb = std::min(avail_hot_page_kb, limit);
-  demote_limit_kb = std::min((long)(promote_limit_kb * demote_ratio), limit);
-  promote_limit_kb = demote_limit_kb / demote_ratio;
+  page_kb = promote_limit_kb * demote_ratio;
+  demote_limit_kb = std::min(page_kb, limit);
+  if (page_kb > limit)
+    promote_limit_kb = demote_limit_kb / demote_ratio;
 
   if (demote_ratio > 1.0) {
     if (demote_limit_kb == 0) {
@@ -1053,6 +1083,10 @@ void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_k
       demote_limit_kb = avail_cold_page_kb;
     }
   }
+
+  printf("One period migration limitation: %ld kb\n", limit);
+  printf("Promote: %ld kb  adjusted to: %ld kb\n", saved_promote_kb, promote_limit_kb);
+  printf("Demote:  %ld kb  adjusted to: %ld kb\n", saved_demote_kb, demote_limit_kb);
 }
 
 void GlobalScan::calc_migrate_parameter()
@@ -1062,71 +1096,71 @@ void GlobalScan::calc_migrate_parameter()
   long promote_count_kb;
   long demote_limit_kb;
   long demote_count_kb;
+  int cold_threshold;
+  int hot_threshold;
 
   calc_migrate_count(promote_limit_kb, demote_limit_kb);
 
-  promote_count_kb = 0;
-  for (auto& range : idle_ranges) {
-    for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
-      const histogram_2d_type& refs_count
-          = range->get_pagetype_refs(type).histogram_2d;
-      int shift = pagetype_shift[type] - 10;
-
+  for (auto& range : idle_ranges)
+    for (const auto type : {PTE_ACCESSED, PMD_ACCESSED})
       init_migration_parameter(range, type);
-      if (promote_count_kb < promote_limit_kb) {
 
-        if (refs_count[REF_LOC_PMEM][nr_walks] == 0)
-          continue;
-
-        nr_kb = refs_count[REF_LOC_PMEM][nr_walks] << shift;
-        nr_kb = std::min(nr_kb, promote_limit_kb - promote_count_kb);
-        nr_page = nr_kb >> shift;
-
-        range->parameter[type].nr_promote = nr_page;
-        range->parameter[type].promote_remain = nr_page;
-        range->parameter[type].hot_threshold = nr_walks;
-        range->parameter[type].hot_threshold_max = nr_walks;
-        range->parameter[type].enable();
-
-        promote_count_kb += nr_kb;
-      }
-    }
-  }
-
+  promote_count_kb = 0;
   demote_count_kb = 0;
-
-  for (int i = 0; i < nr_walks; ++i) {
+  for (int i = 0; i <= nr_walks; ++i) {
     for (auto& range : idle_ranges) {
       for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
         const histogram_2d_type& refs_count
             = range->get_pagetype_refs(type).histogram_2d;
         int shift = pagetype_shift[type] - 10;
 
-        if (demote_count_kb < demote_limit_kb) {
+        hot_threshold = nr_walks - i;
+        if (promote_count_kb >= promote_limit_kb)
+          goto select_cold_page;
+        if (hot_threshold <= 0)
+          goto select_cold_page;
+        if (refs_count[REF_LOC_PMEM][hot_threshold] == 0)
+          goto select_cold_page;
 
-          if (refs_count[REF_LOC_DRAM][i] == 0)
-            continue;
+        nr_kb = refs_count[REF_LOC_PMEM][hot_threshold] << shift;
+        nr_kb = std::min(nr_kb, promote_limit_kb - promote_count_kb);
+        nr_page = nr_kb >> shift;
 
-          // ONLY Skip disabled range by anti-thrashing
-          if (!range->parameter[type].enabled
-              && range->parameter[type].nr_demote != 0)
-            continue;
+        range->parameter[type].nr_promote += nr_page;
+        range->parameter[type].promote_remain = nr_page;
+        range->parameter[type].hot_threshold = hot_threshold;
+        range->parameter[type].hot_threshold_max = nr_walks;
+        range->parameter[type].enable();
 
-          nr_kb = refs_count[REF_LOC_DRAM][i] << shift;
-          nr_kb = std::min(nr_kb, demote_limit_kb - demote_count_kb);
-          nr_page = nr_kb >> shift;
+        promote_count_kb += nr_kb;
 
-          range->parameter[type].nr_demote += nr_page;
-          range->parameter[type].demote_remain = nr_page;
-          range->parameter[type].cold_threshold = i;
-          range->parameter[type].cold_threshold_min = 0;
-          range->parameter[type].enable();
+select_cold_page:
+        cold_threshold = i;
+        if (demote_count_kb >= demote_limit_kb)
+          continue;
+        if (cold_threshold >= nr_walks)
+          continue;
+        if (refs_count[REF_LOC_DRAM][cold_threshold] == 0)
+          continue;
+        // ONLY Skip disabled range by anti-thrashing
+        if (!range->parameter[type].enabled
+          && range->parameter[type].nr_demote != 0)
+          continue;
 
-          if (!in_adjust_ratio_stage())
-            anti_thrashing(range, type, option.anti_thrash_threshold);
+        nr_kb = refs_count[REF_LOC_DRAM][cold_threshold] << shift;
+        nr_kb = std::min(nr_kb, demote_limit_kb - demote_count_kb);
+        nr_page = nr_kb >> shift;
 
-          demote_count_kb += nr_kb;
-        }
+        range->parameter[type].nr_demote += nr_page;
+        range->parameter[type].demote_remain = nr_page;
+        range->parameter[type].cold_threshold = cold_threshold;
+        range->parameter[type].cold_threshold_min = 0;
+        range->parameter[type].enable();
+
+        if (!in_adjust_ratio_stage())
+          anti_thrashing(range, type, option.anti_thrash_threshold);
+
+        demote_count_kb += nr_kb;
       }
     }
   }
