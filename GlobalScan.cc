@@ -1008,6 +1008,7 @@ void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_k
   int cold_threshold;
   int hot_threshold;
   bool too_many_aep;
+  bool need_more_cold_page;
 
   target_aep_kb = global_total_mem_kb * (100 - option.dram_percent) / 100;
   gap = global_total_pmem_kb - target_aep_kb;
@@ -1047,8 +1048,10 @@ void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_k
 
       hot_threshold = nr_walks - i;
       if (!too_many_aep) {
-        if (hot_threshold >= nr_walks)
-          avail_hot_page_kb += sys_refs[REF_LOC_PMEM][hot_threshold] << to_kb;
+        if (hot_threshold >= nr_walks) {
+          page_kb = std::min((long)(sys_refs[REF_LOC_PMEM][hot_threshold] << to_kb), promote_kb);
+          avail_hot_page_kb += page_kb;
+        }
         goto cold_pages;
       }
 
@@ -1069,7 +1072,7 @@ cold_pages:
       avail_cold_page_kb += sys_refs [REF_LOC_DRAM][cold_threshold] << to_kb;
     }
   }
-
+#if 0
   promote_limit_kb = std::min(avail_hot_page_kb, limit);
   page_kb = promote_limit_kb * demote_ratio;
   demote_limit_kb = std::min(page_kb, limit);
@@ -1077,14 +1080,41 @@ cold_pages:
     promote_limit_kb = demote_limit_kb / demote_ratio;
 
   if (demote_ratio > 1.0) {
-    if (demote_limit_kb == 0) {
-      demote_limit_kb = demote_kb;
-    } else if (avail_cold_page_kb < demote_limit_kb) {
+    if (in_unbalanced_stage() && demote_limit_kb == 0) {
+      demote_limit_kb = std::min(demote_kb, avail_cold_page_kb);
+    } else if (avail_cold_page_kb < demote_limit_kb
+               && promote_limit_kb > demote_limit_kb) {
       promote_limit_kb = avail_cold_page_kb / demote_ratio;
       demote_limit_kb = avail_cold_page_kb;
     }
   }
+#else
+  need_more_cold_page = demote_ratio > 1.0;
+  if (avail_cold_page_kb && avail_hot_page_kb) {
 
+    promote_limit_kb = avail_hot_page_kb;
+    page_kb = avail_hot_page_kb * demote_ratio;
+    if (need_more_cold_page) {
+      demote_limit_kb = std::min(avail_cold_page_kb,
+                                 page_kb);
+      if (page_kb > avail_cold_page_kb) {
+        promote_limit_kb = demote_limit_kb / demote_ratio;
+      }
+    } else { // need_more_hot_page case
+      demote_limit_kb = std::min(avail_cold_page_kb, page_kb);
+    }
+
+  } else if (!avail_cold_page_kb && avail_hot_page_kb) {
+    demote_limit_kb = 0;
+    promote_limit_kb = need_more_cold_page ? 0 : avail_hot_page_kb;
+  } else if (avail_cold_page_kb && !avail_hot_page_kb) {
+    promote_limit_kb = 0;
+    demote_limit_kb = need_more_cold_page ? avail_cold_page_kb : 0;
+  } else if (!avail_cold_page_kb && !avail_hot_page_kb) {
+    demote_limit_kb = 0;
+    promote_limit_kb = 0;
+  }
+#endif
   printf("One period migration limitation: %ld kb\n", limit);
   printf("Promote: %ld kb  adjusted to: %ld kb\n", saved_promote_kb, promote_limit_kb);
   printf("Demote:  %ld kb  adjusted to: %ld kb\n", saved_demote_kb, demote_limit_kb);
