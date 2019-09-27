@@ -57,11 +57,11 @@ usage: $0:
 
 For example:
 The AEP in system combined by 128GB X 4 in 2-1-1 configuration,
-the target pid is 100, we want to leave 25% hot pages to NUMA node 1,
-leave remain cold pages to NUMA node 3, run total 120 seconds in profiling
+the target pid is 100, we want to leave 25% hot pages to NUMA node 0,
+leave remain cold pages to NUMA node 1, run total 120 seconds in profiling
 stage:
 
-$0 -p 100 -d 25 -h 1 -c 3 -m 128 -i 211 -t 120
+$0 -p 100 -d 25 -h 0 -c 1 -m 128 -i 211 -t 120
 
 EOF
 }
