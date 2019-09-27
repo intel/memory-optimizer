@@ -166,12 +166,12 @@ def output_bw_per_gb(bw_per_gb_result, dcpmem_bw_per_gb)
   total_all = byte_to_KB(total_all)
   total_suit_dcpmem = byte_to_KB(total_suit_dcpmem)
 
-  print "\nDCPMEM MBps-per-GB: %35.2f\n" % [ dcpmem_bw_per_gb ]
-  print "All average MBps-per-GB: %30.2f\n" % [ bw_per_gb_all ]
-  print "All total size: %39s KB\n" % [ format_number(total_all) ]
-  print "All less than dcpmem MBps-per-GB size: %16s KB (%2.2f%%)\n" \
-          % [ format_number(total_suit_dcpmem), \
-              percent(total_suit_dcpmem, total_all) ]
+#  print "\nDCPMEM MBps-per-GB: %35.2f\n" % [ dcpmem_bw_per_gb ]
+#  print "All average MBps-per-GB: %30.2f\n" % [ bw_per_gb_all ]
+#  print "All total size: %39s KB\n" % [ format_number(total_all) ]
+#  print "All less than dcpmem MBps-per-GB size: %16s KB (%2.2f%%)\n" \
+#          % [ format_number(total_suit_dcpmem), \
+#              percent(total_suit_dcpmem, total_all) ]
   puts "failed count: #{failed_count}" if failed_count > 0
   puts ""
 
