@@ -559,6 +559,9 @@ prepare_sys_refs $target_pid
 
 run_cold_page_bw_per_gb
 
+echo "Moving the memory of pid $target_pid into cold node $cold_node"
+move_mem_to_node $cold_node $target_pid
+
 run_sys_refs
 wait_pid_timeout $sys_refs_pid $SYS_REFS_RUNTIME
 kill_sys_refs
