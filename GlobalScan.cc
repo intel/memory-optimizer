@@ -1068,8 +1068,12 @@ cold_pages:
       cold_threshold = i;
       if (cold_threshold >= nr_walks)
         continue;
+      if (demote_kb <= 0)
+        continue;
 
-      avail_cold_page_kb += sys_refs [REF_LOC_DRAM][cold_threshold] << to_kb;
+      page_kb = std::min((long)(sys_refs[REF_LOC_DRAM][cold_threshold] << to_kb), demote_kb);
+      avail_cold_page_kb += page_kb;
+      demote_kb -= page_kb;
     }
   }
 #if 0
@@ -1106,10 +1110,18 @@ cold_pages:
 
   } else if (!avail_cold_page_kb && avail_hot_page_kb) {
     demote_limit_kb = 0;
-    promote_limit_kb = need_more_cold_page ? 0 : avail_hot_page_kb;
+    if (in_unbalanced_stage()) {
+      promote_limit_kb = need_more_cold_page ? 0 : avail_hot_page_kb;
+    } else {
+      promote_limit_kb = 0;
+    }
   } else if (avail_cold_page_kb && !avail_hot_page_kb) {
     promote_limit_kb = 0;
-    demote_limit_kb = need_more_cold_page ? avail_cold_page_kb : 0;
+    if (in_unbalanced_stage()) {
+      demote_limit_kb = need_more_cold_page ? avail_cold_page_kb : 0;
+    } else {
+      demote_limit_kb = 0;
+    }
   } else if (!avail_cold_page_kb && !avail_hot_page_kb) {
     demote_limit_kb = 0;
     promote_limit_kb = 0;
