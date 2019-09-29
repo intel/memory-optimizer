@@ -337,14 +337,19 @@ void ProcIdlePages::dump_idlepages(proc_maps_entry& vma, int bytes)
 
 void ProcIdlePages::dump_histogram(ProcIdlePageType type)
 {
+  int i;
+
   printf("refs_count dump: Pid: %d type: %s\n",
          pid, pagetype_name[type]);
   printf("%-16s%-16s%s\n",
          "refs_count", "DRAM", "PMEM");
   printf("================================================\n");
 
-  for (int i = nr_walks; i >= 0; --i)
-    printf("  %-14d%-16lu%lu\n",
+  // Fix core dump when target process exit suddenly
+  i = (int)std::min(get_pagetype_refs(type).histogram_2d[REF_LOC_DRAM].size(),
+                    get_pagetype_refs(type).histogram_2d[REF_LOC_PMEM].size()) - 1;
+  for (; i >= 0; --i)
+    printf("  %-14u%-16lu%lu\n",
            i,
            get_pagetype_refs(type).histogram_2d[REF_LOC_DRAM][i],
            get_pagetype_refs(type).histogram_2d[REF_LOC_PMEM][i]);

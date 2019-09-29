@@ -82,6 +82,7 @@ void GlobalScan::main_loop()
       if (idle_ranges.empty()) {
         printf("No target process, sleeping for %f seconds\n", idle_sleep_time);
         usleep(idle_sleep_time * 1000000);
+
         continue;
       }
 
@@ -262,10 +263,11 @@ float GlobalScan::walk_multi()
 
     update_interval();
 
-    sleep_time = interval - elapsed;
-    sleep_time_vector.push_back(sleep_time);
-    if (sleep_time > 0) {
-      usleep(sleep_time * 1000000);
+    if (scans < option.nr_scans) {
+      sleep_time = interval - elapsed;
+      sleep_time_vector.push_back(sleep_time);
+      if (sleep_time > 0)
+        usleep(sleep_time * 1000000);
     }
 
     // for handling overflow case
@@ -581,6 +583,8 @@ void GlobalScan::update_interval()
 {
   unsigned long target_bytes;
   unsigned long young;
+  int index;
+
   if (option.interval)
     return;
 
@@ -591,14 +595,18 @@ void GlobalScan::update_interval()
     target_bytes = option.one_period_migration_size * 1024UL
                    * option.interval_scale / 100;
     young = pmem_young_bytes;
+    index = 0;
   } else {
-    target_bytes = all_bytes * option.dram_percent / 100;
+    // the extra /2 is for anti-thrashing
+    target_bytes = all_bytes * option.dram_percent / 200.0;
     young = young_bytes;
+    index = 1;
   }
 
-  intervaler.set_target_y(target_bytes);
-  intervaler.add_pair(real_interval, young);
-  interval = intervaler.estimate_x();
+  intervaler[index].set_target_y(target_bytes);
+  intervaler[index].add_pair(real_interval, young);
+  interval = intervaler[index].estimate_x();
+
   // if (interval > 10)
   // interval = 10;
 }
@@ -682,26 +690,26 @@ void GlobalScan::get_memory_type()
 
 void GlobalScan::calc_memory_size()
 {
-  global_total_pmem = 0;
-  global_total_dram = 0;
-  global_total_mem = 0;
+  global_total_pmem_kb = 0;
+  global_total_dram_kb = 0;
+  global_total_mem_kb = 0;
   for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
     long shift = pagetype_shift[type] - 10;
 
-    total_pmem[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_PMEM) << shift;
-    total_dram[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_DRAM) << shift;
-    total_mem[type] = total_pmem[type] + total_dram[type];
+    total_pmem_kb[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_PMEM) << shift;
+    total_dram_kb[type] = EPTScan::get_total_memory_page_count(type, REF_LOC_DRAM) << shift;
+    total_mem_kb[type] = total_pmem_kb[type] + total_dram_kb[type];
 
-    global_total_pmem += total_pmem[type];
-    global_total_dram += total_dram[type];
+    global_total_pmem_kb += total_pmem_kb[type];
+    global_total_dram_kb += total_dram_kb[type];
   }
-  global_total_mem = global_total_pmem + global_total_dram;
-  global_dram_ratio = (100.0 * global_total_dram) / global_total_mem;
+  global_total_mem_kb = global_total_pmem_kb + global_total_dram_kb;
+  global_dram_ratio = (100.0 * global_total_dram_kb) / global_total_mem_kb;
 
   printf("global memory size state: total: %ld KB dram: %ld KB pmem: %ld KB\n"
          "ratio: %ld target ratio: %d\n",
-         global_total_mem,
-         global_total_dram, global_total_pmem,
+         global_total_mem_kb,
+         global_total_dram_kb, global_total_pmem_kb,
          global_dram_ratio, option.dram_percent);
 }
 
@@ -737,7 +745,7 @@ void GlobalScan::calc_hotness_drifting()
 
     for (auto& page_type: {PTE_ACCESSED, PMD_ACCESSED}) {
       ret = 0;
-      if (total_mem[page_type] == 0)
+      if (total_mem_kb[page_type] == 0)
         continue;
 
       ret += idle_ranges_last[i]->normalize_page_hotness(page_type,
@@ -852,16 +860,16 @@ void GlobalScan::calc_global_threshold()
   for (int i = 0; i < MAX_ACCESSED + 1; ++i) {
     histogram_2d_type& refs = EPTScan::get_sys_refs_count((ProcIdlePageType)i);
 
-    if (total_mem[i] == 0) {
+    if (total_mem_kb[i] == 0) {
       global_hot_threshold[i].value = -1;
       global_hot_threshold[i].value_max = -1;
       continue;
     }
 
     if (option.dram_percent)
-      page_count = option.dram_percent * total_mem[i] / 100.0;
+      page_count = option.dram_percent * total_mem_kb[i] / 100.0;
     else
-      page_count = total_dram[i];
+      page_count = total_dram_kb[i];
 
     kb_to_page_count = pagetype_shift[i] - 10;
     page_count >>= kb_to_page_count;
@@ -891,20 +899,39 @@ bool GlobalScan::in_adjust_ratio_stage()
   return error ? true : false;
 }
 
+bool GlobalScan::in_unbalanced_stage()
+{
+  long target_dram_kb;
+  long max_delta_kb;
+
+  if (!option.dram_percent)
+    return false;
+
+  // 102400 is 100MB here
+  max_delta_kb = std::max(global_total_mem_kb / 100, 102400L);
+
+  target_dram_kb = global_total_mem_kb * option.dram_percent / 100;
+  if (std::abs(global_total_dram_kb - target_dram_kb) > max_delta_kb)
+    return true;
+
+  return false;
+}
+
 bool GlobalScan::should_target_aep_young()
 {
   if (!option.progressive_profile.empty())
     return false;
 
   // cover the first time case
-  if (global_dram_ratio <= 0)
+  if (global_total_mem_kb <= 0)
     return false;
 
+  // cover the aep little used case
   if ((100 - global_dram_ratio)
       < (100 - option.dram_percent) / 2)
     return false;
 
-  return true;
+  return in_unbalanced_stage();
 }
 
  void GlobalScan::calc_progressive_profile_parameter(ref_location from_type, int page_refs)
@@ -913,7 +940,7 @@ bool GlobalScan::should_target_aep_young()
 
   for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
 
-    if (!total_mem[type]) {
+    if (!total_mem_kb[type]) {
       for (auto& range : idle_ranges) {
         init_migration_parameter(range, type);
         range->parameter[type].disable("No HOT or COLD pages");
@@ -927,8 +954,8 @@ bool GlobalScan::should_target_aep_young()
            "  total_pmem: %ld kb\n"
            "  ratio: %d\n",
            __func__, pagetype_name[type],
-           total_mem[type], total_dram[type], total_pmem[type],
-           percent(total_dram[type], total_mem[type]));
+           total_mem_kb[type], total_dram_kb[type], total_pmem_kb[type],
+           percent(total_dram_kb[type], total_mem_kb[type]));
 
     for (auto& range : idle_ranges) {
       const histogram_2d_type& refs_count
@@ -965,135 +992,227 @@ bool GlobalScan::should_target_aep_young()
   }
 }
 
+void GlobalScan::calc_migrate_count(long& promote_limit_kb, long& demote_limit_kb)
+{
+  long dram_percent = option.dram_percent;
+  long demote_kb, promote_kb;
+  long avail_hot_page_kb;
+  long avail_cold_page_kb;
+  long target_aep_kb;
+  long gap;
+  long limit;
+  float demote_ratio;
+  long page_kb;
+  long saved_promote_kb;
+  long saved_demote_kb;
+  int cold_threshold;
+  int hot_threshold;
+  bool too_many_aep;
+  bool need_more_cold_page;
+
+  target_aep_kb = global_total_mem_kb * (100 - option.dram_percent) / 100;
+  gap = global_total_pmem_kb - target_aep_kb;
+
+  too_many_aep = in_unbalanced_stage() && gap > 0;
+  limit = too_many_aep ?
+          std::max((long)option.one_period_migration_size, gap / 8)
+          : option.one_period_migration_size;
+
+  // calc the demote ratio
+  if (dram_percent) {
+    long adjust = limit / 8;
+    long dram_target;
+    long delta;
+
+    dram_target = global_total_mem_kb * (dram_percent / 100.0);
+    delta = dram_target - global_total_dram_kb;
+    delta = delta < 0 ? std::max(delta, 0 - limit + adjust)
+                        : std::min(delta, limit - adjust);
+    promote_kb = (limit + delta) / 2;
+    demote_kb = (limit - delta) / 2;
+  } else {
+    promote_kb = limit / 2;
+    demote_kb = limit / 2;
+  }
+
+  saved_promote_kb = promote_kb;
+  saved_demote_kb = demote_kb;
+  demote_ratio = (float)demote_kb / promote_kb;
+
+  avail_hot_page_kb = 0;
+  avail_cold_page_kb = 0;
+  for (int i = 0; i <= nr_walks; ++i) {
+    for (auto& type : {PTE_ACCESSED, PMD_ACCESSED}) {
+      const histogram_2d_type& sys_refs = EPTScan::get_sys_refs_count(type);
+      const int to_kb = pagetype_shift[type] - 10;
+
+      hot_threshold = nr_walks - i;
+      if (!too_many_aep) {
+        if (hot_threshold >= nr_walks) {
+          page_kb = std::min((long)(sys_refs[REF_LOC_PMEM][hot_threshold] << to_kb), promote_kb);
+          avail_hot_page_kb += page_kb;
+        }
+        goto cold_pages;
+      }
+
+      if (hot_threshold <= 0)
+        goto cold_pages;
+      if (promote_kb <= 0)
+        goto cold_pages;
+
+      page_kb = std::min((long)(sys_refs[REF_LOC_PMEM][hot_threshold] << to_kb), promote_kb);
+      avail_hot_page_kb += page_kb;
+      promote_kb -= page_kb;
+
+cold_pages:
+      cold_threshold = i;
+      if (cold_threshold >= nr_walks)
+        continue;
+      if (demote_kb <= 0)
+        continue;
+
+      page_kb = std::min((long)(sys_refs[REF_LOC_DRAM][cold_threshold] << to_kb), demote_kb);
+      avail_cold_page_kb += page_kb;
+      demote_kb -= page_kb;
+    }
+  }
+#if 0
+  promote_limit_kb = std::min(avail_hot_page_kb, limit);
+  page_kb = promote_limit_kb * demote_ratio;
+  demote_limit_kb = std::min(page_kb, limit);
+  if (page_kb > limit)
+    promote_limit_kb = demote_limit_kb / demote_ratio;
+
+  if (demote_ratio > 1.0) {
+    if (in_unbalanced_stage() && demote_limit_kb == 0) {
+      demote_limit_kb = std::min(demote_kb, avail_cold_page_kb);
+    } else if (avail_cold_page_kb < demote_limit_kb
+               && promote_limit_kb > demote_limit_kb) {
+      promote_limit_kb = avail_cold_page_kb / demote_ratio;
+      demote_limit_kb = avail_cold_page_kb;
+    }
+  }
+#else
+  need_more_cold_page = demote_ratio > 1.0;
+  if (avail_cold_page_kb && avail_hot_page_kb) {
+
+    promote_limit_kb = avail_hot_page_kb;
+    page_kb = avail_hot_page_kb * demote_ratio;
+    if (need_more_cold_page) {
+      demote_limit_kb = std::min(avail_cold_page_kb,
+                                 page_kb);
+      if (page_kb > avail_cold_page_kb) {
+        promote_limit_kb = demote_limit_kb / demote_ratio;
+      }
+    } else { // need_more_hot_page case
+      demote_limit_kb = std::min(avail_cold_page_kb, page_kb);
+    }
+
+  } else if (!avail_cold_page_kb && avail_hot_page_kb) {
+    demote_limit_kb = 0;
+    if (in_unbalanced_stage()) {
+      promote_limit_kb = need_more_cold_page ? 0 : avail_hot_page_kb;
+    } else {
+      promote_limit_kb = 0;
+    }
+  } else if (avail_cold_page_kb && !avail_hot_page_kb) {
+    promote_limit_kb = 0;
+    if (in_unbalanced_stage()) {
+      demote_limit_kb = need_more_cold_page ? avail_cold_page_kb : 0;
+    } else {
+      demote_limit_kb = 0;
+    }
+  } else if (!avail_cold_page_kb && !avail_hot_page_kb) {
+    demote_limit_kb = 0;
+    promote_limit_kb = 0;
+  }
+#endif
+  printf("One period migration limitation: %ld kb\n", limit);
+  printf("Promote: %ld kb  adjusted to: %ld kb\n", saved_promote_kb, promote_limit_kb);
+  printf("Demote:  %ld kb  adjusted to: %ld kb\n", saved_demote_kb, demote_limit_kb);
+}
+
 void GlobalScan::calc_migrate_parameter()
 {
-  long limit = option.one_period_migration_size;
-  long dram_percent = option.dram_percent;
-  long dram_target;
-  long nr_demote, nr_promote;
-  long save_nr_promote, save_nr_demote;
-  long nr_increase;
-  long delta;
-  int hot_threshold = nr_walks + 1;
-  int cold_threshold = -1;
+  long nr_kb, nr_page;
+  long promote_limit_kb;
+  long promote_count_kb;
+  long demote_limit_kb;
+  long demote_count_kb;
+  int cold_threshold;
+  int hot_threshold;
 
-  for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
-    long shift = pagetype_shift[type] - 10;
+  calc_migrate_count(promote_limit_kb, demote_limit_kb);
 
-    if (!total_mem[type]) {
-      for (auto& range : idle_ranges) {
-        init_migration_parameter(range, type);
-        range->parameter[type].disable("No HOT or COLD pages");
-      }
-      continue;
-    }
+  for (auto& range : idle_ranges)
+    for (const auto type : {PTE_ACCESSED, PMD_ACCESSED})
+      init_migration_parameter(range, type);
 
-    if (dram_percent) {
-      long adjust = limit / 8;
-      dram_target = total_mem[type] * (dram_percent / 100.0);
-      delta = dram_target - total_dram[type];
-      delta = delta < 0 ?
-                      std::max(delta, 0 - limit + adjust) :
-                      std::min(delta, limit - adjust);
-      nr_promote = (limit + delta) / 2;
-      nr_demote = (limit - delta) / 2;
-    } else  {
-      nr_promote = limit / 2;
-      nr_demote = limit / 2;
-    }
-
-    // nr_promote = std::min(total_pmem[type], nr_promote);
-    // nr_demote = std::min(total_dram[type], nr_demote);
-
-    printf("\nMemory info by %s for %s:\n"
-           "  total_mem: %ld kb\n"
-           "  total_dram: %ld kb\n"
-           "  total_pmem: %ld kb\n"
-           "  ratio: %d\n"
-           "  promote: %ld kb\n"
-           "  demote: %ld kb\n",
-           __func__, pagetype_name[type],
-           total_mem[type], total_dram[type], total_pmem[type],
-           percent(total_dram[type], total_mem[type]),
-           nr_promote, nr_demote);
-
-    // from KB to page count
-    nr_promote >>= shift;
-    nr_demote  >>= shift;
-    save_nr_promote = nr_promote;
-    save_nr_demote = nr_demote;
-    for (int i = 0; i < nr_walks; ++i) {
-      for (auto& range : idle_ranges) {
+  promote_count_kb = 0;
+  demote_count_kb = 0;
+  for (int i = 0; i <= nr_walks; ++i) {
+    for (auto& range : idle_ranges) {
+      for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
         const histogram_2d_type& refs_count
             = range->get_pagetype_refs(type).histogram_2d;
+        int shift = pagetype_shift[type] - 10;
 
-        // Skip disabled range (for example fail to anti-thrashing)
-        if (0 == i)
-          init_migration_parameter(range, type);
-        else if (!range->parameter[type].enabled)
+        hot_threshold = nr_walks - i;
+        if (promote_count_kb >= promote_limit_kb)
+          goto select_cold_page;
+        if (hot_threshold <= 0)
+          goto select_cold_page;
+        if (refs_count[REF_LOC_PMEM][hot_threshold] == 0)
+          goto select_cold_page;
+
+        nr_kb = refs_count[REF_LOC_PMEM][hot_threshold] << shift;
+        nr_kb = std::min(nr_kb, promote_limit_kb - promote_count_kb);
+        nr_page = nr_kb >> shift;
+
+        range->parameter[type].nr_promote += nr_page;
+        range->parameter[type].promote_remain = nr_page;
+        range->parameter[type].hot_threshold = hot_threshold;
+        range->parameter[type].hot_threshold_max = nr_walks;
+        range->parameter[type].enable();
+
+        promote_count_kb += nr_kb;
+
+select_cold_page:
+        cold_threshold = i;
+        if (demote_count_kb >= demote_limit_kb)
+          continue;
+        if (cold_threshold >= nr_walks)
+          continue;
+        if (refs_count[REF_LOC_DRAM][cold_threshold] == 0)
+          continue;
+        // ONLY Skip disabled range by anti-thrashing
+        if (!range->parameter[type].enabled
+          && range->parameter[type].nr_demote != 0)
           continue;
 
-        if (nr_promote > 0) {
-          hot_threshold = nr_walks - i;
-          nr_increase = std::min(nr_promote,
-                                 (long)refs_count[REF_LOC_PMEM][hot_threshold]);
+        nr_kb = refs_count[REF_LOC_DRAM][cold_threshold] << shift;
+        nr_kb = std::min(nr_kb, demote_limit_kb - demote_count_kb);
+        nr_page = nr_kb >> shift;
 
-          range->parameter[type].nr_promote += nr_increase;
-          range->parameter[type].promote_remain = nr_increase;
-          range->parameter[type].hot_threshold = hot_threshold;
-          range->parameter[type].hot_threshold_max = nr_walks;
-          range->parameter[type].enable();
-
-          nr_promote -= nr_increase;
-        }
-
-        if (nr_demote > 0) {
-          cold_threshold = i;
-          nr_increase = std::min(nr_demote,
-                                 (long)refs_count[REF_LOC_DRAM][cold_threshold]);
-
-          range->parameter[type].nr_demote += nr_increase;
-          range->parameter[type].demote_remain = nr_increase;
-          range->parameter[type].cold_threshold = cold_threshold;
-          range->parameter[type].cold_threshold_min = 0;
-          range->parameter[type].enable();
-
-          nr_demote -= nr_increase;
-        }
+        range->parameter[type].nr_demote += nr_page;
+        range->parameter[type].demote_remain = nr_page;
+        range->parameter[type].cold_threshold = cold_threshold;
+        range->parameter[type].cold_threshold_min = 0;
+        range->parameter[type].enable();
 
         if (!in_adjust_ratio_stage())
           anti_thrashing(range, type, option.anti_thrash_threshold);
+
+        demote_count_kb += nr_kb;
       }
     }
+  }
 
-    // no enough hot pages case
-    if (nr_promote > 0) {
-      fprintf(stderr, "WARNING: No enough %s HOT pages:\n"
-              "request: %ld actual: %ld\n"
-              "hot_threshold changed to: %d\n",
-              pagetype_name[type],
-              save_nr_promote,
-              save_nr_promote - nr_promote,
-              hot_threshold);
-    }
-    // no enough cold pages case
-    if (nr_demote > 0) {
-      fprintf(stderr, "WARNING: No enough %s COLD pages:\n"
-              "request: %ld actual: %ld\n"
-              "cold_threshold changed to: %d\n",
-              pagetype_name[type],
-              save_nr_demote,
-              save_nr_demote - nr_demote,
-              cold_threshold);
-    }
-
+  for (const auto type : {PTE_ACCESSED, PMD_ACCESSED}) {
     printf("\nPage selection for %s:\n", pagetype_name[type]);
     for (auto& range : idle_ranges) {
       const migrate_parameter& parameter = range->parameter[type];
       range->dump_histogram(type);
-      printf("global nr_promte: %ld global nr_demote: %ld\n",
-             save_nr_promote, save_nr_demote);
-      printf("migration parameter dump:\n");
       parameter.dump();
       printf("\n");
     }
@@ -1158,7 +1277,7 @@ void GlobalScan::init_migration_parameter(EPTMigratePtr range, ProcIdlePageType 
   range->parameter[type].hot_threshold_max = nr_walks + 1;
   range->parameter[type].cold_threshold = -1;
   range->parameter[type].cold_threshold_min = -1;
-  range->parameter[type].disable("by page selection");
+  range->parameter[type].disable("No HOT/COLD pages");
 }
 
 bool GlobalScan::is_all_migration_done()

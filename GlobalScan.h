@@ -79,6 +79,7 @@ class GlobalScan
     void update_pid_context();
     void get_memory_type();
     void calc_progressive_profile_parameter(ref_location from_type, int page_refs);
+    void calc_migrate_count(long& promote_limit, long& demote_limit);
     void calc_migrate_parameter();
 
     unsigned long accept_hot_bytes()   { return dram_hot_target * 12 / 8; }
@@ -102,6 +103,7 @@ class GlobalScan
     void calc_page_hotness_drifting(EPTMigratePtr last, EPTMigratePtr current);
     void calc_global_threshold();
     bool in_adjust_ratio_stage();
+    bool in_unbalanced_stage();
     bool should_target_aep_young();
     void save_scan_finish_ts();
     void save_context_last() {
@@ -142,18 +144,18 @@ class GlobalScan
     ProcVmstat proc_vmstat;
     Sysfs sysfs;
 
-    IntervalFitting<float, unsigned long, 5> intervaler;
+    IntervalFitting<float, unsigned long, 5> intervaler[2];
 
     struct threshold global_hot_threshold[MAX_ACCESSED + 1];
     struct threshold global_hot_threshold_last[MAX_ACCESSED + 1];
 
-    long total_pmem[MAX_ACCESSED + 1];
-    long total_dram[MAX_ACCESSED + 1];
-    long total_mem[MAX_ACCESSED + 1];
+    long total_pmem_kb[MAX_ACCESSED + 1];
+    long total_dram_kb[MAX_ACCESSED + 1];
+    long total_mem_kb[MAX_ACCESSED + 1];
 
-    long global_total_pmem = 0;
-    long global_total_dram = 0;
-    long global_total_mem = 0;
+    long global_total_pmem_kb = 0;
+    long global_total_dram_kb = 0;
+    long global_total_mem_kb = 0;
     long global_dram_ratio = 0;
 };
 
