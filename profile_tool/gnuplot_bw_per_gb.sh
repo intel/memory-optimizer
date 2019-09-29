@@ -1,4 +1,10 @@
 #!/usr/bin/env gnuplot
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright (c) 2019 Intel Corporation
+#
+#
 
 file="bw_per_gb_raw.log"
 

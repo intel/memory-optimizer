@@ -1,4 +1,10 @@
 #!/usr/bin/env ruby
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright (c) 2019 Intel Corporation
+#
+#
 
 $stable = Hash.new {|hash, key| hash[key] = []}
 $unstable = Hash.new {|hash, key| hash[key] = []}

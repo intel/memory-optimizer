@@ -1,4 +1,11 @@
 #!/bin/bash
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright (c) 2019 Intel Corporation
+#
+#
+
 
 BASE_DIR=$(dirname $(readlink -e $0))
 

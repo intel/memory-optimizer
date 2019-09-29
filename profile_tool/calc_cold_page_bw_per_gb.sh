@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright (c) 2019 Intel Corporation
+#
+#
 
 SETUP_DIR=$(dirname $(readlink -e $0))
 source "$SETUP_DIR/common_library.sh"

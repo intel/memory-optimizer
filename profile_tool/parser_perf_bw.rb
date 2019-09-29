@@ -1,4 +1,10 @@
 #!/usr/bin/env ruby
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+# Copyright (c) 2019 Intel Corporation
+#
+#
 
 total_read = 0
 remote_read_cold = 0
