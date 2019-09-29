@@ -1,0 +1,58 @@
+This README includes the quick guide to help you run the profile tool on your system.
+
+Summary
+========
+The tool already tested on CLX and SLX platform, with native workload and KVM workload on
+below kernel version:
+Linux 4.20.0
+Linux 5.3.0-rc3
+
+Pre-request
+==========
+Let's assume the directory you put the source code is $ROOT
+
+- Main file structure:
+$ROOT/kernel_module:  The out of tree kernel module source directory
+$ROOT/profile_tool: The source directory of profile tool
+$ROOT/profile_tool/log/pid_xxx: The log folder, log saved by PID here.
+
+- Build:
+Run $ROOT/profile_tool/build.sh
+You should run this script again after you booted with another kernel or pulled from repo.
+This script checks the binary tool dependence, build the kernel module against the running
+kernel and the sys-refs tool.
+It also downloads the pmu-tools form GITHUB if the capability of local installed perf is
+not enough. 
+
+Usage
+=====
+The tool can profile a running KVM workload or native workload.
+
+Example:
+The AEP in system combined by 128GB X 4 in 2-1-1 configuration, the target PID is 100,
+we want to leave 25% hot pages to NUMA node 0, leave remain cold pages to NUMA node 1,
+run total 120 seconds in profiling stage:
+
+$ROOT/profile_tool/profile.sh -p 100 -d 25 -h 0 -c 1 -m 128 -i 211 -t 120
+
+You can also run profile.sh without parameters to get help information.
+
+Please refer the dcpmem_hw_information.yaml to know the supported DCPMEM type.
+
+
+Limitation:
+========
+- Low accurate on KVM workload:
+To build a pure out of tree kernel module without patch customer's running kernel,
+we removed patches which allow our kernel module checking the actual invalid SPTE
+entries due to page migration in HOST side, so for KVM workload the tool can
+only work in low accuracy mode. 
+
+Known Issue:
+==========
+- Incorrect HOT/COLD node detection result sometimes:
+We planned to detect the HOT/COLD nodes automatically to reduce overheads in customer side,
+But this feature is not stable enough so far, but we have the -h and -c parameters to override it,
+Solution: currently please keep use the -c and -h and don't rely on this feature. 
+
+
