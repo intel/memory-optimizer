@@ -349,10 +349,10 @@ void ProcIdlePages::dump_histogram(ProcIdlePageType type)
   i = (int)std::min(get_pagetype_refs(type).histogram_2d[REF_LOC_DRAM].size(),
                     get_pagetype_refs(type).histogram_2d[REF_LOC_PMEM].size()) - 1;
   for (; i >= 0; --i)
-    printf("  %-14u%-16lu%lu\n",
+    printf("  %-14d%-16lu%lu\n",
            i,
-           get_pagetype_refs(type).histogram_2d[REF_LOC_DRAM][i],
-           get_pagetype_refs(type).histogram_2d[REF_LOC_PMEM][i]);
+           (unsigned long)get_pagetype_refs(type).histogram_2d[REF_LOC_DRAM][i],
+           (unsigned long)get_pagetype_refs(type).histogram_2d[REF_LOC_PMEM][i]);
 }
 
 uint64_t ProcIdlePages::u8_to_u64(uint8_t a[])

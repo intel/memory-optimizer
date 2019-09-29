@@ -717,7 +717,7 @@ void GlobalScan::calc_hotness_drifting()
 {
   bool found;
   size_t i, j;
-  int ret;
+  int ret = 0;
 
   if (idle_ranges_last.empty())
     return;
@@ -777,9 +777,9 @@ void GlobalScan::calc_page_hotness_drifting(EPTMigratePtr last,
   const int j_end = 2;
   int8_t unused_nid;
 
-  long stable_hotness_count[MAX_ACCESSED];
-  long unstable_hotness_count[MAX_ACCESSED];
-  long total_count[MAX_ACCESSED];
+  long stable_hotness_count[MAX_ACCESSED] = {0,};
+  long unstable_hotness_count[MAX_ACCESSED] = {0,};
+  long total_count[MAX_ACCESSED] = {0,};
   int8_t final_hotness;
 
   int rc[j_end];
